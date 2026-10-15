@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+/* Dark-first: EVE is played in the dark. Real design pass comes with the calculator UI (stage 1c). */
+:root {
+  --background: #0b0e12;
+  --surface: #131820;
+  --border: #232b36;
+  --foreground: #d8dee6;
+  --muted: #7d8794;
+  --accent: #e0a43a;
+  --ok: #5cb87a;
+  --bad: #d9614c;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-ok: var(--ok);
+  --color-bad: var(--bad);
+  --font-sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
