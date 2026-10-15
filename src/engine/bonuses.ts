@@ -1,0 +1,136 @@
+/**
+ * Every game constant the engine uses lives here — no magic numbers in formulas.
+ *
+ * ⚠ СВЕРИТЬ С ИГРОЙ. Values below are the commonly documented ones as of
+ * 2025–2026 but CCP tweaks them. Before trusting a profit number, compare a
+ * couple of items against the in-game industry window / EVE Guru and fix the
+ * values here. Each value carries a `// verify` marker until confirmed.
+ */
+import type { Activity } from "./types";
+
+export type StructureType =
+  | "npc_station"
+  | "raitaru"
+  | "azbel"
+  | "sotiyo"
+  | "athanor"
+  | "tatara";
+
+export type Security = "high" | "low" | "null"; // "null" also covers wormholes
+export type RigTier = "none" | "t1" | "t2";
+
+export interface StructureSpec {
+  label: string;
+  /** Activities this structure can run at all. */
+  activities: Activity[];
+  /** Role bonus: fraction of materials saved for manufacturing (0.01 = 1%). */
+  materialBonus: number;
+  /** Role bonus: fraction of job time saved, keyed by activity. */
+  timeBonus: Partial<Record<Activity, number>>;
+  /** Role bonus: fraction of the job gross cost (EIV × index) saved. */
+  jobCostBonus: number;
+}
+
+const ENGINEERING: Activity[] = [
+  "manufacturing",
+  "invention",
+  "copying",
+  "research_material",
+  "research_time",
+];
+
+export const STRUCTURES: Record<StructureType, StructureSpec> = {
+  npc_station: {
+    label: "NPC Station",
+    activities: ENGINEERING,
+    materialBonus: 0,
+    timeBonus: {},
+    jobCostBonus: 0,
+  },
+  raitaru: {
+    label: "Raitaru",
+    activities: ENGINEERING,
+    materialBonus: 0.01, // verify
+    timeBonus: { manufacturing: 0.15, invention: 0.15, copying: 0.15, research_material: 0.15, research_time: 0.15 }, // verify
+    jobCostBonus: 0.03, // verify
+  },
+  azbel: {
+    label: "Azbel",
+    activities: ENGINEERING,
+    materialBonus: 0.01, // verify
+    timeBonus: { manufacturing: 0.2, invention: 0.2, copying: 0.2, research_material: 0.2, research_time: 0.2 }, // verify
+    jobCostBonus: 0.04, // verify
+  },
+  sotiyo: {
+    label: "Sotiyo",
+    activities: ENGINEERING,
+    materialBonus: 0.01, // verify
+    timeBonus: { manufacturing: 0.3, invention: 0.3, copying: 0.3, research_material: 0.3, research_time: 0.3 }, // verify
+    jobCostBonus: 0.05, // verify
+  },
+  athanor: {
+    label: "Athanor",
+    activities: ["reaction"],
+    materialBonus: 0,
+    timeBonus: {},
+    jobCostBonus: 0,
+  },
+  tatara: {
+    label: "Tatara",
+    activities: ["reaction"],
+    materialBonus: 0,
+    timeBonus: { reaction: 0.25 }, // verify
+    jobCostBonus: 0,
+  },
+};
+
+/** Rig bonus multiplier by security band (applied to rig bonuses only). */
+export const SECURITY_RIG_MULTIPLIER: Record<Security, number> = {
+  high: 1.0, // verify
+  low: 1.9, // verify
+  null: 2.1, // verify
+};
+
+/** Material-efficiency rig bonus per tier (before security multiplier). */
+export const RIG_MATERIAL_BONUS: Record<RigTier, number> = {
+  none: 0,
+  t1: 0.02, // verify
+  t2: 0.024, // verify
+};
+
+/** Time-efficiency rig bonus per tier (before security multiplier). */
+export const RIG_TIME_BONUS: Record<RigTier, number> = {
+  none: 0,
+  t1: 0.2, // verify
+  t2: 0.24, // verify
+};
+
+/** Share of EIV used as the base for the job fee, per activity. */
+export const ACTIVITY_EIV_FACTOR: Record<Activity, number> = {
+  manufacturing: 1,
+  reaction: 1,
+  invention: 0.02, // verify
+  copying: 0.02, // verify
+  research_material: 0.02, // verify
+  research_time: 0.02, // verify
+};
+
+/** SCC surcharge, fraction of EIV, added to every job. */
+export const SCC_SURCHARGE = 0.04; // verify
+
+/** Skill time reductions per level. */
+export const SKILL_TIME = {
+  industryPerLevel: 0.04, // verify — Industry
+  advancedIndustryPerLevel: 0.03, // verify — Advanced Industry
+  reactionsPerLevel: 0.04, // verify — Reactions
+} as const;
+
+/** Market fee bases. */
+export const MARKET = {
+  salesTaxBase: 0.075, // verify
+  accountingReductionPerLevel: 0.11, // verify — relative reduction
+  brokerFeeBase: 0.03, // verify — NPC station
+  brokerRelationsPerLevel: 0.003, // verify — absolute
+  factionStandingFactor: 0.0003, // verify — per standing point
+  corpStandingFactor: 0.0002, // verify — per standing point
+} as const;

@@ -1,0 +1,63 @@
+import { describe, expect, it } from "vitest";
+import {
+  acquisitionFeeRate,
+  brokerFeeFromSkills,
+  quotePrice,
+  saleFeeRate,
+  salesTaxFromSkills,
+  type MarketQuote,
+  type PriceMode,
+} from "@/engine/pricing";
+
+const q: MarketQuote = { typeId: 1, buyMax: 90, sellMin: 110 };
+const fees = { salesTax: 0.04, brokerFee: 0.01 };
+
+describe("quotePrice", () => {
+  it.each<[PriceMode, number]>([
+    ["buy", 90],
+    ["sell", 110],
+    ["split", 100],
+  ])("%s → %d", (mode, expected) => {
+    expect(quotePrice(q, mode)).toBe(expected);
+  });
+
+  it("split falls back to the side that exists", () => {
+    expect(quotePrice({ typeId: 1, buyMax: null, sellMin: 50 }, "split")).toBe(50);
+    expect(quotePrice({ typeId: 1, buyMax: 40, sellMin: null }, "split")).toBe(40);
+  });
+
+  it("missing quote / missing side → null", () => {
+    expect(quotePrice(undefined, "sell")).toBeNull();
+    expect(quotePrice({ typeId: 1, buyMax: null, sellMin: 50 }, "buy")).toBeNull();
+  });
+});
+
+describe("fee rules — all mode combinations", () => {
+  it.each<[PriceMode, number]>([
+    ["sell", 0],
+    ["buy", 0.01],
+    ["split", 0.01],
+  ])("acquire via %s → %d", (mode, expected) => {
+    expect(acquisitionFeeRate(mode, fees)).toBe(expected);
+  });
+
+  it.each<[PriceMode, number]>([
+    ["buy", 0.04],
+    ["sell", 0.05],
+    ["split", 0.05],
+  ])("sell via %s → %d", (mode, expected) => {
+    expect(saleFeeRate(mode, fees)).toBeCloseTo(expected);
+  });
+});
+
+describe("skill-based fees", () => {
+  it("Accounting V", () => {
+    expect(salesTaxFromSkills(5)).toBeCloseTo(0.075 * 0.45);
+  });
+  it("Broker Relations V, no standings", () => {
+    expect(brokerFeeFromSkills(5)).toBeCloseTo(0.015);
+  });
+  it("never negative", () => {
+    expect(brokerFeeFromSkills(5, 10, 10)).toBeGreaterThanOrEqual(0);
+  });
+});
