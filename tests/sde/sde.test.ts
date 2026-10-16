@@ -112,3 +112,30 @@ describe("sanityCheck", () => {
     expect(r.problems.join(" ")).toMatch(/too few types/);
   });
 });
+
+describe("consumeJsonl", () => {
+  it("handles lines split across chunks and multibyte chars split mid-character", async () => {
+    const { Readable } = await import("node:stream");
+    const { consumeJsonl } = await import("@/sde/zipJsonl");
+    const text = '{"a":"Тритан"}\n{"a":2}\n\n{"a":3}';
+    const bytes = Buffer.from(text, "utf8");
+    const chunks = [bytes.subarray(0, 9), bytes.subarray(9, 20), bytes.subarray(20)]; // byte 9 splits "р"
+    const got: unknown[] = [];
+    const n = await consumeJsonl(Readable.from(chunks), (r) => got.push(r.a));
+    expect(n).toBe(3);
+    expect(got).toEqual(["Тритан", 2, 3]);
+  });
+
+  it("rejects (does not hang) on a broken line", async () => {
+    const { Readable } = await import("node:stream");
+    const { consumeJsonl } = await import("@/sde/zipJsonl");
+    await expect(consumeJsonl(Readable.from([Buffer.from('{"a":1}\n{oops\n')]), () => {})).rejects.toThrow(/line 2/);
+  });
+
+  it("rejects (does not hang) on a stream error", async () => {
+    const { Readable } = await import("node:stream");
+    const { consumeJsonl } = await import("@/sde/zipJsonl");
+    const s = new Readable({ read() { this.destroy(new Error("invalid stored block lengths")); } });
+    await expect(consumeJsonl(s, () => {})).rejects.toThrow(/invalid stored/);
+  });
+});

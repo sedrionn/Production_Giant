@@ -1,5 +1,5 @@
 /** Streams JSON Lines records out of entries in a zip archive (Node only). */
-import { createInterface } from "node:readline";
+import { StringDecoder } from "node:string_decoder";
 import type { Readable } from "node:stream";
 import yauzl from "yauzl";
 
@@ -48,6 +48,58 @@ export function findEntry(entries: string[], basename: string): string | undefin
   return entries.find((e) => e === basename || e.endsWith(`/${basename}`));
 }
 
+/**
+ * Splits a byte stream into lines and feeds parsed JSON records to `onRecord`.
+ * Explicit 'data'/'end'/'error' handling (instead of readline's async iterator) so a
+ * corrupt entry or a bad line always rejects — never hangs the process silently.
+ */
+export function consumeJsonl(stream: Readable, onRecord: (r: JsonRecord) => void): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const decoder = new StringDecoder("utf8");
+    let tail = "";
+    let n = 0;
+    let lineNo = 0;
+    let failed = false;
+    const fail = (e: unknown) => {
+      if (failed) return;
+      failed = true;
+      stream.destroy();
+      reject(e);
+    };
+    const handle = (line: string) => {
+      lineNo++;
+      const t = line.trim();
+      if (!t) return;
+      try {
+        onRecord(JSON.parse(t) as JsonRecord);
+      } catch (e) {
+        throw new Error(`line ${lineNo}: ${(e as Error).message}; text: ${t.slice(0, 200)}`);
+      }
+      n++;
+    };
+    stream.on("data", (chunk: Buffer) => {
+      if (failed) return;
+      try {
+        const parts = (tail + decoder.write(chunk)).split("\n");
+        tail = parts.pop() ?? "";
+        for (const line of parts) handle(line);
+      } catch (e) {
+        fail(e);
+      }
+    });
+    stream.on("end", () => {
+      if (failed) return;
+      try {
+        handle(tail + decoder.end());
+        resolve(n);
+      } catch (e) {
+        fail(e);
+      }
+    });
+    stream.on("error", fail);
+  });
+}
+
 /** Reads every record of one JSONL entry into `onRecord` (streaming, constant memory). */
 export async function readJsonlEntry(
   zipPath: string,
@@ -61,13 +113,7 @@ export async function readJsonlEntry(
     await walk(zip, async (e) => {
       if (e.fileName !== entryName) return false;
       found = true;
-      const rl = createInterface({ input: await openStream(zip, e), crlfDelay: Infinity });
-      for await (const line of rl) {
-        const t = line.trim();
-        if (!t) continue;
-        onRecord(JSON.parse(t) as JsonRecord);
-        n++;
-      }
+      n = await consumeJsonl(await openStream(zip, e), onRecord);
       return true;
     });
   } finally {

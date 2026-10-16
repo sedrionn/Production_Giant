@@ -9,8 +9,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { Readable } from "node:stream";
-import { pipeline } from "node:stream/promises";
+import { once } from "node:events";
 import Database from "better-sqlite3";
 import { createSdeSchema, insertBlueprints, insertGroups, insertTypes, sanityCheck, setMeta } from "../src/sde/build";
 import { parseBlueprintRecord, parseGroupRecord, parseTypeRecord } from "../src/sde/parse";
@@ -18,8 +17,9 @@ import type { SdeGroup, SdeType } from "../src/sde/types";
 import type { Blueprint } from "../src/engine/types";
 import { findEntry, listZipEntries, readJsonlEntry } from "../src/sde/zipJsonl";
 
-const LATEST_INFO = "https://developers.eveonline.com/static-data/tranquility/latest.jsonl";
-const ZIP_URL = "https://developers.eveonline.com/static-data/eve-online-static-data-latest-jsonl.zip";
+const SDE_BASE = process.env.SDE_BASE_URL ?? "https://developers.eveonline.com/static-data";
+const LATEST_INFO = `${SDE_BASE}/tranquility/latest.jsonl`;
+const ZIP_URL = `${SDE_BASE}/eve-online-static-data-latest-jsonl.zip`;
 const DATA_DIR = path.resolve("data");
 const DB_PATH = path.join(DATA_DIR, "sde.sqlite");
 const USER_AGENT = "production-giant (personal EVE industry tool; github.com/sedrionn/production_giant)";
@@ -60,23 +60,44 @@ async function download(url: string, dest: string): Promise<void> {
   const total = Number(res.headers.get("content-length") ?? 0);
   let done = 0;
   let lastPct = -1;
-  const body = Readable.fromWeb(res.body as import("node:stream/web").ReadableStream);
-  body.on("data", (chunk: Buffer) => {
-    done += chunk.length;
-    const pct = total ? Math.floor((done / total) * 100) : -1;
-    if (pct !== lastPct && pct % 10 === 0) {
-      lastPct = pct;
-      process.stdout.write(` ${pct}%`);
+  // Explicit read → write loop (no pipeline/'data' listener mix): every failure surfaces as an exception.
+  const file = fs.createWriteStream(dest);
+  const fileError = new Promise<never>((_, reject) => file.once("error", reject));
+  const reader = res.body.getReader();
+  try {
+    for (;;) {
+      const { done: finished, value } = await Promise.race([reader.read(), fileError]);
+      if (finished) break;
+      done += value.length;
+      if (!file.write(value)) await Promise.race([once(file, "drain"), fileError]);
+      const pct = total ? Math.floor((done / total) * 100) : -1;
+      if (pct !== lastPct && pct % 10 === 0) {
+        lastPct = pct;
+        process.stdout.write(` ${pct}%`);
+      }
     }
-  });
-  await pipeline(body, fs.createWriteStream(dest));
+  } finally {
+    await new Promise<void>((resolve) => file.end(resolve));
+  }
   process.stdout.write("\n");
+  if (total && done !== total) throw new Error(`download incomplete: got ${done} of ${total} bytes`);
+  console.log(`downloaded ${(done / 1048576).toFixed(1)} MB`);
+}
+
+/** Current step, printed if the process dies silently (see the guard at the bottom). */
+let step = "start";
+let finished = false;
+const t0 = Date.now();
+function stepTo(name: string) {
+  step = name;
+  console.log(`[${((Date.now() - t0) / 1000).toFixed(1)}s] ${name}`);
 }
 
 async function main() {
   const force = process.argv.includes("--force");
   fs.mkdirSync(DATA_DIR, { recursive: true });
 
+  stepTo("checking latest SDE build");
   const build = await latestBuild();
   const have = currentBuild();
   console.log(`latest SDE build: ${build}; local: ${have ?? "none"}`);
@@ -87,11 +108,14 @@ async function main() {
 
   const zipPath = path.join(DATA_DIR, `sde-${build.replace(/[^\w.-]/g, "_")}.zip`);
   if (!fs.existsSync(zipPath)) {
-    console.log(`downloading ${ZIP_URL}`);
+    stepTo(`downloading ${ZIP_URL}`);
     await download(ZIP_URL, zipPath + ".part");
     fs.renameSync(zipPath + ".part", zipPath);
+  } else {
+    console.log(`using cached ${path.relative(process.cwd(), zipPath)}`);
   }
 
+  stepTo("reading zip directory");
   const entries = await listZipEntries(zipPath);
   const need = ["groups.jsonl", "types.jsonl", "blueprints.jsonl"];
   const resolved = Object.fromEntries(need.map((n) => [n, findEntry(entries, n)]));
@@ -100,6 +124,8 @@ async function main() {
     console.error(`Missing ${missing.join(", ")} in zip. Entries:\n  ${entries.slice(0, 80).join("\n  ")}`);
     process.exit(1);
   }
+
+  console.log(`  ${entries.length} entries; using ${need.map((n) => resolved[n]).join(", ")}`);
 
   const tmp = DB_PATH + ".tmp";
   fs.rmSync(tmp, { force: true });
@@ -115,6 +141,7 @@ async function main() {
     firstSkipped[kind] ??= r;
   };
 
+  stepTo("parsing groups");
   const groups: SdeGroup[] = [];
   await readJsonlEntry(zipPath, resolved["groups.jsonl"]!, (r) => {
     const g = parseGroupRecord(r);
@@ -124,6 +151,7 @@ async function main() {
   insertGroups(db, groups);
   const groupCategory = new Map(groups.map((g) => [g.groupId, g.categoryId]));
 
+  stepTo(`parsing types (groups: ${groups.length})`);
   const types: SdeType[] = [];
   await readJsonlEntry(zipPath, resolved["types.jsonl"]!, (r) => {
     const t = parseTypeRecord(r, groupCategory);
@@ -132,6 +160,7 @@ async function main() {
   });
   insertTypes(db, types);
 
+  stepTo(`parsing blueprints (types: ${types.length})`);
   const bps: Blueprint[] = [];
   await readJsonlEntry(zipPath, resolved["blueprints.jsonl"]!, (r) => {
     const b = parseBlueprintRecord(r);
@@ -140,6 +169,7 @@ async function main() {
   });
   insertBlueprints(db, bps);
 
+  stepTo(`sanity check (blueprints: ${bps.length})`);
   setMeta(db, { build, source: ZIP_URL, importedAt: new Date().toISOString() });
   const report = sanityCheck(db);
   db.close();
@@ -158,7 +188,22 @@ async function main() {
   console.log(`OK → ${DB_PATH}`);
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
+// Guard: if some await never settles, Node exits silently. Make that loud.
+process.on("beforeExit", () => {
+  if (!finished) {
+    console.error(`\n!! Process stopped silently during step: "${step}". Send this output to the coding session.`);
+    process.exitCode = 2;
+    finished = true;
+  }
 });
+
+main()
+  .then(() => {
+    finished = true;
+  })
+  .catch((e) => {
+    finished = true;
+    console.error(`\n!! Failed during step: "${step}"`);
+    console.error(e);
+    process.exit(1);
+  });
