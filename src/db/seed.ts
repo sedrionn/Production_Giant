@@ -21,6 +21,8 @@ export interface AppSettings {
   inventionSkills: { encryption: number; science1: number; science2: number };
   /** Build an intermediate only if it saves at least this many ISK per hour of its job vs buying. */
   minBuildIskPerHour: number;
+  /** Overview and weekly plan: size batches so the product's job runs about this long. */
+  targetJobDays: number;
   manufacturingProfileId: number | null;
   reactionProfileId: number | null;
 }
@@ -37,6 +39,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   industrySkills: { industry: 5, advancedIndustry: 5, reactions: 4, blueprintSkills: 5 },
   inventionSkills: { encryption: 4, science1: 4, science2: 4 },
   minBuildIskPerHour: 100_000,
+  targetJobDays: 5,
   manufacturingProfileId: null,
   reactionProfileId: null,
 };

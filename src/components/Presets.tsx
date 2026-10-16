@@ -361,6 +361,7 @@ export function SettingsForm() {
             className={input}
           />
         </L>
+        {lvl("Длина джобы в обзоре, дней", s.targetJobDays, (n) => set({ targetJobDays: Math.max(1, n) }), 30)}
         {lvl("ME чертежей компонентов", s.defaultMe, (n) => set({ defaultMe: n }), 10)}
         {lvl("TE чертежей компонентов", s.defaultTe, (n) => set({ defaultTe: n }), 20)}
         {lvl("Industry", s.industrySkills.industry, (n) => set({ industrySkills: { ...s.industrySkills, industry: n } }))}

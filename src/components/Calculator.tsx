@@ -47,7 +47,16 @@ export function Calculator() {
   const seq = useRef(0);
 
   useEffect(() => {
-    setForm(load());
+    const saved = load();
+    // Deep link from the overview: /?typeId=…&name=…&runs=…
+    const q = new URLSearchParams(window.location.search);
+    const id = Number(q.get("typeId"));
+    if (id) {
+      setForm({ ...DEFAULT_FORM, ...saved, item: { id, name: q.get("name") ?? `#${id}` }, runs: Number(q.get("runs")) || saved.runs, decisions: {}, me: undefined, te: undefined, inventionSourceId: undefined, blueprintSource: undefined });
+      window.history.replaceState(null, "", "/");
+    } else {
+      setForm(saved);
+    }
     setReady(true);
     fetch("/api/profiles")
       .then((r) => r.json())
