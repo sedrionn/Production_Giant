@@ -69,6 +69,7 @@ export function saveCharacter(id: CharacterIdentity, tokens: TokenResponse, corp
     .values({ characterId: id.characterId, ...values })
     .onConflictDoUpdate({ target: characters.characterId, set: values })
     .run();
+  forgetCharacterLookups();
 }
 
 /** Valid access token, refreshed when it expires within a minute. */
@@ -130,6 +131,7 @@ export function removeCharacter(characterId: number): void {
     tx.delete(industryJobs).where(eq(industryJobs.viaCharacterId, characterId)).run();
     tx.delete(characters).where(eq(characters.characterId, characterId)).run();
   });
+  forgetCharacterLookups();
 }
 
 // ---- sync -----------------------------------------------------------------
@@ -220,6 +222,7 @@ export async function syncCharacter(
       .where(eq(characters.characterId, characterId))
       .run();
   });
+  forgetCharacterLookups();
 
   return {
     characterId,
@@ -248,12 +251,34 @@ export async function syncAll(api?: CharacterApi): Promise<(SyncResult | { chara
 
 // ---- lookups for calculations ---------------------------------------------
 
+/**
+ * The overview calls these for every item (hundreds of times in a few seconds) and they
+ * read whole tables. Keep each result for a few seconds; a sync shows up at most that late.
+ */
+const MEMO_MS = 5_000;
+const memo = new Map<string, { at: number; value: unknown }>();
+function remember<T>(key: string, load: () => T): T {
+  const hit = memo.get(key);
+  if (hit && Date.now() - hit.at < MEMO_MS) return hit.value as T;
+  const value = load();
+  memo.set(key, { at: Date.now(), value });
+  return value;
+}
+/** Call after writing characters, skills or blueprints. */
+export function forgetCharacterLookups(): void {
+  memo.clear();
+}
+
 export function hasCharacters(): boolean {
-  return getDb().select({ id: characters.characterId }).from(characters).limit(1).all().length > 0;
+  return remember("has", () => getDb().select({ id: characters.characterId }).from(characters).limit(1).all().length > 0);
 }
 
 /** Skill levels: one character, or the best level across all characters (characterId = null). */
 export function skillLevels(characterId: number | null): Map<number, number> {
+  return remember(`skills:${characterId}`, () => loadSkillLevels(characterId));
+}
+
+function loadSkillLevels(characterId: number | null): Map<number, number> {
   const db = getDb();
   const rows = characterId
     ? db.select().from(characterSkills).where(eq(characterSkills.characterId, characterId)).all()
@@ -276,6 +301,10 @@ export interface OwnedBlueprint {
 
 /** Best owned blueprint per blueprint type: BPO over BPC, then higher ME, then TE. */
 export function ownedBlueprintIndex(blueprintTypeIds?: number[]): Map<number, OwnedBlueprint> {
+  return blueprintTypeIds ? loadOwnedBlueprints(blueprintTypeIds) : remember("owned", () => loadOwnedBlueprints());
+}
+
+function loadOwnedBlueprints(blueprintTypeIds?: number[]): Map<number, OwnedBlueprint> {
   const db = getDb();
   const rows = blueprintTypeIds
     ? db.select().from(ownedBlueprints).where(inArray(ownedBlueprints.typeId, blueprintTypeIds)).all()

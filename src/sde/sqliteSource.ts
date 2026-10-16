@@ -34,35 +34,51 @@ function toType(r: TypeRow): SdeType {
 
 /** Reads the normalized tables written by src/sde/build.ts. */
 export class SqliteSdeSource implements SdeSource {
+  // The SDE never changes while the app runs: cache prepared statements and lookups.
+  // (Profiling the overview: re-preparing SQL on every getType/findProducers was ~half the time.)
   private cache = new Map<number, Blueprint | undefined>();
+  private types = new Map<number, SdeType | undefined>();
+  private producers = new Map<string, ProducerRef[]>();
+  private groups = new Map<number, SdeGroup | undefined>();
+  private decryptors?: Decryptor[];
+  private stmts = new Map<string, Database.Statement>();
 
   constructor(private db: Database.Database) {}
 
+  private stmt(sql: string): Database.Statement {
+    let s = this.stmts.get(sql);
+    if (!s) this.stmts.set(sql, (s = this.db.prepare(sql)));
+    return s;
+  }
+
   getType(typeId: number): SdeType | undefined {
-    const r = this.db.prepare("SELECT * FROM sde_types WHERE type_id = ?").get(typeId) as TypeRow | undefined;
-    return r && toType(r);
+    if (this.types.has(typeId)) return this.types.get(typeId);
+    const r = this.stmt("SELECT * FROM sde_types WHERE type_id = ?").get(typeId) as TypeRow | undefined;
+    const t = r && toType(r);
+    this.types.set(typeId, t);
+    return t;
   }
 
   getBlueprint(blueprintTypeId: number): Blueprint | undefined {
     if (this.cache.has(blueprintTypeId)) return this.cache.get(blueprintTypeId);
-    const head = this.db
-      .prepare("SELECT max_production_limit FROM sde_blueprints WHERE blueprint_type_id = ?")
+    const head = this
+      .stmt("SELECT max_production_limit FROM sde_blueprints WHERE blueprint_type_id = ?")
       .get(blueprintTypeId) as { max_production_limit: number } | undefined;
     if (!head) {
       this.cache.set(blueprintTypeId, undefined);
       return undefined;
     }
-    const acts = this.db
-      .prepare("SELECT activity, time FROM sde_bp_activities WHERE blueprint_type_id = ?")
+    const acts = this
+      .stmt("SELECT activity, time FROM sde_bp_activities WHERE blueprint_type_id = ?")
       .all(blueprintTypeId) as { activity: Activity; time: number }[];
-    const mats = this.db
-      .prepare("SELECT activity, type_id, quantity FROM sde_bp_materials WHERE blueprint_type_id = ?")
+    const mats = this
+      .stmt("SELECT activity, type_id, quantity FROM sde_bp_materials WHERE blueprint_type_id = ?")
       .all(blueprintTypeId) as { activity: Activity; type_id: number; quantity: number }[];
-    const prods = this.db
-      .prepare("SELECT activity, type_id, quantity, probability FROM sde_bp_products WHERE blueprint_type_id = ?")
+    const prods = this
+      .stmt("SELECT activity, type_id, quantity, probability FROM sde_bp_products WHERE blueprint_type_id = ?")
       .all(blueprintTypeId) as { activity: Activity; type_id: number; quantity: number; probability: number | null }[];
-    const skills = this.db
-      .prepare("SELECT activity, type_id, level FROM sde_bp_skills WHERE blueprint_type_id = ?")
+    const skills = this
+      .stmt("SELECT activity, type_id, level FROM sde_bp_skills WHERE blueprint_type_id = ?")
       .all(blueprintTypeId) as { activity: Activity; type_id: number; level: number }[];
 
     const activities: Blueprint["activities"] = {};
@@ -89,19 +105,22 @@ export class SqliteSdeSource implements SdeSource {
   }
 
   findProducers(productTypeId: number, activity?: Activity): ProducerRef[] {
+    const key = `${productTypeId}:${activity ?? ""}`;
+    const hit = this.producers.get(key);
+    if (hit) return hit;
     const rows = (
       activity
-        ? this.db
-            .prepare("SELECT blueprint_type_id, activity FROM sde_bp_products WHERE type_id = ? AND activity = ?")
-            .all(productTypeId, activity)
-        : this.db.prepare("SELECT blueprint_type_id, activity FROM sde_bp_products WHERE type_id = ?").all(productTypeId)
+        ? this.stmt("SELECT blueprint_type_id, activity FROM sde_bp_products WHERE type_id = ? AND activity = ?").all(productTypeId, activity)
+        : this.stmt("SELECT blueprint_type_id, activity FROM sde_bp_products WHERE type_id = ?").all(productTypeId)
     ) as { blueprint_type_id: number; activity: Activity }[];
-    return rows.map((r) => ({ blueprintTypeId: r.blueprint_type_id, activity: r.activity }));
+    const out = rows.map((r) => ({ blueprintTypeId: r.blueprint_type_id, activity: r.activity }));
+    this.producers.set(key, out);
+    return out;
   }
 
   searchTypes(query: string, limit = 20): SdeType[] {
-    const rows = this.db
-      .prepare("SELECT * FROM sde_types WHERE published = 1 AND name LIKE ? ORDER BY length(name) LIMIT ?")
+    const rows = this
+      .stmt("SELECT * FROM sde_types WHERE published = 1 AND name LIKE ? ORDER BY length(name) LIMIT ?")
       .all(`%${query}%`, limit) as TypeRow[];
     return rows.map(toType);
   }
@@ -121,7 +140,7 @@ export class SqliteSdeSource implements SdeSource {
 
   getSystem(systemId: number): SdeSystem | undefined {
     if (!this.hasSystems()) return undefined;
-    const r = this.db.prepare("SELECT system_id, name, security FROM sde_systems WHERE system_id = ?").get(systemId) as
+    const r = this.stmt("SELECT system_id, name, security FROM sde_systems WHERE system_id = ?").get(systemId) as
       | { system_id: number; name: string; security: number | null }
       | undefined;
     return r && { systemId: r.system_id, name: r.name, security: r.security };
@@ -155,13 +174,20 @@ export class SqliteSdeSource implements SdeSource {
   }
 
   getGroup(groupId: number): SdeGroup | undefined {
-    const r = this.db.prepare("SELECT group_id, category_id, name FROM sde_groups WHERE group_id = ?").get(groupId) as
+    if (this.groups.has(groupId)) return this.groups.get(groupId);
+    const r = this.stmt("SELECT group_id, category_id, name FROM sde_groups WHERE group_id = ?").get(groupId) as
       | { group_id: number; category_id: number; name: string }
       | undefined;
-    return r && { groupId: r.group_id, categoryId: r.category_id, name: r.name };
+    const g = r && { groupId: r.group_id, categoryId: r.category_id, name: r.name };
+    this.groups.set(groupId, g);
+    return g;
   }
 
   listDecryptors(): Decryptor[] {
+    return (this.decryptors ??= this.loadDecryptors());
+  }
+
+  private loadDecryptors(): Decryptor[] {
     const has = this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='sde_decryptors'").get();
     if (!has) return [];
     const rows = this.db.prepare("SELECT * FROM sde_decryptors ORDER BY name").all() as {

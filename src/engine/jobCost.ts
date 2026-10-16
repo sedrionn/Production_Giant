@@ -106,7 +106,8 @@ export function jobTime(
   item?: ItemClass,
   requiredSkills: SkillRequirement[] = [],
 ): number {
-  if (te < 0 || te > 20) throw new RangeError(`TE must be within 0..20, got ${te}`);
+  // Researched blueprints stop at TE 20; special BPCs may go higher (see materials.ts).
+  if (te < 0 || te >= 100) throw new RangeError(`TE must be within 0..99, got ${te}`);
   const teMult = activity === "manufacturing" ? 1 - te / 100 : 1;
   return baseTimePerRun * runs * teMult * timeMultiplier(facility, activity, item) * skillTimeMultiplier(activity, skills, requiredSkills);
 }
