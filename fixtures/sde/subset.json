@@ -2,13 +2,16 @@
  "meta": {
   "source": "CCP SDE (JSONL) via data/sde.sqlite",
   "build": "3607705",
-  "capturedAt": "2026-10-16T00:07:47.903Z",
+  "capturedAt": "2026-10-16T16:31:15.544Z",
   "roots": [
    34828,
    11478,
    2185,
    21017,
-   30305
+   30305,
+   22464,
+   28710,
+   31796
   ]
  },
  "types": [
@@ -21,7 +24,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1857,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 35,
@@ -32,7 +37,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1857,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 36,
@@ -43,7 +50,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1857,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 37,
@@ -54,7 +63,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1857,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 38,
@@ -65,7 +76,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1857,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 39,
@@ -76,7 +89,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1857,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 40,
@@ -87,7 +102,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1857,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 44,
@@ -98,7 +115,35 @@
    "volume": 0.75,
    "published": true,
    "marketGroupId": 1335,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.75
+  },
+  {
+   "typeId": 638,
+   "name": "Raven",
+   "groupId": 27,
+   "categoryId": 6,
+   "portionSize": 1,
+   "volume": 470000,
+   "published": true,
+   "marketGroupId": 80,
+   "metaGroupId": 1,
+   "raceId": 1,
+   "packagedVolume": 50000
+  },
+  {
+   "typeId": 688,
+   "name": "Raven Blueprint",
+   "groupId": 107,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 280,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 2183,
@@ -109,7 +154,9 @@
    "volume": 10,
    "published": true,
    "marketGroupId": 838,
-   "metaGroupId": 1
+   "metaGroupId": 1,
+   "raceId": 8,
+   "packagedVolume": 10
   },
   {
    "typeId": 2184,
@@ -120,7 +167,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1532,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 2185,
@@ -131,7 +180,9 @@
    "volume": 10,
    "published": true,
    "marketGroupId": 838,
-   "metaGroupId": 2
+   "metaGroupId": 2,
+   "raceId": 8,
+   "packagedVolume": 10
   },
   {
    "typeId": 2186,
@@ -142,7 +193,61 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": null,
-   "metaGroupId": 2
+   "metaGroupId": 2,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 2312,
+   "name": "Supertensile Plastics",
+   "groupId": 1034,
+   "categoryId": 43,
+   "portionSize": 1,
+   "volume": 0.75,
+   "published": true,
+   "marketGroupId": 1335,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.75
+  },
+  {
+   "typeId": 2319,
+   "name": "Test Cultures",
+   "groupId": 1034,
+   "categoryId": 43,
+   "portionSize": 1,
+   "volume": 0.75,
+   "published": true,
+   "marketGroupId": 1335,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.75
+  },
+  {
+   "typeId": 2401,
+   "name": "Chiral Structures",
+   "groupId": 1042,
+   "categoryId": 43,
+   "portionSize": 1,
+   "volume": 0.19,
+   "published": true,
+   "marketGroupId": 1334,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.19
+  },
+  {
+   "typeId": 2463,
+   "name": "Nanites",
+   "groupId": 1034,
+   "categoryId": 43,
+   "portionSize": 1,
+   "volume": 0.75,
+   "published": true,
+   "marketGroupId": 1335,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.75
   },
   {
    "typeId": 2870,
@@ -153,7 +258,9 @@
    "volume": 50,
    "published": true,
    "marketGroupId": 1337,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 50
   },
   {
    "typeId": 3380,
@@ -164,7 +271,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 369,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 3395,
@@ -175,7 +284,35 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 369,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 3398,
+   "name": "Advanced Large Ship Construction",
+   "groupId": 268,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 369,
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 3402,
+   "name": "Science",
+   "groupId": 270,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 375,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 3403,
@@ -186,7 +323,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 375,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 3408,
@@ -197,7 +336,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 375,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 3409,
@@ -208,7 +349,22 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 375,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 3645,
+   "name": "Water",
+   "groupId": 1042,
+   "categoryId": 43,
+   "portionSize": 1,
+   "volume": 0.19,
+   "published": true,
+   "marketGroupId": 1334,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.19
   },
   {
    "typeId": 3683,
@@ -219,7 +375,9 @@
    "volume": 0.19,
    "published": true,
    "marketGroupId": 1334,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.19
   },
   {
    "typeId": 3689,
@@ -230,7 +388,35 @@
    "volume": 0.75,
    "published": true,
    "marketGroupId": 1335,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.75
+  },
+  {
+   "typeId": 3775,
+   "name": "Viral Agent",
+   "groupId": 1034,
+   "categoryId": 43,
+   "portionSize": 1,
+   "volume": 0.75,
+   "published": true,
+   "marketGroupId": 1335,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.75
+  },
+  {
+   "typeId": 3828,
+   "name": "Construction Blocks",
+   "groupId": 1034,
+   "categoryId": 43,
+   "portionSize": 1,
+   "volume": 0.75,
+   "published": true,
+   "marketGroupId": 1335,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.75
   },
   {
    "typeId": 4051,
@@ -241,7 +427,9 @@
    "volume": 5,
    "published": true,
    "marketGroupId": 1870,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 5
   },
   {
    "typeId": 4246,
@@ -252,7 +440,9 @@
    "volume": 5,
    "published": true,
    "marketGroupId": 1870,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 5
   },
   {
    "typeId": 4247,
@@ -263,7 +453,9 @@
    "volume": 5,
    "published": true,
    "marketGroupId": 1870,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 5
   },
   {
    "typeId": 4312,
@@ -274,7 +466,9 @@
    "volume": 5,
    "published": true,
    "marketGroupId": 1870,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 5
   },
   {
    "typeId": 4313,
@@ -285,7 +479,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1920,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 8,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 4314,
@@ -296,7 +492,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1920,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 1,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 4315,
@@ -307,7 +505,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1920,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 4316,
@@ -318,7 +518,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1920,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 2,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 9832,
@@ -329,7 +531,9 @@
    "volume": 0.75,
    "published": true,
    "marketGroupId": 1335,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.75
   },
   {
    "typeId": 9834,
@@ -340,7 +544,9 @@
    "volume": 3,
    "published": true,
    "marketGroupId": 1336,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 3
   },
   {
    "typeId": 9848,
@@ -351,7 +557,9 @@
    "volume": 3,
    "published": true,
    "marketGroupId": 1336,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 3
   },
   {
    "typeId": 11399,
@@ -362,7 +570,22 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1857,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 11433,
+   "name": "High Energy Physics",
+   "groupId": 270,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 375,
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 11441,
@@ -373,7 +596,22 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 375,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 11443,
+   "name": "Hydromagnetic Physics",
+   "groupId": 270,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 375,
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 11446,
@@ -384,7 +622,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 375,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 11448,
@@ -395,7 +635,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 375,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 11452,
@@ -406,7 +648,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 375,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 11453,
@@ -417,7 +661,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 375,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 11454,
@@ -428,7 +674,22 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 375,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 11455,
+   "name": "Quantum Physics",
+   "groupId": 270,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 375,
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 11478,
@@ -439,7 +700,9 @@
    "volume": 0.04,
    "published": true,
    "marketGroupId": 1908,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.04
   },
   {
    "typeId": 11481,
@@ -450,7 +713,126 @@
    "volume": 0.04,
    "published": true,
    "marketGroupId": 1908,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.04
+  },
+  {
+   "typeId": 11484,
+   "name": "R.A.M.- Shield Tech",
+   "groupId": 332,
+   "categoryId": 17,
+   "portionSize": 100,
+   "volume": 0.04,
+   "published": true,
+   "marketGroupId": 1908,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.04
+  },
+  {
+   "typeId": 11529,
+   "name": "Molecular Engineering",
+   "groupId": 270,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 375,
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 11533,
+   "name": "Magpulse Thruster",
+   "groupId": 334,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 1,
+   "published": true,
+   "marketGroupId": 803,
+   "metaGroupId": null,
+   "raceId": 1,
+   "packagedVolume": 1
+  },
+  {
+   "typeId": 11534,
+   "name": "Gravimetric Sensor Cluster",
+   "groupId": 334,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 1,
+   "published": true,
+   "marketGroupId": 803,
+   "metaGroupId": null,
+   "raceId": 1,
+   "packagedVolume": 1
+  },
+  {
+   "typeId": 11540,
+   "name": "Quantum Microprocessor",
+   "groupId": 334,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 1,
+   "published": true,
+   "marketGroupId": 803,
+   "metaGroupId": null,
+   "raceId": 1,
+   "packagedVolume": 1
+  },
+  {
+   "typeId": 11544,
+   "name": "Titanium Diborite Armor Plate",
+   "groupId": 334,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 1,
+   "published": true,
+   "marketGroupId": 803,
+   "metaGroupId": null,
+   "raceId": 1,
+   "packagedVolume": 1
+  },
+  {
+   "typeId": 11550,
+   "name": "Graviton Reactor Unit",
+   "groupId": 334,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 1,
+   "published": true,
+   "marketGroupId": 803,
+   "metaGroupId": null,
+   "raceId": 1,
+   "packagedVolume": 1
+  },
+  {
+   "typeId": 11552,
+   "name": "Scalar Capacitor Unit",
+   "groupId": 334,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 1,
+   "published": true,
+   "marketGroupId": 803,
+   "metaGroupId": null,
+   "raceId": 1,
+   "packagedVolume": 1
+  },
+  {
+   "typeId": 11558,
+   "name": "Sustained Shield Emitter",
+   "groupId": 334,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 1,
+   "published": true,
+   "marketGroupId": 803,
+   "metaGroupId": null,
+   "raceId": 1,
+   "packagedVolume": 1
   },
   {
    "typeId": 11688,
@@ -461,7 +843,9 @@
    "volume": 1,
    "published": true,
    "marketGroupId": 1888,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 8,
+   "packagedVolume": 1
   },
   {
    "typeId": 11887,
@@ -472,7 +856,22 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1918,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 11889,
+   "name": "R.A.M.- Shield Tech Blueprint",
+   "groupId": 356,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1918,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 11890,
@@ -483,7 +882,35 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1918,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 16238,
+   "name": "Cormorant",
+   "groupId": 420,
+   "categoryId": 6,
+   "portionSize": 1,
+   "volume": 52000,
+   "published": true,
+   "marketGroupId": 466,
+   "metaGroupId": 1,
+   "raceId": 1,
+   "packagedVolume": 5000
+  },
+  {
+   "typeId": 16239,
+   "name": "Cormorant Blueprint",
+   "groupId": 487,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 584,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 16272,
@@ -494,7 +921,9 @@
    "volume": 0.4,
    "published": true,
    "marketGroupId": 1033,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.4
   },
   {
    "typeId": 16273,
@@ -505,7 +934,9 @@
    "volume": 0.4,
    "published": true,
    "marketGroupId": 1033,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.4
   },
   {
    "typeId": 16274,
@@ -516,7 +947,9 @@
    "volume": 0.03,
    "published": true,
    "marketGroupId": 1033,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.03
   },
   {
    "typeId": 16275,
@@ -527,7 +960,9 @@
    "volume": 3,
    "published": true,
    "marketGroupId": 1033,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 3
   },
   {
    "typeId": 16633,
@@ -538,7 +973,9 @@
    "volume": 0.05,
    "published": true,
    "marketGroupId": 501,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
   },
   {
    "typeId": 16634,
@@ -549,7 +986,9 @@
    "volume": 0.05,
    "published": true,
    "marketGroupId": 501,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
   },
   {
    "typeId": 16635,
@@ -560,7 +999,9 @@
    "volume": 0.05,
    "published": true,
    "marketGroupId": 501,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
   },
   {
    "typeId": 16636,
@@ -571,7 +1012,22 @@
    "volume": 0.05,
    "published": true,
    "marketGroupId": 501,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
+  },
+  {
+   "typeId": 16638,
+   "name": "Titanium",
+   "groupId": 427,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 501,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
   },
   {
    "typeId": 16640,
@@ -582,7 +1038,9 @@
    "volume": 0.05,
    "published": true,
    "marketGroupId": 501,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
   },
   {
    "typeId": 16641,
@@ -593,7 +1051,9 @@
    "volume": 0.05,
    "published": true,
    "marketGroupId": 501,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
   },
   {
    "typeId": 16642,
@@ -604,7 +1064,9 @@
    "volume": 0.05,
    "published": true,
    "marketGroupId": 501,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
   },
   {
    "typeId": 16643,
@@ -615,7 +1077,9 @@
    "volume": 0.05,
    "published": true,
    "marketGroupId": 501,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
   },
   {
    "typeId": 16644,
@@ -626,7 +1090,9 @@
    "volume": 0.05,
    "published": true,
    "marketGroupId": 501,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
   },
   {
    "typeId": 16646,
@@ -637,7 +1103,9 @@
    "volume": 0.05,
    "published": true,
    "marketGroupId": 501,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
   },
   {
    "typeId": 16647,
@@ -648,7 +1116,9 @@
    "volume": 0.05,
    "published": true,
    "marketGroupId": 501,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
   },
   {
    "typeId": 16648,
@@ -659,7 +1129,9 @@
    "volume": 0.05,
    "published": true,
    "marketGroupId": 501,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
   },
   {
    "typeId": 16649,
@@ -670,7 +1142,9 @@
    "volume": 0.05,
    "published": true,
    "marketGroupId": 501,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
   },
   {
    "typeId": 16650,
@@ -681,7 +1155,61 @@
    "volume": 0.05,
    "published": true,
    "marketGroupId": 501,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
+  },
+  {
+   "typeId": 16651,
+   "name": "Neodymium",
+   "groupId": 427,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 501,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
+  },
+  {
+   "typeId": 16652,
+   "name": "Promethium",
+   "groupId": 427,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 501,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
+  },
+  {
+   "typeId": 16653,
+   "name": "Thulium",
+   "groupId": 427,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 501,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
+  },
+  {
+   "typeId": 16654,
+   "name": "Titanium Chromide",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
   },
   {
    "typeId": 16655,
@@ -692,7 +1220,22 @@
    "volume": 0.2,
    "published": true,
    "marketGroupId": 500,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
+  },
+  {
+   "typeId": 16658,
+   "name": "Silicon Diborite",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
   },
   {
    "typeId": 16659,
@@ -703,7 +1246,35 @@
    "volume": 0.2,
    "published": true,
    "marketGroupId": 500,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
+  },
+  {
+   "typeId": 16660,
+   "name": "Ceramic Powder",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
+  },
+  {
+   "typeId": 16661,
+   "name": "Sulfuric Acid",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
   },
   {
    "typeId": 16662,
@@ -714,7 +1285,22 @@
    "volume": 0.2,
    "published": true,
    "marketGroupId": 500,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
+  },
+  {
+   "typeId": 16663,
+   "name": "Caesarium Cadmide",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
   },
   {
    "typeId": 16664,
@@ -725,7 +1311,48 @@
    "volume": 0.2,
    "published": true,
    "marketGroupId": 500,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
+  },
+  {
+   "typeId": 16665,
+   "name": "Hexite",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
+  },
+  {
+   "typeId": 16666,
+   "name": "Hyperflurite",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
+  },
+  {
+   "typeId": 16667,
+   "name": "Neo Mercurite",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
   },
   {
    "typeId": 16668,
@@ -736,7 +1363,22 @@
    "volume": 0.2,
    "published": true,
    "marketGroupId": 500,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
+  },
+  {
+   "typeId": 16669,
+   "name": "Ferrofluid",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
   },
   {
    "typeId": 16670,
@@ -747,7 +1389,35 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 499,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 16671,
+   "name": "Titanium Carbide",
+   "groupId": 429,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 499,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 16678,
+   "name": "Sylramic Fibers",
+   "groupId": 429,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 499,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.05
   },
   {
    "typeId": 16679,
@@ -758,7 +1428,35 @@
    "volume": 0.15,
    "published": true,
    "marketGroupId": 499,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.15
+  },
+  {
+   "typeId": 16680,
+   "name": "Phenolic Composites",
+   "groupId": 429,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 499,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
+  },
+  {
+   "typeId": 16681,
+   "name": "Nanotransistors",
+   "groupId": 429,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.25,
+   "published": true,
+   "marketGroupId": 499,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.25
   },
   {
    "typeId": 16682,
@@ -769,7 +1467,74 @@
    "volume": 0.6,
    "published": true,
    "marketGroupId": 499,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.6
+  },
+  {
+   "typeId": 16683,
+   "name": "Ferrogel",
+   "groupId": 429,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 1,
+   "published": true,
+   "marketGroupId": 499,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 1
+  },
+  {
+   "typeId": 17317,
+   "name": "Fermionic Condensates",
+   "groupId": 429,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 1.3,
+   "published": true,
+   "marketGroupId": 499,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 1.3
+  },
+  {
+   "typeId": 17327,
+   "name": "Scalar Capacitor Unit Blueprint",
+   "groupId": 447,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1593,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 17328,
+   "name": "Titanium Diborite Armor Plate Blueprint",
+   "groupId": 447,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1593,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 17340,
+   "name": "Gravimetric Sensor Cluster Blueprint",
+   "groupId": 447,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1593,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 17344,
@@ -780,7 +1545,74 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1594,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 17351,
+   "name": "Quantum Microprocessor Blueprint",
+   "groupId": 447,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1593,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 17352,
+   "name": "Sustained Shield Emitter Blueprint",
+   "groupId": 447,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1593,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 17353,
+   "name": "Graviton Reactor Unit Blueprint",
+   "groupId": 447,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1593,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 17356,
+   "name": "Magpulse Thruster Blueprint",
+   "groupId": 447,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1593,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 17769,
+   "name": "Fluxed Condensates",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
   },
   {
    "typeId": 17887,
@@ -791,7 +1623,9 @@
    "volume": 0.03,
    "published": true,
    "marketGroupId": 1033,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.03
   },
   {
    "typeId": 17888,
@@ -802,7 +1636,9 @@
    "volume": 0.03,
    "published": true,
    "marketGroupId": 1033,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.03
   },
   {
    "typeId": 17889,
@@ -813,7 +1649,9 @@
    "volume": 0.03,
    "published": true,
    "marketGroupId": 1033,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.03
   },
   {
    "typeId": 17959,
@@ -824,7 +1662,48 @@
    "volume": 0.2,
    "published": true,
    "marketGroupId": 500,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
+  },
+  {
+   "typeId": 17960,
+   "name": "Prometium",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
+  },
+  {
+   "typeId": 20171,
+   "name": "Datacore - Hydromagnetic Physics",
+   "groupId": 333,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 0.1,
+   "published": true,
+   "marketGroupId": 1880,
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.1
+  },
+  {
+   "typeId": 20411,
+   "name": "Datacore - High Energy Physics",
+   "groupId": 333,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 0.1,
+   "published": true,
+   "marketGroupId": 1880,
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.1
   },
   {
    "typeId": 20412,
@@ -835,7 +1714,22 @@
    "volume": 0.1,
    "published": true,
    "marketGroupId": 1880,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.1
+  },
+  {
+   "typeId": 20414,
+   "name": "Datacore - Quantum Physics",
+   "groupId": 333,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 0.1,
+   "published": true,
+   "marketGroupId": 1880,
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.1
   },
   {
    "typeId": 20418,
@@ -846,7 +1740,9 @@
    "volume": 0.1,
    "published": true,
    "marketGroupId": 1880,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.1
   },
   {
    "typeId": 20419,
@@ -857,7 +1753,9 @@
    "volume": 0.1,
    "published": true,
    "marketGroupId": 1880,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.1
   },
   {
    "typeId": 20424,
@@ -868,7 +1766,9 @@
    "volume": 0.1,
    "published": true,
    "marketGroupId": 1880,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.1
   },
   {
    "typeId": 21017,
@@ -879,7 +1779,9 @@
    "volume": 2000,
    "published": true,
    "marketGroupId": 781,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 2000
   },
   {
    "typeId": 21018,
@@ -890,7 +1792,22 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 796,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 21790,
+   "name": "Caldari Encryption Methods",
+   "groupId": 270,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 375,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 22242,
@@ -901,7 +1818,35 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 369,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 22464,
+   "name": "Flycatcher",
+   "groupId": 541,
+   "categoryId": 6,
+   "portionSize": 1,
+   "volume": 52000,
+   "published": true,
+   "marketGroupId": 829,
+   "metaGroupId": 2,
+   "raceId": 1,
+   "packagedVolume": 5000
+  },
+  {
+   "typeId": 22465,
+   "name": "Flycatcher Blueprint",
+   "groupId": 487,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 893,
+   "metaGroupId": 2,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 23121,
@@ -912,7 +1857,139 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 375,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 25598,
+   "name": "Tripped Power Circuit",
+   "groupId": 754,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1863,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 25600,
+   "name": "Burned Logic Circuit",
+   "groupId": 754,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1863,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 25606,
+   "name": "Ward Console",
+   "groupId": 754,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1863,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 25617,
+   "name": "Power Circuit",
+   "groupId": 754,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1863,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 25619,
+   "name": "Logic Circuit",
+   "groupId": 754,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1863,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 25625,
+   "name": "Enhanced Ward Console",
+   "groupId": 754,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1863,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 25887,
+   "name": "Datacore - Caldari Starship Engineering",
+   "groupId": 333,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 0.1,
+   "published": true,
+   "marketGroupId": 1880,
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.1
+  },
+  {
+   "typeId": 26261,
+   "name": "Shield Rigging",
+   "groupId": 269,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 372,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 28710,
+   "name": "Golem",
+   "groupId": 900,
+   "categoryId": 6,
+   "portionSize": 1,
+   "volume": 470000,
+   "published": true,
+   "marketGroupId": 1082,
+   "metaGroupId": 2,
+   "raceId": 1,
+   "packagedVolume": 50000
+  },
+  {
+   "typeId": 28711,
+   "name": "Golem Blueprint",
+   "groupId": 107,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": null,
+   "metaGroupId": 2,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 29992,
@@ -923,7 +2000,9 @@
    "volume": 10,
    "published": true,
    "marketGroupId": 1147,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 10
   },
   {
    "typeId": 29993,
@@ -934,7 +2013,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1191,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 29994,
@@ -945,7 +2026,9 @@
    "volume": 10,
    "published": true,
    "marketGroupId": 1147,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 10
   },
   {
    "typeId": 29995,
@@ -956,7 +2039,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1191,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30002,
@@ -967,7 +2052,9 @@
    "volume": 5,
    "published": true,
    "marketGroupId": 1147,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 5
   },
   {
    "typeId": 30003,
@@ -978,7 +2065,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1191,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30018,
@@ -989,7 +2078,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1862,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30019,
@@ -1000,7 +2091,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1862,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30021,
@@ -1011,7 +2104,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1862,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30022,
@@ -1022,7 +2117,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1862,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30024,
@@ -1033,7 +2130,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1862,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30248,
@@ -1044,7 +2143,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1862,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30251,
@@ -1055,7 +2156,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1862,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30252,
@@ -1066,7 +2169,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1862,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30254,
@@ -1077,7 +2182,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1862,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30258,
@@ -1088,7 +2195,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1862,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30259,
@@ -1099,7 +2208,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1862,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30268,
@@ -1110,7 +2221,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1862,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30269,
@@ -1121,7 +2234,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1862,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30270,
@@ -1132,7 +2247,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1862,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30271,
@@ -1143,7 +2260,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1862,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30303,
@@ -1154,7 +2273,9 @@
    "volume": 0.1,
    "published": true,
    "marketGroupId": 1860,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.1
   },
   {
    "typeId": 30304,
@@ -1165,7 +2286,9 @@
    "volume": 0.5,
    "published": true,
    "marketGroupId": 1860,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.5
   },
   {
    "typeId": 30305,
@@ -1176,7 +2299,9 @@
    "volume": 0.8,
    "published": true,
    "marketGroupId": 1860,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.8
   },
   {
    "typeId": 30306,
@@ -1187,7 +2312,9 @@
    "volume": 0.75,
    "published": true,
    "marketGroupId": 1860,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.75
   },
   {
    "typeId": 30307,
@@ -1198,7 +2325,9 @@
    "volume": 1,
    "published": true,
    "marketGroupId": 1860,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 1
   },
   {
    "typeId": 30308,
@@ -1209,7 +2338,9 @@
    "volume": 0.65,
    "published": true,
    "marketGroupId": 1860,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.65
   },
   {
    "typeId": 30309,
@@ -1220,7 +2351,9 @@
    "volume": 1.5,
    "published": true,
    "marketGroupId": 1860,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 1.5
   },
   {
    "typeId": 30310,
@@ -1231,7 +2364,9 @@
    "volume": 0.4,
    "published": true,
    "marketGroupId": 1860,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.4
   },
   {
    "typeId": 30311,
@@ -1242,7 +2377,9 @@
    "volume": 0.2,
    "published": true,
    "marketGroupId": 1860,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
   },
   {
    "typeId": 30370,
@@ -1253,7 +2390,9 @@
    "volume": 1,
    "published": true,
    "marketGroupId": 1859,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 1
   },
   {
    "typeId": 30371,
@@ -1264,7 +2403,9 @@
    "volume": 1,
    "published": true,
    "marketGroupId": 1859,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 1
   },
   {
    "typeId": 30372,
@@ -1275,7 +2416,9 @@
    "volume": 1,
    "published": true,
    "marketGroupId": 1859,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 1
   },
   {
    "typeId": 30373,
@@ -1286,7 +2429,9 @@
    "volume": 2,
    "published": true,
    "marketGroupId": 1859,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 2
   },
   {
    "typeId": 30374,
@@ -1297,7 +2442,9 @@
    "volume": 2,
    "published": true,
    "marketGroupId": 1859,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 2
   },
   {
    "typeId": 30375,
@@ -1308,7 +2455,9 @@
    "volume": 2,
    "published": true,
    "marketGroupId": 1859,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 2
   },
   {
    "typeId": 30376,
@@ -1319,7 +2468,9 @@
    "volume": 5,
    "published": true,
    "marketGroupId": 1859,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 5
   },
   {
    "typeId": 30377,
@@ -1330,7 +2481,9 @@
    "volume": 5,
    "published": true,
    "marketGroupId": 1859,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 5
   },
   {
    "typeId": 30378,
@@ -1341,7 +2494,9 @@
    "volume": 10,
    "published": true,
    "marketGroupId": 1859,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 10
   },
   {
    "typeId": 30464,
@@ -1352,7 +2507,9 @@
    "volume": 5,
    "published": true,
    "marketGroupId": 1147,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 5
   },
   {
    "typeId": 30465,
@@ -1363,7 +2520,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1191,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30466,
@@ -1374,7 +2533,9 @@
    "volume": 10,
    "published": true,
    "marketGroupId": 1147,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 10
   },
   {
    "typeId": 30467,
@@ -1385,7 +2546,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1191,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30476,
@@ -1396,7 +2559,9 @@
    "volume": 5,
    "published": true,
    "marketGroupId": 1147,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 5
   },
   {
    "typeId": 30477,
@@ -1407,7 +2572,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1191,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 30478,
@@ -1418,7 +2585,9 @@
    "volume": 10,
    "published": true,
    "marketGroupId": 1147,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 10
   },
   {
    "typeId": 30479,
@@ -1429,7 +2598,61 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1191,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 31791,
+   "name": "Medium Core Defense Field Extender I Blueprint",
+   "groupId": 787,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1268,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 31796,
+   "name": "Medium Core Defense Field Extender II",
+   "groupId": 774,
+   "categoryId": 7,
+   "portionSize": 1,
+   "volume": 10,
+   "published": true,
+   "marketGroupId": 1235,
+   "metaGroupId": 2,
+   "raceId": null,
+   "packagedVolume": 10
+  },
+  {
+   "typeId": 31797,
+   "name": "Medium Core Defense Field Extender II Blueprint",
+   "groupId": 787,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": null,
+   "metaGroupId": 2,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 33362,
+   "name": "Nonlinear Metamaterials",
+   "groupId": 429,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 1,
+   "published": true,
+   "marketGroupId": 499,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 1
   },
   {
    "typeId": 34396,
@@ -1440,7 +2663,9 @@
    "volume": 5,
    "published": true,
    "marketGroupId": 1147,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 5
   },
   {
    "typeId": 34397,
@@ -1451,7 +2676,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1191,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 34412,
@@ -1462,7 +2689,9 @@
    "volume": 20,
    "published": true,
    "marketGroupId": 1909,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 20
   },
   {
    "typeId": 34414,
@@ -1473,7 +2702,9 @@
    "volume": 20,
    "published": true,
    "marketGroupId": 1909,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 20
   },
   {
    "typeId": 34416,
@@ -1484,7 +2715,9 @@
    "volume": 20,
    "published": true,
    "marketGroupId": 1909,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": 4,
+   "packagedVolume": 20
   },
   {
    "typeId": 34828,
@@ -1495,7 +2728,9 @@
    "volume": 47000,
    "published": true,
    "marketGroupId": 2021,
-   "metaGroupId": 14
+   "metaGroupId": 14,
+   "raceId": 1,
+   "packagedVolume": 5000
   },
   {
    "typeId": 34829,
@@ -1506,7 +2741,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": null,
-   "metaGroupId": 14
+   "metaGroupId": 14,
+   "raceId": 1,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 45746,
@@ -1517,7 +2754,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 1323,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 46157,
@@ -1528,7 +2767,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2404,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 46158,
@@ -1539,7 +2780,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2404,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 46159,
@@ -1550,7 +2793,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2404,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 46160,
@@ -1561,7 +2806,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2404,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 46161,
@@ -1572,7 +2819,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2404,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 46162,
@@ -1583,7 +2832,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2404,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 46163,
@@ -1594,7 +2845,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2404,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 46164,
@@ -1605,7 +2858,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2404,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 46165,
@@ -1616,7 +2871,22 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2404,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 46166,
+   "name": "Caesarium Cadmide Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 46167,
@@ -1627,7 +2897,22 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2403,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 46168,
+   "name": "Ceramic Powder Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 46169,
@@ -1638,7 +2923,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2403,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 46170,
@@ -1649,7 +2936,74 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2403,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 46172,
+   "name": "Ferrofluid Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 46173,
+   "name": "Fluxed Condensates Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 46174,
+   "name": "Hexite Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 46175,
+   "name": "Hyperflurite Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 46176,
+   "name": "Neo Mercurite Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 46177,
@@ -1660,7 +3014,22 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2403,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 46179,
+   "name": "Silicon Diborite Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 46180,
@@ -1671,7 +3040,35 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2403,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 46181,
+   "name": "Sulfuric Acid Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 46182,
+   "name": "Titanium Chromide Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 46183,
@@ -1682,7 +3079,35 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2403,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 46184,
+   "name": "Prometium Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 46204,
+   "name": "Titanium Carbide Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 46205,
@@ -1693,7 +3118,22 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2403,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 46208,
+   "name": "Sylramic Fibers Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 46209,
@@ -1704,7 +3144,35 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2403,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 46210,
+   "name": "Phenolic Composites Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 46211,
+   "name": "Nanotransistors Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 46212,
@@ -1715,7 +3183,48 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2403,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 46213,
+   "name": "Ferrogel Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 46214,
+   "name": "Fermionic Condensates Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 46218,
+   "name": "Nonlinear Metamaterials Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 57453,
@@ -1726,7 +3235,9 @@
    "volume": 0.2,
    "published": true,
    "marketGroupId": 500,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
   },
   {
    "typeId": 57454,
@@ -1737,7 +3248,9 @@
    "volume": 0.1,
    "published": true,
    "marketGroupId": 500,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.1
   },
   {
    "typeId": 57455,
@@ -1748,7 +3261,22 @@
    "volume": 0.2,
    "published": true,
    "marketGroupId": 500,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.2
+  },
+  {
+   "typeId": 57456,
+   "name": "Pressurized Oxidizers",
+   "groupId": 429,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.1,
+   "published": true,
+   "marketGroupId": 499,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.1
   },
   {
    "typeId": 57457,
@@ -1759,7 +3287,48 @@
    "volume": 0.1,
    "published": true,
    "marketGroupId": 499,
-   "metaGroupId": null
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 0.1
+  },
+  {
+   "typeId": 57478,
+   "name": "Auto-Integrity Preservation Seal",
+   "groupId": 334,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 16,
+   "published": true,
+   "marketGroupId": 2768,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 16
+  },
+  {
+   "typeId": 57479,
+   "name": "Core Temperature Regulator",
+   "groupId": 334,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 180,
+   "published": true,
+   "marketGroupId": 2768,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 180
+  },
+  {
+   "typeId": 57486,
+   "name": "Life Support Backup Unit",
+   "groupId": 334,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 45,
+   "published": true,
+   "marketGroupId": 2768,
+   "metaGroupId": null,
+   "raceId": null,
+   "packagedVolume": 45
   },
   {
    "typeId": 57490,
@@ -1770,7 +3339,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2403,
-   "metaGroupId": 1
+   "metaGroupId": 1,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 57491,
@@ -1781,7 +3352,22 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2403,
-   "metaGroupId": 1
+   "metaGroupId": 1,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 57492,
+   "name": "Pressurized Oxidizers Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": 1,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 57493,
@@ -1792,7 +3378,9 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2403,
-   "metaGroupId": 1
+   "metaGroupId": 1,
+   "raceId": null,
+   "packagedVolume": 0.01
   },
   {
    "typeId": 57494,
@@ -1803,10 +3391,176 @@
    "volume": 0.01,
    "published": true,
    "marketGroupId": 2403,
-   "metaGroupId": 1
+   "metaGroupId": 1,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 57515,
+   "name": "Auto-Integrity Preservation Seal Blueprint",
+   "groupId": 447,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2770,
+   "metaGroupId": 1,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 57516,
+   "name": "Core Temperature Regulator Blueprint",
+   "groupId": 447,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2770,
+   "metaGroupId": 1,
+   "raceId": null,
+   "packagedVolume": 0.01
+  },
+  {
+   "typeId": 57523,
+   "name": "Life Support Backup Unit Blueprint",
+   "groupId": 447,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2770,
+   "metaGroupId": 1,
+   "raceId": null,
+   "packagedVolume": 0.01
   }
  ],
  "blueprints": [
+  {
+   "blueprintTypeId": 688,
+   "maxProductionLimit": 10,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 688,
+     "activity": "copying",
+     "time": 14400,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "invention": {
+     "blueprintTypeId": 688,
+     "activity": "invention",
+     "time": 192000,
+     "materials": [
+      {
+       "typeId": 20411,
+       "quantity": 32
+      },
+      {
+       "typeId": 25887,
+       "quantity": 32
+      }
+     ],
+     "products": [
+      {
+       "typeId": 28711,
+       "quantity": 1,
+       "probability": 0.22
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 11433,
+       "level": 1
+      },
+      {
+       "typeId": 11454,
+       "level": 1
+      },
+      {
+       "typeId": 21790,
+       "level": 1
+      }
+     ]
+    },
+    "manufacturing": {
+     "blueprintTypeId": 688,
+     "activity": "manufacturing",
+     "time": 18000,
+     "materials": [
+      {
+       "typeId": 57479,
+       "quantity": 1
+      },
+      {
+       "typeId": 57486,
+       "quantity": 75
+      },
+      {
+       "typeId": 57478,
+       "quantity": 150
+      },
+      {
+       "typeId": 40,
+       "quantity": 1950
+      },
+      {
+       "typeId": 39,
+       "quantity": 3900
+      },
+      {
+       "typeId": 38,
+       "quantity": 15600
+      },
+      {
+       "typeId": 37,
+       "quantity": 130000
+      },
+      {
+       "typeId": 36,
+       "quantity": 390000
+      },
+      {
+       "typeId": 35,
+       "quantity": 2600000
+      },
+      {
+       "typeId": 34,
+       "quantity": 5200000
+      }
+     ],
+     "products": [
+      {
+       "typeId": 638,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 688,
+     "activity": "research_material",
+     "time": 6300,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 688,
+     "activity": "research_time",
+     "time": 6300,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
   {
    "blueprintTypeId": 2184,
    "maxProductionLimit": 300,
@@ -2473,6 +4227,75 @@
    }
   },
   {
+   "blueprintTypeId": 11889,
+   "maxProductionLimit": 200,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 11889,
+     "activity": "copying",
+     "time": 2000,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 11889,
+     "activity": "manufacturing",
+     "time": 2500,
+     "materials": [
+      {
+       "typeId": 34,
+       "quantity": 556
+      },
+      {
+       "typeId": 35,
+       "quantity": 444
+      },
+      {
+       "typeId": 36,
+       "quantity": 222
+      },
+      {
+       "typeId": 37,
+       "quantity": 82
+      },
+      {
+       "typeId": 38,
+       "quantity": 36
+      }
+     ],
+     "products": [
+      {
+       "typeId": 11484,
+       "quantity": 100
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 11889,
+     "activity": "research_material",
+     "time": 2100,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 11889,
+     "activity": "research_time",
+     "time": 2100,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
    "blueprintTypeId": 11890,
    "maxProductionLimit": 200,
    "activities": {
@@ -2542,6 +4365,332 @@
    }
   },
   {
+   "blueprintTypeId": 16239,
+   "maxProductionLimit": 20,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 16239,
+     "activity": "copying",
+     "time": 7200,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "invention": {
+     "blueprintTypeId": 16239,
+     "activity": "invention",
+     "time": 96000,
+     "materials": [
+      {
+       "typeId": 20411,
+       "quantity": 4
+      },
+      {
+       "typeId": 25887,
+       "quantity": 4
+      }
+     ],
+     "products": [
+      {
+       "typeId": 22465,
+       "quantity": 1,
+       "probability": 0.3
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 11433,
+       "level": 1
+      },
+      {
+       "typeId": 11454,
+       "level": 1
+      },
+      {
+       "typeId": 21790,
+       "level": 1
+      }
+     ]
+    },
+    "manufacturing": {
+     "blueprintTypeId": 16239,
+     "activity": "manufacturing",
+     "time": 9000,
+     "materials": [
+      {
+       "typeId": 34,
+       "quantity": 80000
+      },
+      {
+       "typeId": 35,
+       "quantity": 15000
+      },
+      {
+       "typeId": 36,
+       "quantity": 5000
+      },
+      {
+       "typeId": 37,
+       "quantity": 1000
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16238,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 16239,
+     "activity": "research_material",
+     "time": 3150,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 16239,
+     "activity": "research_time",
+     "time": 3150,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 17327,
+   "maxProductionLimit": 4000,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 17327,
+     "activity": "copying",
+     "time": 120,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 17327,
+     "activity": "manufacturing",
+     "time": 150,
+     "materials": [
+      {
+       "typeId": 16681,
+       "quantity": 1
+      },
+      {
+       "typeId": 33362,
+       "quantity": 2
+      },
+      {
+       "typeId": 16679,
+       "quantity": 11
+      },
+      {
+       "typeId": 16671,
+       "quantity": 27
+      }
+     ],
+     "products": [
+      {
+       "typeId": 11552,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      },
+      {
+       "typeId": 11448,
+       "level": 3
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 17327,
+     "activity": "research_material",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3409,
+       "level": 5
+      }
+     ]
+    },
+    "research_time": {
+     "blueprintTypeId": 17327,
+     "activity": "research_time",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3403,
+       "level": 5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 17328,
+   "maxProductionLimit": 20000,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 17328,
+     "activity": "copying",
+     "time": 20,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 17328,
+     "activity": "manufacturing",
+     "time": 25,
+     "materials": [
+      {
+       "typeId": 16678,
+       "quantity": 11
+      },
+      {
+       "typeId": 16671,
+       "quantity": 44
+      }
+     ],
+     "products": [
+      {
+       "typeId": 11544,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      },
+      {
+       "typeId": 11529,
+       "level": 3
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 17328,
+     "activity": "research_material",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3409,
+       "level": 5
+      }
+     ]
+    },
+    "research_time": {
+     "blueprintTypeId": 17328,
+     "activity": "research_time",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3403,
+       "level": 5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 17340,
+   "maxProductionLimit": 4000,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 17340,
+     "activity": "copying",
+     "time": 120,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 17340,
+     "activity": "manufacturing",
+     "time": 150,
+     "materials": [
+      {
+       "typeId": 16681,
+       "quantity": 1
+      },
+      {
+       "typeId": 16682,
+       "quantity": 2
+      },
+      {
+       "typeId": 16671,
+       "quantity": 22
+      }
+     ],
+     "products": [
+      {
+       "typeId": 11534,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      },
+      {
+       "typeId": 11453,
+       "level": 3
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 17340,
+     "activity": "research_material",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3409,
+       "level": 5
+      }
+     ]
+    },
+    "research_time": {
+     "blueprintTypeId": 17340,
+     "activity": "research_time",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3403,
+       "level": 5
+      }
+     ]
+    }
+   }
+  },
+  {
    "blueprintTypeId": 17344,
    "maxProductionLimit": 4000,
    "activities": {
@@ -2603,6 +4752,306 @@
     },
     "research_time": {
      "blueprintTypeId": 17344,
+     "activity": "research_time",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3403,
+       "level": 5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 17351,
+   "maxProductionLimit": 8000,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 17351,
+     "activity": "copying",
+     "time": 60,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 17351,
+     "activity": "manufacturing",
+     "time": 75,
+     "materials": [
+      {
+       "typeId": 16680,
+       "quantity": 6
+      },
+      {
+       "typeId": 16681,
+       "quantity": 2
+      },
+      {
+       "typeId": 33362,
+       "quantity": 2
+      },
+      {
+       "typeId": 16671,
+       "quantity": 17
+      }
+     ],
+     "products": [
+      {
+       "typeId": 11540,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      },
+      {
+       "typeId": 11453,
+       "level": 3
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 17351,
+     "activity": "research_material",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3409,
+       "level": 5
+      }
+     ]
+    },
+    "research_time": {
+     "blueprintTypeId": 17351,
+     "activity": "research_time",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3403,
+       "level": 5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 17352,
+   "maxProductionLimit": 4000,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 17352,
+     "activity": "copying",
+     "time": 120,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 17352,
+     "activity": "manufacturing",
+     "time": 150,
+     "materials": [
+      {
+       "typeId": 16683,
+       "quantity": 1
+      },
+      {
+       "typeId": 16678,
+       "quantity": 9
+      },
+      {
+       "typeId": 16671,
+       "quantity": 22
+      }
+     ],
+     "products": [
+      {
+       "typeId": 11558,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      },
+      {
+       "typeId": 11443,
+       "level": 3
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 17352,
+     "activity": "research_material",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3409,
+       "level": 5
+      }
+     ]
+    },
+    "research_time": {
+     "blueprintTypeId": 17352,
+     "activity": "research_time",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3403,
+       "level": 5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 17353,
+   "maxProductionLimit": 2000,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 17353,
+     "activity": "copying",
+     "time": 240,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 17353,
+     "activity": "manufacturing",
+     "time": 300,
+     "materials": [
+      {
+       "typeId": 17317,
+       "quantity": 2
+      },
+      {
+       "typeId": 16671,
+       "quantity": 9
+      }
+     ],
+     "products": [
+      {
+       "typeId": 11550,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      },
+      {
+       "typeId": 11446,
+       "level": 3
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 17353,
+     "activity": "research_material",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3409,
+       "level": 5
+      }
+     ]
+    },
+    "research_time": {
+     "blueprintTypeId": 17353,
+     "activity": "research_time",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3403,
+       "level": 5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 17356,
+   "maxProductionLimit": 4000,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 17356,
+     "activity": "copying",
+     "time": 120,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 17356,
+     "activity": "manufacturing",
+     "time": 150,
+     "materials": [
+      {
+       "typeId": 16680,
+       "quantity": 3
+      },
+      {
+       "typeId": 16683,
+       "quantity": 1
+      },
+      {
+       "typeId": 16671,
+       "quantity": 13
+      }
+     ],
+     "products": [
+      {
+       "typeId": 11533,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      },
+      {
+       "typeId": 11453,
+       "level": 3
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 17356,
+     "activity": "research_material",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3409,
+       "level": 5
+      }
+     ]
+    },
+    "research_time": {
+     "blueprintTypeId": 17356,
      "activity": "research_time",
      "time": 105,
      "materials": [],
@@ -2698,6 +5147,356 @@
      "materials": [],
      "products": [],
      "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 22465,
+   "maxProductionLimit": 1,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 22465,
+     "activity": "copying",
+     "time": 144000,
+     "materials": [
+      {
+       "typeId": 11464,
+       "quantity": 6
+      },
+      {
+       "typeId": 3812,
+       "quantity": 90
+      }
+     ],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 11446,
+       "level": 1
+      },
+      {
+       "typeId": 11454,
+       "level": 1
+      }
+     ]
+    },
+    "manufacturing": {
+     "blueprintTypeId": 22465,
+     "activity": "manufacturing",
+     "time": 180000,
+     "materials": [
+      {
+       "typeId": 11552,
+       "quantity": 150
+      },
+      {
+       "typeId": 11399,
+       "quantity": 15
+      },
+      {
+       "typeId": 11533,
+       "quantity": 60
+      },
+      {
+       "typeId": 16238,
+       "quantity": 1
+      },
+      {
+       "typeId": 3828,
+       "quantity": 23
+      },
+      {
+       "typeId": 11534,
+       "quantity": 75
+      },
+      {
+       "typeId": 11478,
+       "quantity": 9
+      },
+      {
+       "typeId": 11544,
+       "quantity": 1500
+      },
+      {
+       "typeId": 11540,
+       "quantity": 360
+      },
+      {
+       "typeId": 11558,
+       "quantity": 38
+      },
+      {
+       "typeId": 11550,
+       "quantity": 15
+      }
+     ],
+     "products": [
+      {
+       "typeId": 22464,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 5
+      },
+      {
+       "typeId": 3395,
+       "level": 1
+      },
+      {
+       "typeId": 11446,
+       "level": 1
+      },
+      {
+       "typeId": 11454,
+       "level": 1
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 22465,
+     "activity": "research_material",
+     "time": 63000,
+     "materials": [
+      {
+       "typeId": 11464,
+       "quantity": 3
+      },
+      {
+       "typeId": 9836,
+       "quantity": 11
+      },
+      {
+       "typeId": 3814,
+       "quantity": 22
+      }
+     ],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3409,
+       "level": 5
+      },
+      {
+       "typeId": 11446,
+       "level": 1
+      },
+      {
+       "typeId": 11454,
+       "level": 1
+      }
+     ]
+    },
+    "research_time": {
+     "blueprintTypeId": 22465,
+     "activity": "research_time",
+     "time": 63000,
+     "materials": [
+      {
+       "typeId": 11464,
+       "quantity": 3
+      },
+      {
+       "typeId": 9836,
+       "quantity": 11
+      },
+      {
+       "typeId": 3814,
+       "quantity": 22
+      }
+     ],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3403,
+       "level": 5
+      },
+      {
+       "typeId": 11446,
+       "level": 1
+      },
+      {
+       "typeId": 11454,
+       "level": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 28711,
+   "maxProductionLimit": 1,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 28711,
+     "activity": "copying",
+     "time": 288000,
+     "materials": [
+      {
+       "typeId": 11746,
+       "quantity": 20
+      },
+      {
+       "typeId": 3812,
+       "quantity": 300
+      }
+     ],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 11452,
+       "level": 1
+      },
+      {
+       "typeId": 11454,
+       "level": 1
+      }
+     ]
+    },
+    "manufacturing": {
+     "blueprintTypeId": 28711,
+     "activity": "manufacturing",
+     "time": 360000,
+     "materials": [
+      {
+       "typeId": 638,
+       "quantity": 1
+      },
+      {
+       "typeId": 11478,
+       "quantity": 30
+      },
+      {
+       "typeId": 11533,
+       "quantity": 375
+      },
+      {
+       "typeId": 3828,
+       "quantity": 450
+      },
+      {
+       "typeId": 11550,
+       "quantity": 675
+      },
+      {
+       "typeId": 11534,
+       "quantity": 863
+      },
+      {
+       "typeId": 11399,
+       "quantity": 975
+      },
+      {
+       "typeId": 11552,
+       "quantity": 3000
+      },
+      {
+       "typeId": 11558,
+       "quantity": 3795
+      },
+      {
+       "typeId": 11540,
+       "quantity": 6000
+      },
+      {
+       "typeId": 11544,
+       "quantity": 37500
+      }
+     ],
+     "products": [
+      {
+       "typeId": 28710,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3398,
+       "level": 1
+      },
+      {
+       "typeId": 11452,
+       "level": 1
+      },
+      {
+       "typeId": 11454,
+       "level": 1
+      },
+      {
+       "typeId": 3380,
+       "level": 5
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 28711,
+     "activity": "research_material",
+     "time": 126000,
+     "materials": [
+      {
+       "typeId": 11746,
+       "quantity": 15
+      },
+      {
+       "typeId": 9836,
+       "quantity": 50
+      },
+      {
+       "typeId": 3814,
+       "quantity": 70
+      }
+     ],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 11452,
+       "level": 1
+      },
+      {
+       "typeId": 11454,
+       "level": 1
+      },
+      {
+       "typeId": 3409,
+       "level": 5
+      }
+     ]
+    },
+    "research_time": {
+     "blueprintTypeId": 28711,
+     "activity": "research_time",
+     "time": 126000,
+     "materials": [
+      {
+       "typeId": 11746,
+       "quantity": 15
+      },
+      {
+       "typeId": 9836,
+       "quantity": 50
+      },
+      {
+       "typeId": 3814,
+       "quantity": 60
+      }
+     ],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 11452,
+       "level": 1
+      },
+      {
+       "typeId": 11454,
+       "level": 1
+      },
+      {
+       "typeId": 3403,
+       "level": 5
+      }
+     ]
     }
    }
   },
@@ -3273,6 +6072,225 @@
      "materials": [],
      "products": [],
      "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 31791,
+   "maxProductionLimit": 60,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 31791,
+     "activity": "copying",
+     "time": 2400,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "invention": {
+     "blueprintTypeId": 31791,
+     "activity": "invention",
+     "time": 15600,
+     "materials": [
+      {
+       "typeId": 20171,
+       "quantity": 2
+      },
+      {
+       "typeId": 20414,
+       "quantity": 2
+      }
+     ],
+     "products": [
+      {
+       "typeId": 31797,
+       "quantity": 1,
+       "probability": 0.34
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 11443,
+       "level": 1
+      },
+      {
+       "typeId": 11455,
+       "level": 1
+      },
+      {
+       "typeId": 21790,
+       "level": 1
+      }
+     ]
+    },
+    "manufacturing": {
+     "blueprintTypeId": 31791,
+     "activity": "manufacturing",
+     "time": 3000,
+     "materials": [
+      {
+       "typeId": 25600,
+       "quantity": 22
+      },
+      {
+       "typeId": 25606,
+       "quantity": 9
+      },
+      {
+       "typeId": 25598,
+       "quantity": 22
+      }
+     ],
+     "products": [
+      {
+       "typeId": 31790,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      },
+      {
+       "typeId": 26261,
+       "level": 1
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 31791,
+     "activity": "research_material",
+     "time": 1050,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3409,
+       "level": 1
+      },
+      {
+       "typeId": 26261,
+       "level": 1
+      }
+     ]
+    },
+    "research_time": {
+     "blueprintTypeId": 31791,
+     "activity": "research_time",
+     "time": 1050,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3403,
+       "level": 1
+      },
+      {
+       "typeId": 26261,
+       "level": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 31797,
+   "maxProductionLimit": 1,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 31797,
+     "activity": "copying",
+     "time": 24000,
+     "materials": [
+      {
+       "typeId": 3812,
+       "quantity": 5
+      }
+     ],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 31797,
+     "activity": "manufacturing",
+     "time": 30000,
+     "materials": [
+      {
+       "typeId": 25617,
+       "quantity": 6
+      },
+      {
+       "typeId": 25619,
+       "quantity": 6
+      },
+      {
+       "typeId": 11484,
+       "quantity": 1
+      },
+      {
+       "typeId": 25625,
+       "quantity": 3
+      }
+     ],
+     "products": [
+      {
+       "typeId": 31796,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 5
+      },
+      {
+       "typeId": 11443,
+       "level": 1
+      },
+      {
+       "typeId": 11455,
+       "level": 1
+      },
+      {
+       "typeId": 26261,
+       "level": 1
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 31797,
+     "activity": "research_material",
+     "time": 10500,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3409,
+       "level": 5
+      },
+      {
+       "typeId": 26261,
+       "level": 1
+      }
+     ]
+    },
+    "research_time": {
+     "blueprintTypeId": 31797,
+     "activity": "research_time",
+     "time": 10500,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3403,
+       "level": 5
+      },
+      {
+       "typeId": 26261,
+       "level": 1
+      }
+     ]
     }
    }
   },
@@ -4019,6 +7037,43 @@
    }
   },
   {
+   "blueprintTypeId": 46166,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46166,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4312,
+       "quantity": 5
+      },
+      {
+       "typeId": 16643,
+       "quantity": 100
+      },
+      {
+       "typeId": 16647,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16663,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 2
+      }
+     ]
+    }
+   }
+  },
+  {
    "blueprintTypeId": 46167,
    "maxProductionLimit": 1000,
    "activities": {
@@ -4043,6 +7098,43 @@
      "products": [
       {
        "typeId": 16659,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 2
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46168,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46168,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4246,
+       "quantity": 5
+      },
+      {
+       "typeId": 16635,
+       "quantity": 100
+      },
+      {
+       "typeId": 16636,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16660,
        "quantity": 200
       }
      ],
@@ -4130,6 +7222,191 @@
    }
   },
   {
+   "blueprintTypeId": 46172,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46172,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4246,
+       "quantity": 5
+      },
+      {
+       "typeId": 16648,
+       "quantity": 100
+      },
+      {
+       "typeId": 16650,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16669,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 2
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46173,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46173,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4312,
+       "quantity": 5
+      },
+      {
+       "typeId": 16651,
+       "quantity": 100
+      },
+      {
+       "typeId": 16653,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 17769,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 2
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46174,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46174,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4051,
+       "quantity": 5
+      },
+      {
+       "typeId": 16641,
+       "quantity": 100
+      },
+      {
+       "typeId": 16644,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16665,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 2
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46175,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46175,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4051,
+       "quantity": 5
+      },
+      {
+       "typeId": 16642,
+       "quantity": 100
+      },
+      {
+       "typeId": 16652,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16666,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 2
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46176,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46176,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4247,
+       "quantity": 5
+      },
+      {
+       "typeId": 16646,
+       "quantity": 100
+      },
+      {
+       "typeId": 16651,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16667,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 2
+      }
+     ]
+    }
+   }
+  },
+  {
    "blueprintTypeId": 46177,
    "maxProductionLimit": 1000,
    "activities": {
@@ -4154,6 +7431,43 @@
      "products": [
       {
        "typeId": 16662,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 2
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46179,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46179,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4312,
+       "quantity": 5
+      },
+      {
+       "typeId": 16635,
+       "quantity": 100
+      },
+      {
+       "typeId": 16636,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16658,
        "quantity": 200
       }
      ],
@@ -4204,6 +7518,80 @@
    }
   },
   {
+   "blueprintTypeId": 46181,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46181,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4051,
+       "quantity": 5
+      },
+      {
+       "typeId": 16634,
+       "quantity": 100
+      },
+      {
+       "typeId": 16635,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16661,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 2
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46182,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46182,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4312,
+       "quantity": 5
+      },
+      {
+       "typeId": 16638,
+       "quantity": 100
+      },
+      {
+       "typeId": 16641,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16654,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 2
+      }
+     ]
+    }
+   }
+  },
+  {
    "blueprintTypeId": 46183,
    "maxProductionLimit": 1000,
    "activities": {
@@ -4241,6 +7629,80 @@
    }
   },
   {
+   "blueprintTypeId": 46184,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46184,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4312,
+       "quantity": 5
+      },
+      {
+       "typeId": 16643,
+       "quantity": 100
+      },
+      {
+       "typeId": 16652,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 17960,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 2
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46204,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46204,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4312,
+       "quantity": 5
+      },
+      {
+       "typeId": 16654,
+       "quantity": 100
+      },
+      {
+       "typeId": 16658,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16671,
+       "quantity": 10000
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
    "blueprintTypeId": 46205,
    "maxProductionLimit": 1000,
    "activities": {
@@ -4266,6 +7728,43 @@
       {
        "typeId": 16670,
        "quantity": 10000
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46208,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46208,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4247,
+       "quantity": 5
+      },
+      {
+       "typeId": 16660,
+       "quantity": 100
+      },
+      {
+       "typeId": 16665,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16678,
+       "quantity": 6000
       }
      ],
      "skills": [
@@ -4315,6 +7814,88 @@
    }
   },
   {
+   "blueprintTypeId": 46210,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46210,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4312,
+       "quantity": 5
+      },
+      {
+       "typeId": 16658,
+       "quantity": 100
+      },
+      {
+       "typeId": 16663,
+       "quantity": 100
+      },
+      {
+       "typeId": 17959,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16680,
+       "quantity": 2200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46211,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46211,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4051,
+       "quantity": 5
+      },
+      {
+       "typeId": 16661,
+       "quantity": 100
+      },
+      {
+       "typeId": 16662,
+       "quantity": 100
+      },
+      {
+       "typeId": 16667,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16681,
+       "quantity": 1500
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
    "blueprintTypeId": 46212,
    "maxProductionLimit": 1000,
    "activities": {
@@ -4344,6 +7925,133 @@
       {
        "typeId": 16682,
        "quantity": 750
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46213,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46213,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4246,
+       "quantity": 5
+      },
+      {
+       "typeId": 16665,
+       "quantity": 100
+      },
+      {
+       "typeId": 16666,
+       "quantity": 100
+      },
+      {
+       "typeId": 16669,
+       "quantity": 100
+      },
+      {
+       "typeId": 17960,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16683,
+       "quantity": 400
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46214,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46214,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4247,
+       "quantity": 5
+      },
+      {
+       "typeId": 16663,
+       "quantity": 100
+      },
+      {
+       "typeId": 16668,
+       "quantity": 100
+      },
+      {
+       "typeId": 17769,
+       "quantity": 100
+      },
+      {
+       "typeId": 17960,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 17317,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46218,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46218,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4051,
+       "quantity": 5
+      },
+      {
+       "typeId": 16654,
+       "quantity": 100
+      },
+      {
+       "typeId": 16669,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 33362,
+       "quantity": 300
       }
      ],
      "skills": [
@@ -4430,6 +8138,43 @@
    }
   },
   {
+   "blueprintTypeId": 57492,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 57492,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 16659,
+       "quantity": 200
+      },
+      {
+       "typeId": 16661,
+       "quantity": 200
+      },
+      {
+       "typeId": 57454,
+       "quantity": 1
+      }
+     ],
+     "products": [
+      {
+       "typeId": 57456,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
    "blueprintTypeId": 57493,
    "maxProductionLimit": 1000,
    "activities": {
@@ -4502,6 +8247,520 @@
      ]
     }
    }
+  },
+  {
+   "blueprintTypeId": 57515,
+   "maxProductionLimit": 200,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 57515,
+     "activity": "copying",
+     "time": 1440,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 57515,
+     "activity": "manufacturing",
+     "time": 1800,
+     "materials": [
+      {
+       "typeId": 2312,
+       "quantity": 4
+      },
+      {
+       "typeId": 2463,
+       "quantity": 4
+      },
+      {
+       "typeId": 57457,
+       "quantity": 10
+      }
+     ],
+     "products": [
+      {
+       "typeId": 57478,
+       "quantity": 3
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 57515,
+     "activity": "research_material",
+     "time": 700,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 57515,
+     "activity": "research_time",
+     "time": 700,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 57516,
+   "maxProductionLimit": 40,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 57516,
+     "activity": "copying",
+     "time": 6400,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 57516,
+     "activity": "manufacturing",
+     "time": 8000,
+     "materials": [
+      {
+       "typeId": 2401,
+       "quantity": 100
+      },
+      {
+       "typeId": 3645,
+       "quantity": 100
+      },
+      {
+       "typeId": 57456,
+       "quantity": 500
+      },
+      {
+       "typeId": 57457,
+       "quantity": 500
+      }
+     ],
+     "products": [
+      {
+       "typeId": 57479,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 5
+      },
+      {
+       "typeId": 3402,
+       "level": 5
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 57516,
+     "activity": "research_material",
+     "time": 3150,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 57516,
+     "activity": "research_time",
+     "time": 3150,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 57523,
+   "maxProductionLimit": 200,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 57523,
+     "activity": "copying",
+     "time": 1440,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 57523,
+     "activity": "manufacturing",
+     "time": 1800,
+     "materials": [
+      {
+       "typeId": 2319,
+       "quantity": 8
+      },
+      {
+       "typeId": 3775,
+       "quantity": 8
+      },
+      {
+       "typeId": 57457,
+       "quantity": 10
+      }
+     ],
+     "products": [
+      {
+       "typeId": 57486,
+       "quantity": 3
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 57523,
+     "activity": "research_material",
+     "time": 700,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 57523,
+     "activity": "research_time",
+     "time": 700,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
   }
- ]
+ ],
+ "systems": [
+  {
+   "systemId": 30000142,
+   "name": "Jita",
+   "security": 0.945913
+  },
+  {
+   "systemId": 30000144,
+   "name": "Perimeter",
+   "security": 0.949
+  }
+ ],
+ "groups": [
+  {
+   "groupId": 18,
+   "categoryId": 4,
+   "name": "Mineral"
+  },
+  {
+   "groupId": 1034,
+   "categoryId": 43,
+   "name": "Refined Commodities - Tier 2"
+  },
+  {
+   "groupId": 27,
+   "categoryId": 6,
+   "name": "Battleship"
+  },
+  {
+   "groupId": 107,
+   "categoryId": 9,
+   "name": "Battleship Blueprint"
+  },
+  {
+   "groupId": 100,
+   "categoryId": 18,
+   "name": "Combat Drone"
+  },
+  {
+   "groupId": 176,
+   "categoryId": 9,
+   "name": "Combat Drone Blueprint"
+  },
+  {
+   "groupId": 1042,
+   "categoryId": 43,
+   "name": "Basic Commodities - Tier 1"
+  },
+  {
+   "groupId": 1041,
+   "categoryId": 43,
+   "name": "Advanced Commodities - Tier 4"
+  },
+  {
+   "groupId": 268,
+   "categoryId": 16,
+   "name": "Production"
+  },
+  {
+   "groupId": 270,
+   "categoryId": 16,
+   "name": "Science"
+  },
+  {
+   "groupId": 1136,
+   "categoryId": 4,
+   "name": "Fuel Block"
+  },
+  {
+   "groupId": 1137,
+   "categoryId": 9,
+   "name": "Fuel Block Blueprint"
+  },
+  {
+   "groupId": 1040,
+   "categoryId": 43,
+   "name": "Specialized Commodities - Tier 3"
+  },
+  {
+   "groupId": 332,
+   "categoryId": 17,
+   "name": "Tool"
+  },
+  {
+   "groupId": 334,
+   "categoryId": 17,
+   "name": "Construction Components"
+  },
+  {
+   "groupId": 356,
+   "categoryId": 9,
+   "name": "Tool Blueprint"
+  },
+  {
+   "groupId": 420,
+   "categoryId": 6,
+   "name": "Destroyer"
+  },
+  {
+   "groupId": 487,
+   "categoryId": 9,
+   "name": "Destroyer Blueprint"
+  },
+  {
+   "groupId": 423,
+   "categoryId": 4,
+   "name": "Ice Product"
+  },
+  {
+   "groupId": 427,
+   "categoryId": 4,
+   "name": "Moon Materials"
+  },
+  {
+   "groupId": 428,
+   "categoryId": 4,
+   "name": "Intermediate Materials"
+  },
+  {
+   "groupId": 429,
+   "categoryId": 4,
+   "name": "Composite"
+  },
+  {
+   "groupId": 447,
+   "categoryId": 9,
+   "name": "Construction Component Blueprints"
+  },
+  {
+   "groupId": 333,
+   "categoryId": 17,
+   "name": "Datacores"
+  },
+  {
+   "groupId": 873,
+   "categoryId": 17,
+   "name": "Capital Construction Components"
+  },
+  {
+   "groupId": 915,
+   "categoryId": 9,
+   "name": "Capital Construction Blueprints"
+  },
+  {
+   "groupId": 541,
+   "categoryId": 6,
+   "name": "Interdictor"
+  },
+  {
+   "groupId": 754,
+   "categoryId": 4,
+   "name": "Salvaged Materials"
+  },
+  {
+   "groupId": 269,
+   "categoryId": 16,
+   "name": "Rigging"
+  },
+  {
+   "groupId": 900,
+   "categoryId": 6,
+   "name": "Marauder"
+  },
+  {
+   "groupId": 964,
+   "categoryId": 17,
+   "name": "Hybrid Tech Components"
+  },
+  {
+   "groupId": 965,
+   "categoryId": 9,
+   "name": "Hybrid Component Blueprints"
+  },
+  {
+   "groupId": 966,
+   "categoryId": 4,
+   "name": "Ancient Salvage"
+  },
+  {
+   "groupId": 974,
+   "categoryId": 4,
+   "name": "Hybrid Polymers"
+  },
+  {
+   "groupId": 711,
+   "categoryId": 2,
+   "name": "Harvestable Cloud"
+  },
+  {
+   "groupId": 787,
+   "categoryId": 9,
+   "name": "Rig Blueprint"
+  },
+  {
+   "groupId": 774,
+   "categoryId": 7,
+   "name": "Rig Shield"
+  },
+  {
+   "groupId": 997,
+   "categoryId": 34,
+   "name": "Sleeper Hull Relics"
+  },
+  {
+   "groupId": 1305,
+   "categoryId": 6,
+   "name": "Tactical Destroyer"
+  },
+  {
+   "groupId": 1309,
+   "categoryId": 9,
+   "name": "Tactical Destroyer Blueprint"
+  },
+  {
+   "groupId": 1218,
+   "categoryId": 16,
+   "name": "Resource Processing"
+  },
+  {
+   "groupId": 1889,
+   "categoryId": 9,
+   "name": "Polymer Reaction Formulas"
+  },
+  {
+   "groupId": 1888,
+   "categoryId": 9,
+   "name": "Composite Reaction Formulas"
+  }
+ ],
+ "decryptors": [
+  {
+   "typeId": 34201,
+   "name": "Accelerant Decryptor",
+   "probabilityMultiplier": 1.2,
+   "me": 2,
+   "te": 10,
+   "runs": 1
+  },
+  {
+   "typeId": 34202,
+   "name": "Attainment Decryptor",
+   "probabilityMultiplier": 1.8,
+   "me": -1,
+   "te": 4,
+   "runs": 4
+  },
+  {
+   "typeId": 34203,
+   "name": "Augmentation Decryptor",
+   "probabilityMultiplier": 0.6,
+   "me": -2,
+   "te": 2,
+   "runs": 9
+  },
+  {
+   "typeId": 34207,
+   "name": "Optimized Attainment Decryptor",
+   "probabilityMultiplier": 1.9,
+   "me": 1,
+   "te": -2,
+   "runs": 2
+  },
+  {
+   "typeId": 34208,
+   "name": "Optimized Augmentation Decryptor",
+   "probabilityMultiplier": 0.9,
+   "me": 2,
+   "te": 0,
+   "runs": 7
+  },
+  {
+   "typeId": 34204,
+   "name": "Parity Decryptor",
+   "probabilityMultiplier": 1.5,
+   "me": 1,
+   "te": -2,
+   "runs": 3
+  },
+  {
+   "typeId": 34205,
+   "name": "Process Decryptor",
+   "probabilityMultiplier": 1.1,
+   "me": 3,
+   "te": 6,
+   "runs": 0
+  },
+  {
+   "typeId": 34206,
+   "name": "Symmetry Decryptor",
+   "probabilityMultiplier": 1,
+   "me": 1,
+   "te": 8,
+   "runs": 2
+  }
+ ],
+ "skillTimeBonuses": {
+  "3395": 0.01,
+  "3396": 0.01,
+  "3397": 0.01,
+  "3398": 0.01,
+  "3400": 0.01,
+  "11433": 0.01,
+  "11441": 0.01,
+  "11442": 0.01,
+  "11443": 0.01,
+  "11444": 0.01,
+  "11445": 0.01,
+  "11446": 0.01,
+  "11447": 0.01,
+  "11448": 0.01,
+  "11449": 0.01,
+  "11450": 0.01,
+  "11451": 0.01,
+  "11452": 0.01,
+  "11453": 0.01,
+  "11454": 0.01,
+  "11455": 0.01,
+  "11529": 0.01,
+  "52307": 0.01,
+  "77725": 0.01,
+  "81050": 0.01,
+  "81896": 0.02
+ }
 }

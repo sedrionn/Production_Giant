@@ -1,4 +1,4 @@
-import type { Activity, Blueprint } from "@/engine/types";
+import type { Activity, Blueprint, Decryptor } from "@/engine/types";
 
 export interface SdeType {
   typeId: number;
@@ -8,6 +8,8 @@ export interface SdeType {
   /** Units per "portion" — relevant for reprocessing, NOT for job output. */
   portionSize: number;
   volume: number;
+  /** Repackaged volume (ships, containers); null/absent = same as volume. For freight. */
+  packagedVolume?: number | null;
   published: boolean;
   marketGroupId: number | null;
   metaGroupId: number | null;
@@ -50,6 +52,10 @@ export interface SdeSource {
   getGroup(groupId: number): SdeGroup | undefined;
   getSystem(systemId: number): SdeSystem | undefined;
   searchSystems(query: string, limit?: number): SdeSystem[];
+  /** Invention decryptors (empty for SDE imports made before 2026-10-17). */
+  listDecryptors(): Decryptor[];
+  /** Manufacturing time bonus per level by skill id (fraction); null for SDE imports before 2026-10-17. */
+  skillTimeBonuses(): Record<number, number> | null;
 }
 
 /** Shape of fixtures/sde/*.json */
@@ -59,4 +65,6 @@ export interface SdeSubset {
   blueprints: Blueprint[];
   systems?: SdeSystem[];
   groups?: SdeGroup[];
+  decryptors?: Decryptor[];
+  skillTimeBonuses?: Record<number, number>;
 }

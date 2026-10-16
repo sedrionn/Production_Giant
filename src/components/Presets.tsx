@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { AppSettings } from "@/db/seed";
 import type { RigScope } from "@/engine/bonuses";
 import type { RigRule } from "@/engine/facility";
-import type { Activity } from "@/engine/types";
+import type { Activity, Decryptor } from "@/engine/types";
 import { Search } from "./ItemSearch";
 
 interface Profile {
@@ -330,8 +330,10 @@ function ProfileForm({ initial, onSave, onCancel, error }: { initial: Profile; o
 export function SettingsForm() {
   const [s, setS] = useState<AppSettings | null>(null);
   const [saved, setSaved] = useState(false);
+  const [decryptors, setDecryptors] = useState<Decryptor[]>([]);
   useEffect(() => {
     fetch("/api/settings").then((r) => r.json()).then(setS).catch(() => {});
+    fetch("/api/decryptors").then((r) => (r.ok ? r.json() : [])).then(setDecryptors).catch(() => {});
   }, []);
   if (!s) return null;
   const set = (patch: Partial<AppSettings>) => setS({ ...s, ...patch });
@@ -373,6 +375,26 @@ export function SettingsForm() {
           />
         </L>
         {lvl("Длина джобы в обзоре, дней", s.targetJobDays, (n) => set({ targetJobDays: Math.max(1, n) }), 30)}
+        <L label="Доставка материалов на завод, ISK/м³">
+          <input type="number" min={0} step={10} value={s.freightInPerM3} onChange={(e) => set({ freightInPerM3: Math.max(0, Number(e.target.value)) })} className={input} />
+        </L>
+        <L label="Доставка продукта на рынок, ISK/м³">
+          <input type="number" min={0} step={10} value={s.freightOutPerM3} onChange={(e) => set({ freightOutPerM3: Math.max(0, Number(e.target.value)) })} className={input} />
+        </L>
+        <L label="Декриптор для инвента">
+          <select
+            value={s.inventionDecryptorId ?? ""}
+            onChange={(e) => set({ inventionDecryptorId: e.target.value ? Number(e.target.value) : null })}
+            className={input}
+          >
+            <option value="">Без декриптора</option>
+            {decryptors.map((d) => (
+              <option key={d.typeId} value={d.typeId}>
+                {d.name.replace(" Decryptor", "")} (×{d.probabilityMultiplier}, ME {signed(d.me)}, TE {signed(d.te)}, раны {signed(d.runs)})
+              </option>
+            ))}
+          </select>
+        </L>
         {lvl("ME чертежей компонентов", s.defaultMe, (n) => set({ defaultMe: n }), 10)}
         {lvl("TE чертежей компонентов", s.defaultTe, (n) => set({ defaultTe: n }), 20)}
         {lvl("Industry", s.industrySkills.industry, (n) => set({ industrySkills: { ...s.industrySkills, industry: n } }))}
@@ -389,6 +411,8 @@ export function SettingsForm() {
     </section>
   );
 }
+
+const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 
 const input = "w-full rounded border border-line bg-ink px-2 py-1.5 focus:border-marker focus:outline-none";
 

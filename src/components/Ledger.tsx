@@ -15,6 +15,7 @@ export function Ledger({ s }: { s: ProfitSummary }) {
     { label: "Материалы", v: s.materialCost, c: "bg-mat" },
     { label: "Джобы", v: s.jobCost, c: "bg-job" },
     { label: "Чертёж (инвент)", v: s.blueprintCost, c: "bg-bpc" },
+    { label: "Доставка", v: s.shippingCost, c: "bg-graphite/60" },
   ].filter((p) => p.v > 0);
   const profitable = (s.profit ?? 0) >= 0;
 
@@ -67,6 +68,11 @@ export function Ledger({ s }: { s: ProfitSummary }) {
             {p.label} <span className="text-chalk">{isk(p.v)}</span>
           </li>
         ))}
+        {s.surplusCredit > 0 && (
+          <li className="flex items-center gap-1.5" title="Остатки промежуточных от целых ранов (например, 40 топливных блоков, когда нужно 5). Остаются на складе, поэтому вычитаются из расхода по их себестоимости">
+            Излишек в запас <span className="text-gain">−{isk(s.surplusCredit)}</span>
+          </li>
+        )}
         <li className="flex items-center gap-1.5">
           <span className="inline-block size-2.5 rounded-sm bg-fee/40" aria-hidden />
           Налог и брокер <span className="text-chalk">{isk(s.saleFees)}</span>

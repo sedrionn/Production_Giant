@@ -82,3 +82,17 @@ describe("system job bonus (e.g. Faction Warfare)", () => {
     expect(c.sccSurcharge).toBeCloseTo(1_000_000 * SCC_SURCHARGE);
   });
 });
+
+describe("skillTimeMultiplier — per-skill bonus from SDE", () => {
+  // Medium Core Defense Field Extender II requires Hydromagnetic Physics (11443), Quantum Physics (11455)
+  // and Shield Rigging (26261). SDE dogma attr 1982 = −1 on the two science skills only.
+  const required = [{ typeId: 11443, level: 1 }, { typeId: 11455, level: 1 }, { typeId: 26261, level: 1 }];
+  const base = { industry: 5, advancedIndustry: 5, blueprintSkills: 5 };
+  it("only skills with a time bonus count (EVE Guru: 03:13:19 on the T2 rig)", () => {
+    const m = skillTimeMultiplier("manufacturing", { ...base, timeBonusPerLevel: { 11443: 0.01, 11455: 0.01 } }, required);
+    expect(m).toBeCloseTo(0.8 * 0.85 * 0.95 * 0.95);
+  });
+  it("without SDE data falls back to 1% for every required skill", () => {
+    expect(skillTimeMultiplier("manufacturing", base, required)).toBeCloseTo(0.8 * 0.85 * 0.95 ** 3);
+  });
+});

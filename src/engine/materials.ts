@@ -14,7 +14,8 @@ import type { ActivityProduct, MaterialRequirement } from "./types";
  */
 export function materialQuantity(base: number, runs: number, me: number, multiplier = 1): number {
   if (!Number.isInteger(runs) || runs < 1) throw new RangeError(`runs must be a positive integer, got ${runs}`);
-  if (me < 0 || me > 10) throw new RangeError(`ME must be within 0..10, got ${me}`);
+  // Researched blueprints stop at ME 10, but special BPCs exist above it ('Whiskey' Shield Amplifier BPC: ME 15).
+  if (me < 0 || me >= 100) throw new RangeError(`ME must be within 0..99, got ${me}`);
   if (base <= 0) return 0;
   const raw = base * runs * (1 - me / 100) * multiplier;
   const rounded = Math.round(raw * 100) / 100;

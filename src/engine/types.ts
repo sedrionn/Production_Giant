@@ -50,6 +50,18 @@ export interface BlueprintActivity {
   skills: SkillRequirement[];
 }
 
+/** Invention decryptor, values straight from the SDE dogma attributes. */
+export interface Decryptor {
+  typeId: number;
+  name: string;
+  /** Multiplies the invention chance (e.g. 1.1 = +10%). */
+  probabilityMultiplier: number;
+  /** Added to the invented BPC's ME / TE / runs. */
+  me: number;
+  te: number;
+  runs: number;
+}
+
 export interface Blueprint {
   blueprintTypeId: number;
   maxProductionLimit: number;

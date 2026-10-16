@@ -29,6 +29,22 @@ export interface CalcRequest {
   manufacturingProfileId?: number;
   reactionProfileId?: number;
   minBuildIskPerHour?: number;
+  /** Invention decryptor type id; null = none; undefined = from settings. */
+  decryptorId?: number | null;
+  /** Also compute profit for every decryptor (calculator only — costs one tree per decryptor). */
+  compareDecryptors?: boolean;
+}
+
+export interface DecryptorComparison {
+  decryptorId: number | null;
+  name: string;
+  me: number;
+  te: number;
+  runsPerSuccess: number;
+  chance: number;
+  costPerRun: number;
+  /** Profit of the same batch with this decryptor (null = no product price). */
+  profit: number | null;
 }
 
 export interface NodeDTO {
@@ -56,8 +72,14 @@ export interface CalcResponse {
   summary: ProfitSummary;
   nodes: NodeDTO[];
   jobs: (NodeDTO["job"] & { name: string })[];
-  shopping: { typeId: number; name: string; quantity: number; unitPrice: number | null; cost: number | null; volume: number }[];
-  invention: { options: InventionOption[]; chosen: InventionOption | null };
+  shopping: { typeId: number; name: string; quantity: number; unitPrice: number | null; cost: number | null; freight: number; volume: number }[];
+  invention: {
+    options: InventionOption[];
+    chosen: InventionOption | null;
+    decryptor: { typeId: number; name: string } | null;
+    /** Filled when compareDecryptors was asked and the root is invented. */
+    comparison: DecryptorComparison[];
+  };
   /** Best owned blueprint for the product (null if none or no characters). */
   ownedBlueprint: OwnedBlueprint | null;
   /** "characters" when skills come from synced characters, otherwise "settings". */
@@ -116,14 +138,16 @@ export function calculate(req: CalcRequest): CalcResponse {
   // Characters: real skills and owned blueprints when synced, settings otherwise.
   const withChars = hasCharacters();
   const levels = withChars ? skillLevels(s.industryCharacterId) : null;
+  const timeBonusPerLevel = sde.skillTimeBonuses() ?? undefined;
   const skills: IndustrySkills = levels
     ? {
         industry: levels.get(SKILL_IDS.industry) ?? 0,
         advancedIndustry: levels.get(SKILL_IDS.advancedIndustry) ?? 0,
         reactions: levels.get(SKILL_IDS.reactions) ?? 0,
         levels: Object.fromEntries(levels),
+        timeBonusPerLevel,
       }
-    : s.industrySkills;
+    : { ...s.industrySkills, timeBonusPerLevel };
   const owned = withChars ? ownedBlueprintIndex() : new Map<number, OwnedBlueprint>();
   const ownedRoot = owned.get(rootRecipe.blueprintTypeId) ?? null;
 
@@ -137,9 +161,14 @@ export function calculate(req: CalcRequest): CalcResponse {
   // Price book over every type the tree or invention might touch.
   const prices = priceBook(touchedTypes(sde, recipe, req.typeId), s.priceLocationId);
 
-  const options: InventionOption[] = sources.flatMap((src) => {
+  const decryptors = sde.listDecryptors();
+  const wantedDecryptor = req.decryptorId === undefined ? s.inventionDecryptorId : req.decryptorId;
+  const decryptor = wantedDecryptor === null ? null : decryptors.find((d) => d.typeId === wantedDecryptor) ?? null;
+  if (wantedDecryptor !== null && !decryptor) warnings.push("Декриптор не найден в SDE — пересобери базу (npm run sde:download -- --force)");
+
+  const inventFrom = (src: { blueprintTypeId: number }, d: typeof decryptor): InventionOption | null => {
     const inv = sde.getBlueprint(src.blueprintTypeId)?.activities.invention;
-    if (!inv) return [];
+    if (!inv) return null;
     const isBlueprint = sde.getType(src.blueprintTypeId)?.name.endsWith("Blueprint") ?? false;
     // T1 blueprint copies come from your own BPO (copy cost not modelled); relics are consumed and bought.
     const relicPrice = isBlueprint ? 0 : prices.quote(src.blueprintTypeId)?.sellMin ?? null;
@@ -156,9 +185,11 @@ export function calculate(req: CalcRequest): CalcResponse {
       fees,
       facility: toFacility(mfgProfile),
       costIndex: mfgIdx.indices.invention ?? 0,
+      decryptor: d,
     });
-    return [{ ...r, sourceId: src.blueprintTypeId, sourceName: name(src.blueprintTypeId) }];
-  });
+    return { ...r, sourceId: src.blueprintTypeId, sourceName: name(src.blueprintTypeId) };
+  };
+  const options = sources.map((src) => inventFrom(src, decryptor)).filter((o): o is InventionOption => !!o);
   const chosen =
     blueprintSource === "invention"
       ? options.find((o) => o.sourceId === req.inventionSourceId) ??
@@ -172,10 +203,16 @@ export function calculate(req: CalcRequest): CalcResponse {
   const me = req.me ?? (chosen ? chosen.me : ownedRoot ? ownedRoot.me : s.defaultMe);
   const te = req.te ?? (chosen ? chosen.te : ownedRoot ? ownedRoot.te : s.defaultTe);
 
-  const tree = buildTree(req.typeId, req.runs, {
+  const volumeOf = (id: number) => {
+    const t = sde.getType(id);
+    return t ? t.packagedVolume ?? t.volume : 0;
+  };
+  const productFreight = volumeOf(req.typeId) * s.freightOutPerM3;
+  const treeFor = (rootMe: number, rootTe: number) => buildTree(req.typeId, req.runs, {
     recipe,
+    freight: s.freightInPerM3 > 0 ? { perM3: s.freightInPerM3, volume: volumeOf } : undefined,
     blueprintLevels: (bp) => {
-      if (bp === rootRecipe.blueprintTypeId) return { me, te };
+      if (bp === rootRecipe.blueprintTypeId) return { me: rootMe, te: rootTe };
       const o = owned.get(bp);
       return o ? { me: o.me, te: o.te } : { me: s.defaultMe, te: s.defaultTe };
     },
@@ -193,9 +230,32 @@ export function calculate(req: CalcRequest): CalcResponse {
     decisions: req.decisions,
     minBuildIskPerHour: req.minBuildIskPerHour ?? s.minBuildIskPerHour,
   });
+  const tree = treeFor(me, te);
   warnings.push(...tree.warnings.map((w) => localizeWarning(w, name)));
 
-  const summary = summarizeProfit(tree, prices.quote(req.typeId), productPriceMode, fees, chosen?.costPerRun ?? 0);
+  const summary = summarizeProfit(tree, prices.quote(req.typeId), productPriceMode, fees, chosen?.costPerRun ?? 0, productFreight);
+
+  // Same batch with every decryptor (and none), each with its own ME/TE → full tree.
+  const comparison: DecryptorComparison[] = [];
+  if (req.compareDecryptors && chosen) {
+    const src = { blueprintTypeId: chosen.sourceId };
+    for (const d of [null, ...decryptors]) {
+      const o = inventFrom(src, d);
+      if (!o) continue;
+      const t = treeFor(o.me, o.te);
+      const p = summarizeProfit(t, prices.quote(req.typeId), productPriceMode, fees, o.costPerRun, productFreight);
+      comparison.push({
+        decryptorId: d?.typeId ?? null,
+        name: d?.name ?? "Без декриптора",
+        me: o.me,
+        te: o.te,
+        runsPerSuccess: o.runsPerSuccess,
+        chance: o.chance,
+        costPerRun: o.costPerRun,
+        profit: p.profit,
+      });
+    }
+  }
 
   const nodes: NodeDTO[] = [...tree.nodes.values()].map((n) => ({
     typeId: n.typeId,
@@ -230,8 +290,8 @@ export function calculate(req: CalcRequest): CalcResponse {
     summary,
     nodes,
     jobs: tree.jobs.map((j) => ({ ...j, cost: j.cost.total, costBreakdown: j.cost, name: name(j.typeId) })),
-    shopping: tree.shopping.map((l) => ({ ...l, name: name(l.typeId), volume: (sde.getType(l.typeId)?.volume ?? 0) * l.quantity })),
-    invention: { options, chosen },
+    shopping: tree.shopping.map((l) => ({ ...l, name: name(l.typeId), volume: volumeOf(l.typeId) * l.quantity })),
+    invention: { options, chosen, decryptor: decryptor && { typeId: decryptor.typeId, name: decryptor.name }, comparison },
     ownedBlueprint: ownedRoot,
     skillsSource: levels ? "characters" : "settings",
     facilities: { manufacturing: dto(mfgProfile, mfgIdx), reaction: dto(rxProfile, rxIdx), costIndexSource: mfgIdx.source },
@@ -288,6 +348,7 @@ function touchedTypes(sde: SdeSource, recipe: ReturnType<typeof recipeLookup>, t
     out.add(src.blueprintTypeId);
     for (const m of sde.getBlueprint(src.blueprintTypeId)?.activities.invention?.materials ?? []) out.add(m.typeId);
   }
+  if (rootBp && sde.findProducers(rootBp, "invention").length) for (const d of sde.listDecryptors()) out.add(d.typeId);
   return [...out];
 }
 

@@ -29,6 +29,9 @@ const DEFAULT_ROOTS: (string | number)[] = [
   "Hammerhead II", // T2 drone, invention
   "Capital Armor Plates", // capital component
   "Fullerene Intercalated Graphite", // polymer reaction
+  "Flycatcher", // T2 Caldari, EVE Guru reference
+  "Golem", // T2 battleship, EVE Guru reference
+  "Medium Core Defense Field Extender II", // T2 rig, EVE Guru reference
 ];
 const EXTRA_SYSTEMS = [30000144]; // Perimeter — add your Sotiyo system here
 
@@ -76,6 +79,8 @@ async function main() {
     blueprints: blueprints.sort((a, b) => a.blueprintTypeId - b.blueprintTypeId),
     systems: [SYSTEM_JITA, ...EXTRA_SYSTEMS].map((id) => sde.getSystem(id)).filter((x): x is SdeSystem => !!x),
     groups: [...new Set(types.map((t) => t.groupId))].map((id) => sde.getGroup(id)).filter((g): g is SdeGroup => !!g),
+    decryptors: sde.listDecryptors(),
+    skillTimeBonuses: sde.skillTimeBonuses() ?? undefined,
   };
   write(path.join(OUT_SDE, "subset.json"), subset);
   console.log(`  ${types.length} types, ${blueprints.length} blueprints, ${tree.leafTypeIds.size} raw leaves`);
@@ -94,7 +99,10 @@ async function main() {
     systems: Object.fromEntries([SYSTEM_JITA, ...EXTRA_SYSTEMS].map((s) => [s, ci.get(s) ?? {}])),
   });
 
-  const marketable = types.filter((t) => t.published && t.marketGroupId !== null).map((t) => t.typeId);
+  const marketable = [
+    ...types.filter((t) => t.published && t.marketGroupId !== null).map((t) => t.typeId),
+    ...subset.decryptors!.map((d) => d.typeId),
+  ];
   console.log(`ESI: Jita orders for ${marketable.length} types …`);
   const quotes = await mapLimit(marketable, 6, async (typeId, i) => {
     const orders = await getRegionOrders(REGION_THE_FORGE, typeId);

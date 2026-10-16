@@ -67,12 +67,17 @@ export interface IndustrySkills {
   blueprintSkills?: number;
   /** Real levels by skill type id (from a synced character); wins over blueprintSkills. */
   levels?: Record<number, number>;
+  /**
+   * Time bonus per level of each skill, as a fraction (SDE dogma, e.g. 0.01 for the science skills).
+   * Skills not listed give nothing (rigging, ship skills). Absent = legacy rule: 1% for every required skill.
+   */
+  timeBonusPerLevel?: Record<number, number>;
 }
 
 /**
  * Skills time multiplier. Manufacturing: Industry 4%/lvl × Advanced Industry 3%/lvl ×
- * 1%/lvl for every other required skill of the blueprint (confirmed in game: Jackdaw
- * with all V = −41.7%).
+ * the bonus of every other required skill that has one — 1%/lvl for science skills
+ * (confirmed in game: Jackdaw with all V = −41.7%; EVE Guru: Shield Rigging on T2 rigs gives nothing).
  */
 export function skillTimeMultiplier(activity: Activity, s: IndustrySkills, required: SkillRequirement[] = []): number {
   if (activity === "reaction") return 1 - SKILL_TIME.reactionsPerLevel * (s.reactions ?? 0);
@@ -84,7 +89,8 @@ export function skillTimeMultiplier(activity: Activity, s: IndustrySkills, requi
   for (const r of required) {
     if (own.has(r.typeId)) continue;
     const level = s.levels ? (s.levels[r.typeId] ?? 0) : (s.blueprintSkills ?? 0);
-    m *= 1 - SKILL_TIME.requiredSkillPerLevel * level;
+    const perLevel = s.timeBonusPerLevel ? (s.timeBonusPerLevel[r.typeId] ?? 0) : SKILL_TIME.requiredSkillPerLevel;
+    m *= 1 - perLevel * level;
   }
   return m;
 }
@@ -100,7 +106,8 @@ export function jobTime(
   item?: ItemClass,
   requiredSkills: SkillRequirement[] = [],
 ): number {
-  if (te < 0 || te > 20) throw new RangeError(`TE must be within 0..20, got ${te}`);
+  // Researched blueprints stop at TE 20; special BPCs may go higher (see materials.ts).
+  if (te < 0 || te >= 100) throw new RangeError(`TE must be within 0..99, got ${te}`);
   const teMult = activity === "manufacturing" ? 1 - te / 100 : 1;
   return baseTimePerRun * runs * teMult * timeMultiplier(facility, activity, item) * skillTimeMultiplier(activity, skills, requiredSkills);
 }

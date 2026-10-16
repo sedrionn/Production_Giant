@@ -24,7 +24,8 @@ describe("materialQuantity", () => {
   it("rejects bad input", () => {
     expect(() => materialQuantity(10, 0, 0)).toThrow();
     expect(() => materialQuantity(10, 1.5, 0)).toThrow();
-    expect(() => materialQuantity(10, 1, 11)).toThrow();
+    expect(() => materialQuantity(10, 1, -1)).toThrow();
+    expect(materialQuantity(100, 1, 15)).toBe(85); // special BPC above ME 10 ('Whiskey' Shield Amplifier, ME 15)
   });
 });
 

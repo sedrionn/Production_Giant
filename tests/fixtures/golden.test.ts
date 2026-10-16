@@ -169,3 +169,39 @@ describe("in-game rig attributes (Show Info, 2026-10-16)", () => {
     expect(jobInstallCost(1_000_000, "manufacturing", 0.1, forge).grossCost).toBeCloseTo(100_000 * 0.95 * 0.5);
   });
 });
+
+/**
+ * EVE Guru (2026-10-17, profile Auner, "Perfect Skills (all 5)", Process decryptor → ME 5 / TE 10):
+ * product job durations read off its Industry Calculator.
+ */
+describe("EVE Guru: job time at Guru Forge (Auner), all skills V", () => {
+  // Sotiyo in lowsec with the XL ship rig (T1: 20% time × 1.9) — same rule as scripts/setup-auner.ts.
+  const forge = {
+    structure: "sotiyo" as const,
+    security: "low" as const,
+    facilityTax: 0.01,
+    systemJobBonus: 0.5,
+    rigs: [{ activity: "manufacturing" as const, scopes: ["ships" as const], material: 0.02, time: 0.2 }],
+  };
+  const perfect = { industry: 5, advancedIndustry: 5, blueprintSkills: 5, timeBonusPerLevel: fx.sde.skillTimeBonuses() ?? undefined };
+  const time = (typeId: number) => {
+    const act = producer(typeId);
+    const t = fx.sde.getType(typeId)!;
+    return jobTime(act.time, 1, 10, "manufacturing", forge, perfect, { categoryId: t.categoryId, groupId: t.groupId }, act.skills);
+  };
+  const cases: [string, number, string][] = [
+    ["Jackdaw", 34828, "11:23:11"],
+    ["Flycatcher", 22464, "11:23:11"],
+    ["Golem", 28710, "22:46:21"],
+    ["Medium Core Defense Field Extender II", 31796, "03:13:19"],
+  ];
+  it("SDE carries per-skill time bonuses", () => {
+    expect(perfect.timeBonusPerLevel).toBeTruthy();
+  });
+  for (const [name, id, hms] of cases) {
+    it(`${name}: ${hms}`, () => {
+      const [h, m, s] = hms.split(":").map(Number);
+      expect(Math.abs(time(id) - (h * 3600 + m * 60 + s))).toBeLessThanOrEqual(1);
+    });
+  }
+});

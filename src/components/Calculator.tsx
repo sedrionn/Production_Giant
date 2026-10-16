@@ -80,7 +80,7 @@ export function Calculator() {
       const r = await fetch("/api/calc", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...rest, typeId: item.id }),
+        body: JSON.stringify({ ...rest, typeId: item.id, compareDecryptors: true }),
       });
       const body = await r.json();
       if (my !== seq.current) return;
@@ -212,6 +212,37 @@ export function Calculator() {
                 </span>
               </label>
             ))}
+          </fieldset>
+        )}
+
+        {r?.blueprintSource === "invention" && invention && invention.comparison.length > 1 && (
+          <fieldset className="space-y-1">
+            <legend className="mb-1 text-sm text-graphite" title="Прибыль той же партии с каждым декриптором: свой шанс, ME/TE и раны, полное дерево">
+              Декриптор
+            </legend>
+            {[...invention.comparison]
+              .sort((a, b) => (b.profit ?? -Infinity) - (a.profit ?? -Infinity))
+              .map((c, i) => {
+                const active = (invention.decryptor?.typeId ?? null) === c.decryptorId;
+                return (
+                  <label
+                    key={c.decryptorId ?? 0}
+                    className={`flex cursor-pointer items-baseline justify-between gap-2 rounded px-2 py-1 ring-1 ${active ? "bg-sheet ring-marker/60" : "ring-line hover:bg-sheet/60"}`}
+                  >
+                    <span className="flex items-baseline gap-2">
+                      <input type="radio" name="dec" className="accent-[var(--marker)]" checked={active} onChange={() => set({ decryptorId: c.decryptorId, me: undefined, te: undefined })} />
+                      <span>
+                        {c.name.replace(" Decryptor", "")}
+                        {i === 0 && <span className="ml-1.5 text-xs text-gain">лучший</span>}
+                        <span className="block text-xs text-graphite">
+                          ME {c.me} / TE {c.te}, {c.runsPerSuccess} ран., {pct(c.chance, 0)}
+                        </span>
+                      </span>
+                    </span>
+                    <span className={`text-right text-sm ${(c.profit ?? 0) >= 0 ? "text-gain" : "text-loss"}`}>{isk(c.profit, true)}</span>
+                  </label>
+                );
+              })}
           </fieldset>
         )}
 

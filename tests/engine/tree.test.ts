@@ -103,7 +103,7 @@ describe("buildTree — aggregation", () => {
 
   it("shopping list = all bought leaves with totals", () => {
     // minerals: reaction 20 runs × 100 = 2000 + compB 20 × 1 = 20 → 2020
-    expect(r.shopping).toEqual([{ typeId: 5, quantity: 2020, unitPrice: 10, cost: 20200 }]);
+    expect(r.shopping).toEqual([{ typeId: 5, quantity: 2020, unitPrice: 10, cost: 20200, freight: 0 }]);
     expect(r.materialCost).toBe(20200);
   });
 
@@ -157,5 +157,36 @@ describe("buildTree — ISK/h threshold for intermediates", () => {
     const r = buildTree(1, 1, ctx({ minBuildIskPerHour: 1e12, decisions: { 2: "build" } }));
     expect(r.nodes.get(1)!.decision).toBe("build");
     expect(r.nodes.get(2)!.decision).toBe("build");
+  });
+});
+
+describe("buildTree — surplus credit", () => {
+  it("leftover from whole runs is credited at its unit cost, not charged to the batch", () => {
+    // SYNTHETIC: compA needs 150 goo → 1500 + 1000 = 2500 goo → 13 reaction runs → 2600, surplus 100.
+    const recipe = (t: number) => (t === 2 ? mk(102, "manufacturing", [[4, 150]], [2, 1]) : recipes[t]);
+    const r = buildTree(1, 1, ctx({ recipe }));
+    const goo = r.jobs.find((j) => j.typeId === 4)!;
+    expect(goo.surplus).toBe(100);
+    // goo build cost = 100 minerals × 10 / 200 = 5 per unit
+    expect(r.surplusCredit).toBeCloseTo(100 * 5);
+    expect(r.totalCost).toBeCloseTo(r.materialCost + r.jobCost - 500);
+  });
+
+  it("no surplus → no credit", () => {
+    expect(buildTree(1, 1, ctx()).surplusCredit).toBe(0);
+  });
+});
+
+describe("buildTree — freight", () => {
+  it("bought materials pay freight per m³; it enters the buy price and the total", () => {
+    // SYNTHETIC volumes: mineral 0.01 m³, everything else 1 m³; 100 ISK/m³.
+    const volume = (t: number) => (t === 5 ? 0.01 : 1);
+    const plain = buildTree(1, 1, ctx());
+    const r = buildTree(1, 1, ctx({ freight: { perM3: 100, volume } }));
+    const minerals = r.shopping.find((l) => l.typeId === 5)!;
+    expect(minerals.freight).toBeCloseTo(minerals.quantity * 0.01 * 100);
+    expect(r.freightCost).toBeCloseTo(minerals.freight);
+    expect(r.nodes.get(5)!.buyUnitCost).toBeCloseTo(10 + 1);
+    expect(r.totalCost).toBeCloseTo(plain.totalCost + r.freightCost);
   });
 });
