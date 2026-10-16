@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import type { Overview as OverviewData, OverviewRow } from "@/server/overview";
 import type { TaskState } from "@/server/tasks";
 import { ago, duration, full, isk, pct, qty } from "@/lib/format";
+import { ChainPanel } from "./ChainPanel";
 
 export interface CategoryTab {
   key: string;
@@ -34,6 +34,14 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
   const [filter, setFilter] = useState("");
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "iskPerHour", dir: -1 });
   const [task, setTask] = useState<TaskState | null>(null);
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const toggle = (id: number) =>
+    setExpanded((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   useEffect(() => {
     try {
@@ -66,6 +74,7 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
 
   useEffect(() => {
     load(cat);
+    setExpanded(new Set());
   }, [cat, load]);
 
   // Poll the background refresh, then recompute.
@@ -183,14 +192,21 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.typeId} className="border-b border-line/40 hover:bg-sheet/70">
+              <Fragment key={r.typeId}>
+              <tr className={`border-b border-line/40 hover:bg-sheet/70 ${expanded.has(r.typeId) ? "bg-sheet/70" : ""}`}>
                 <td className="py-1.5 pr-4">
-                  <Link
-                    href={`/?typeId=${r.typeId}&name=${encodeURIComponent(r.name)}&runs=${Math.max(1, r.runs)}`}
-                    className="hover:text-marker"
+                  <button
+                    onClick={() => toggle(r.typeId)}
+                    disabled={!!r.error}
+                    aria-expanded={expanded.has(r.typeId)}
+                    aria-label={`Цепочка производства: ${r.name}`}
+                    className="mr-2 inline-grid size-5 place-items-center rounded border border-line align-middle text-xs text-graphite hover:border-marker hover:text-marker disabled:opacity-30"
                   >
+                    {expanded.has(r.typeId) ? "−" : "+"}
+                  </button>
+                  <button onClick={() => !r.error && toggle(r.typeId)} className="text-left hover:text-marker">
                     {r.name}
-                  </Link>
+                  </button>
                   <span className="ml-2 text-xs text-graphite">
                     {[
                       r.group,
@@ -225,6 +241,14 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
                 </td>
                 <td className="py-1.5 text-right text-graphite">{r.jobSeconds ? duration(r.jobSeconds) : "—"}</td>
               </tr>
+              {expanded.has(r.typeId) && (
+                <tr>
+                  <td colSpan={COLUMNS.length} className="whitespace-normal pb-4">
+                    <ChainPanel typeId={r.typeId} name={r.name} runs={Math.max(1, r.runs)} />
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             ))}
           </tbody>
         </table>

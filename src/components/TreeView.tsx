@@ -39,13 +39,15 @@ export function TreeView({
 
   return (
     <div className="overflow-x-auto">
-      <div className="min-w-[880px]">
-        <div className="grid grid-cols-[minmax(18rem,1fr)_6rem_15rem_6.5rem_6.5rem_5rem] gap-3 border-b border-line px-2 pb-2 text-sm text-graphite">
+      <div className="min-w-[1000px]">
+        <div className="grid grid-cols-[minmax(16rem,1fr)_5.5rem_11rem_6.5rem_6.5rem_6.5rem_6rem_4rem] gap-3 border-b border-line px-2 pb-2 text-sm text-graphite">
           <span>Предмет</span>
           <span className="text-right">Нужно</span>
           <span>Решение</span>
-          <span className="text-right">Купить, шт</span>
-          <span className="text-right">Строить, шт</span>
+          <span className="text-right" title="Купить нужное количество на рынке">Купить</span>
+          <span className="text-right" title="Построить нужное количество (материалы + джобы)">Построить</span>
+          <span className="text-right" title="Сколько экономит постройка вместо покупки">Выгода</span>
+          <span className="text-right" title="Выгода за час джобы этого узла">ISK/ч</span>
           <span className="text-right">Раны</span>
         </div>
         <ul>
@@ -80,11 +82,15 @@ function Row({
   const canSwitch = depth > 0 && node.activity !== null && node.reason !== "cycle";
   const cheaper =
     node.buildUnitCost !== null && node.buyUnitCost !== null ? (node.buildUnitCost < node.buyUnitCost ? "build" : "buy") : null;
+  const buyTotal = node.buyUnitCost === null ? null : node.buyUnitCost * quantity;
+  const buildTotal = node.buildUnitCost === null ? null : node.buildUnitCost * quantity;
+  const savings = buyTotal !== null && buildTotal !== null ? buyTotal - buildTotal : null;
+  const perHour = node.buildSavingsPerHour;
 
   return (
     <li className={depth ? "relative ml-4 border-l border-dashed border-line pl-3" : ""}>
       {depth > 0 && <span aria-hidden className="absolute top-[1.15rem] left-0 w-2.5 border-t border-dashed border-line" />}
-      <div className="grid grid-cols-[minmax(18rem,1fr)_6rem_15rem_6.5rem_6.5rem_5rem] items-center gap-3 rounded px-2 py-1.5 hover:bg-sheet/70">
+      <div className="grid grid-cols-[minmax(16rem,1fr)_5.5rem_11rem_6.5rem_6.5rem_6.5rem_6rem_4rem] items-center gap-3 rounded px-2 py-1.5 hover:bg-sheet/70">
         <span className="flex min-w-0 items-center gap-2">
           {built ? (
             <button
@@ -122,21 +128,19 @@ function Row({
           ) : (
             <span className="px-2 text-sm text-graphite">{depth === 0 ? "строить" : "купить"}</span>
           )}
-          {REASON[node.reason] && (
-            <span
-              className="truncate text-xs text-graphite"
-              title={node.buildSavingsPerHour !== null ? `Постройка вместо покупки: ${isk(node.buildSavingsPerHour, true)} ISK за час джобы` : undefined}
-            >
-              {REASON[node.reason]}
-              {node.buildSavingsPerHour !== null && node.buildSavingsPerHour > 0 && `, ${isk(node.buildSavingsPerHour, true)}/ч`}
-            </span>
-          )}
+          {REASON[node.reason] && <span className="truncate text-xs text-graphite">{REASON[node.reason]}</span>}
         </span>
-        <span className={`text-right ${cheaper === "buy" ? "text-chalk" : "text-graphite"}`} title={full(node.buyUnitCost)}>
-          {isk(node.buyUnitCost)}
+        <span className={`text-right ${cheaper === "buy" ? "text-chalk" : "text-graphite"}`} title={`${full(buyTotal)} (${full(node.buyUnitCost)} за шт)`}>
+          {isk(buyTotal)}
         </span>
-        <span className={`text-right ${cheaper === "build" ? "text-chalk" : "text-graphite"}`} title={full(node.buildUnitCost)}>
-          {node.activity ? isk(node.buildUnitCost) : ""}
+        <span className={`text-right ${cheaper === "build" ? "text-chalk" : "text-graphite"}`} title={`${full(buildTotal)} (${full(node.buildUnitCost)} за шт)`}>
+          {node.activity ? isk(buildTotal) : ""}
+        </span>
+        <span className={`text-right ${savings === null ? "" : savings >= 0 ? "text-gain" : "text-loss"}`} title={full(savings)}>
+          {savings === null || depth === 0 ? "" : isk(savings, true)}
+        </span>
+        <span className={`text-right ${perHour === null ? "" : perHour >= 0 ? "text-gain" : "text-loss"}`}>
+          {perHour === null || depth === 0 ? "" : isk(perHour, true)}
         </span>
         <span className="text-right text-graphite">{node.job ? qty(node.job.runs) : ""}</span>
       </div>
