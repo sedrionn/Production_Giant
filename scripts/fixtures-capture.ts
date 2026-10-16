@@ -29,6 +29,9 @@ const DEFAULT_ROOTS: (string | number)[] = [
   "Hammerhead II", // T2 drone, invention
   "Capital Armor Plates", // capital component
   "Fullerene Intercalated Graphite", // polymer reaction
+  "Flycatcher", // T2 Caldari, EVE Guru reference
+  "Golem", // T2 battleship, EVE Guru reference
+  "Medium Core Defense Field Extender II", // T2 rig, EVE Guru reference
 ];
 const EXTRA_SYSTEMS = [30000144]; // Perimeter — add your Sotiyo system here
 

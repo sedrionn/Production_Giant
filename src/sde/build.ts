@@ -160,7 +160,7 @@ export function sanityCheck(db: Database.Database): SdeSanityReport {
   if (counts.reactions < 50) problems.push(`too few reaction formulas (${counts.reactions})`);
   if (counts.invention < 500) problems.push(`too few invention activities (${counts.invention})`);
   if (counts.typesWithoutCategory > counts.types * 0.05) problems.push("many types without category — groups not linked");
-  if (counts.decryptors < 8) problems.push(`too few decryptors (${counts.decryptors}) — typeDogma format changed?`);
+  if (counts.decryptors < 8 || counts.decryptors > 20) problems.push(`unexpected decryptor count (${counts.decryptors}) — typeDogma or category 35 changed?`);
   if (counts.packagedVolumes < 100) problems.push(`too few packaged volumes (${counts.packagedVolumes}) — types.packagedVolume renamed?`);
   const tritanium = db.prepare("SELECT name FROM sde_types WHERE type_id = 34").get() as { name: string } | undefined;
   if (tritanium?.name !== "Tritanium") problems.push(`type 34 should be Tritanium, got ${tritanium?.name}`);

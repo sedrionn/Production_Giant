@@ -133,6 +133,13 @@ export function parseBlueprintRecord(r: Rec): Blueprint | null {
 
 /** Dogma attribute ids of invention decryptors (dogmaAttributes.jsonl: inventionPropabilityMultiplier, …). */
 export const DECRYPTOR_ATTRS = { probability: 1112, me: 1113, te: 1114, runs: 1124 } as const;
+/**
+ * SDE category "Decryptors". The same dogma attributes also sit on legacy racial decryptors
+ * (no market group, can't be bought) and on Sleeper/Takmahl relic loot (category 17) —
+ * only market-listed types of this category are real, usable decryptors.
+ */
+export const CATEGORY_DECRYPTORS = 35;
+export const isUsableDecryptor = (t: SdeType) => t.published && t.categoryId === CATEGORY_DECRYPTORS && t.marketGroupId !== null;
 
 /**
  * A typeDogma record → decryptor values, or null when the type is not a decryptor
