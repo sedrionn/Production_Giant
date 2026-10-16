@@ -4,13 +4,14 @@
  */
 import type { SdeSource, SdeType } from "@/sde/types";
 
-export type CategoryKey = "caldari_t1" | "caldari_t2" | "t3" | "reactions" | "rigs_t1" | "rigs_t2";
+export type CategoryKey = "mine" | "caldari_t1" | "caldari_t2" | "t3" | "reactions" | "rigs_t1" | "rigs_t2";
 
 export const RACE_CALDARI = 1;
 export const META = { t1: 1, t2: 2, t3: 14 } as const;
 const CATEGORY = { ship: 6, module: 7, subsystem: 32 } as const;
 
 export const CATEGORIES: { key: CategoryKey; label: string }[] = [
+  { key: "mine", label: "Мои чертежи" },
   { key: "caldari_t1", label: "Калдари T1" },
   { key: "caldari_t2", label: "Калдари T2" },
   { key: "t3", label: "T3" },
@@ -22,12 +23,22 @@ export const CATEGORIES: { key: CategoryKey; label: string }[] = [
 /** T1 items usually carry no meta group in the SDE. */
 const isMeta = (t: SdeType, meta: number) => (meta === META.t1 ? t.metaGroupId == null || t.metaGroupId === META.t1 : t.metaGroupId === meta);
 
-export function listCategory(sde: SdeSource, key: CategoryKey): SdeType[] {
+export function listCategory(sde: SdeSource, key: CategoryKey, ownedBlueprintIds: number[] = []): SdeType[] {
   if (key === "reactions") return sde.listProducts("reaction");
+  if (key === "mine") {
+    const out = new Map<number, SdeType>();
+    for (const bpId of ownedBlueprintIds) {
+      const bp = sde.getBlueprint(bpId);
+      const productId = bp?.activities.manufacturing?.products[0]?.typeId ?? bp?.activities.reaction?.products[0]?.typeId;
+      const t = productId ? sde.getType(productId) : undefined;
+      if (t?.published) out.set(t.typeId, t);
+    }
+    return [...out.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }
   const made = sde.listProducts("manufacturing");
   const groupName = (t: SdeType) => sde.getGroup(t.groupId)?.name ?? "";
   const isRig = (t: SdeType) => t.categoryId === CATEGORY.module && groupName(t).startsWith("Rig ");
-  switch (key) {
+  switch (key as Exclude<CategoryKey, "mine" | "reactions">) {
     case "caldari_t1":
       return made.filter((t) => t.categoryId === CATEGORY.ship && t.raceId === RACE_CALDARI && isMeta(t, META.t1));
     case "caldari_t2":
@@ -42,7 +53,8 @@ export function listCategory(sde: SdeSource, key: CategoryKey): SdeType[] {
 }
 
 /** Why a category might come back empty — shown in the UI instead of a blank table. */
-export function categoryHint(sde: SdeSource & { hasRaces?: () => boolean }, key: CategoryKey): string | null {
+export function categoryHint(sde: SdeSource & { hasRaces?: () => boolean }, key: CategoryKey, hasCharacters = true): string | null {
+  if (key === "mine" && !hasCharacters) return "Добавь персонажей на странице «Персонажи» — здесь появятся предметы по твоим чертежам";
   if ((key === "caldari_t1" || key === "caldari_t2") && sde.hasRaces && !sde.hasRaces()) {
     return "В SDE нет рас — пересобери базу: npm run sde:download -- --force";
   }

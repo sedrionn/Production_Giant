@@ -171,6 +171,16 @@ export function Calculator() {
           />
         </Field>
 
+        {res && r?.blueprintSource === "owned" && (
+          <p className="-mt-3 text-sm text-graphite">
+            {res.ownedBlueprint
+              ? `${res.ownedBlueprint.isBpo ? "BPO" : `BPC, ${res.ownedBlueprint.runs} ранов`}, ME ${res.ownedBlueprint.me} / TE ${res.ownedBlueprint.te}`
+              : res.skillsSource === "characters"
+                ? "у персонажей нет этого чертежа"
+                : "ME/TE вводятся вручную"}
+          </p>
+        )}
+
         {r?.blueprintSource === "invention" && invention && (
           <fieldset className="space-y-1.5">
             <legend className="mb-1 text-sm text-graphite">Из чего инвентим</legend>
@@ -307,7 +317,7 @@ export function Calculator() {
 
 function priceNote(res: CalcResponse): string {
   const p = res.prices;
-  const parts: string[] = [];
+  const parts: string[] = [res.skillsSource === "characters" ? "скиллы персонажей" : "скиллы из настроек"];
   if (p.esi) parts.push(`цены ESI: ${ago(p.oldest)}`);
   if (p.fixtures) parts.push(`${p.fixtures} цен из фикстур (${ago(p.fixturesCapturedAt)})`);
   if (p.none) parts.push(`${p.none} без цены`);

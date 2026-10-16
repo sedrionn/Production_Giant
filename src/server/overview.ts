@@ -4,14 +4,15 @@
  */
 import { calculate, priceTypesFor, type CalcRequest } from "./calculate";
 import { categoryHint, listCategory, type CategoryKey } from "./catalog";
+import { hasCharacters, ownedBlueprintIndex } from "./characters";
 import { getSde, getSettings, volumesFor } from "./data";
 
 export interface OverviewRow {
   typeId: number;
   name: string;
   group: string;
-  /** "invention" | "owned" | null when the item can't be calculated. */
-  blueprintSource: string | null;
+  /** bpo / bpc (owned), invention, none (no blueprint, ME/TE from settings), null on error. */
+  blueprintSource: "bpo" | "bpc" | "invention" | "none" | null;
   runs: number;
   output: number;
   profit: number | null;
@@ -41,7 +42,8 @@ export interface Overview {
 }
 
 export function itemsOf(category: CategoryKey) {
-  return listCategory(getSde().source, category);
+  const owned = category === "mine" ? [...ownedBlueprintIndex().keys()] : [];
+  return listCategory(getSde().source, category, owned);
 }
 
 /** Runs needed for the product job to last ~days, capped by the blueprint's max runs. */
@@ -67,7 +69,8 @@ export function computeOverview(category: CategoryKey, extra: Partial<CalcReques
       const rootJob = probe.jobs.at(-1)!;
       const bp = sde.getBlueprint(rootJob.blueprintTypeId);
       const invented = probe.request.blueprintSource === "invention" ? probe.invention.chosen?.runsPerSuccess ?? 0 : 0;
-      const maxRuns = invented || bp?.maxProductionLimit || 0;
+      const ownedBpc = probe.request.blueprintSource === "owned" && probe.ownedBlueprint && !probe.ownedBlueprint.isBpo ? probe.ownedBlueprint.runs : 0;
+      const maxRuns = invented || ownedBpc || bp?.maxProductionLimit || 0;
       const runs = batchRuns(rootJob.timeSeconds, s.targetJobDays, maxRuns);
       const r = runs === 1 ? probe : calculate({ ...extra, typeId: item.typeId, runs });
       const job = r.jobs.at(-1)!;
@@ -77,7 +80,8 @@ export function computeOverview(category: CategoryKey, extra: Partial<CalcReques
         typeId: item.typeId,
         name: item.name,
         group,
-        blueprintSource: r.request.blueprintSource,
+        blueprintSource:
+          r.request.blueprintSource === "invention" ? "invention" : r.ownedBlueprint ? (r.ownedBlueprint.isBpo ? "bpo" : "bpc") : "none",
         runs,
         output: r.summary.output,
         profit: r.summary.profit,
@@ -104,7 +108,7 @@ export function computeOverview(category: CategoryKey, extra: Partial<CalcReques
 
   return {
     category,
-    hint: categoryHint(sde, category) ?? (items.length ? null : "В этой категории ничего не нашлось в SDE"),
+    hint: categoryHint(sde, category, hasCharacters()) ?? (items.length ? null : "В этой категории ничего не нашлось в SDE"),
     rows,
     targetJobDays: s.targetJobDays,
     pricesOldest: oldest,

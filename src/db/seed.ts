@@ -23,6 +23,8 @@ export interface AppSettings {
   minBuildIskPerHour: number;
   /** Overview and weekly plan: size batches so the product's job runs about this long. */
   targetJobDays: number;
+  /** Character whose skills drive time/invention; null = best level across all synced characters. */
+  industryCharacterId: number | null;
   manufacturingProfileId: number | null;
   reactionProfileId: number | null;
 }
@@ -40,6 +42,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   inventionSkills: { encryption: 4, science1: 4, science2: 4 },
   minBuildIskPerHour: 100_000,
   targetJobDays: 5,
+  industryCharacterId: null,
   manufacturingProfileId: null,
   reactionProfileId: null,
 };

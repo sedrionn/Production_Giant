@@ -7,6 +7,11 @@ import { buildTree, type Decision, type TreeJob } from "@/engine/tree";
 import type { Activity } from "@/engine/types";
 import { recipeLookup } from "@/sde/recipes";
 import type { SdeSource } from "@/sde/types";
+import { SKILL_IDS } from "@/engine/bonuses";
+import type { IndustrySkills } from "@/engine/jobCost";
+import type { InventionSkills } from "@/engine/invention";
+import type { BlueprintActivity } from "@/engine/types";
+import { hasCharacters, ownedBlueprintIndex, skillLevels, type OwnedBlueprint } from "./characters";
 import { costIndicesFor, getProfile, getSde, getSettings, listProfiles, priceBook, type Profile } from "./data";
 
 export interface CalcRequest {
@@ -53,6 +58,10 @@ export interface CalcResponse {
   jobs: (NodeDTO["job"] & { name: string })[];
   shopping: { typeId: number; name: string; quantity: number; unitPrice: number | null; cost: number | null; volume: number }[];
   invention: { options: InventionOption[]; chosen: InventionOption | null };
+  /** Best owned blueprint for the product (null if none or no characters). */
+  ownedBlueprint: OwnedBlueprint | null;
+  /** "characters" when skills come from synced characters, otherwise "settings". */
+  skillsSource: "characters" | "settings";
   facilities: { manufacturing: ProfileDTO | null; reaction: ProfileDTO | null; costIndexSource: string };
   prices: ReturnType<ReturnType<typeof priceBook>["meta"]>;
   sde: { kind: "sqlite" | "fixtures"; build: string | null };
@@ -104,9 +113,23 @@ export function calculate(req: CalcRequest): CalcResponse {
   const rootRecipe = recipe(req.typeId);
   if (!rootRecipe) throw new Error(`${name(req.typeId)} нельзя построить`);
 
+  // Characters: real skills and owned blueprints when synced, settings otherwise.
+  const withChars = hasCharacters();
+  const levels = withChars ? skillLevels(s.industryCharacterId) : null;
+  const skills: IndustrySkills = levels
+    ? {
+        industry: levels.get(SKILL_IDS.industry) ?? 0,
+        advancedIndustry: levels.get(SKILL_IDS.advancedIndustry) ?? 0,
+        reactions: levels.get(SKILL_IDS.reactions) ?? 0,
+        levels: Object.fromEntries(levels),
+      }
+    : s.industrySkills;
+  const owned = withChars ? ownedBlueprintIndex() : new Map<number, OwnedBlueprint>();
+  const ownedRoot = owned.get(rootRecipe.blueprintTypeId) ?? null;
+
   // Invention options for the root blueprint.
   const sources = sde.findProducers(rootRecipe.blueprintTypeId, "invention");
-  const blueprintSource = req.blueprintSource ?? (sources.length ? "invention" : "owned");
+  const blueprintSource = req.blueprintSource ?? (ownedRoot ? "owned" : sources.length ? "invention" : "owned");
   const materialPriceMode = req.materialPriceMode ?? s.materialPriceMode;
   const productPriceMode = req.productPriceMode ?? s.productPriceMode;
   const fees = { salesTax: s.salesTax, brokerFee: s.brokerFee };
@@ -125,7 +148,7 @@ export function calculate(req: CalcRequest): CalcResponse {
       invention: inv,
       targetBlueprintTypeId: rootRecipe.blueprintTypeId,
       targetManufacturing: rootRecipe,
-      skills: s.inventionSkills,
+      skills: inventionSkillsFor(inv, levels, s.inventionSkills, (id) => sde.getType(id)?.name ?? ""),
       sourceItemCost: relicPrice ?? 0,
       quote: prices.quote,
       adjustedPrice: prices.adjusted,
@@ -143,13 +166,19 @@ export function calculate(req: CalcRequest): CalcResponse {
         null
       : null;
   if (blueprintSource === "invention" && !chosen) warnings.push("Для этого чертежа нет инвента — считаю как свой BPO");
+  const usesOwned = !chosen;
+  if (usesOwned && withChars && !ownedRoot) warnings.push("У персонажей нет этого чертежа — ME/TE взяты из настроек");
 
-  const me = req.me ?? (chosen ? chosen.me : s.defaultMe);
-  const te = req.te ?? (chosen ? chosen.te : s.defaultTe);
+  const me = req.me ?? (chosen ? chosen.me : ownedRoot ? ownedRoot.me : s.defaultMe);
+  const te = req.te ?? (chosen ? chosen.te : ownedRoot ? ownedRoot.te : s.defaultTe);
 
   const tree = buildTree(req.typeId, req.runs, {
     recipe,
-    blueprintLevels: (bp) => (bp === rootRecipe.blueprintTypeId ? { me, te } : { me: s.defaultMe, te: s.defaultTe }),
+    blueprintLevels: (bp) => {
+      if (bp === rootRecipe.blueprintTypeId) return { me, te };
+      const o = owned.get(bp);
+      return o ? { me: o.me, te: o.te } : { me: s.defaultMe, te: s.defaultTe };
+    },
     facility: (a) => toFacility(a === "reaction" ? rxProfile : mfgProfile),
     itemClass: (id) => {
       const t = sde.getType(id);
@@ -160,7 +189,7 @@ export function calculate(req: CalcRequest): CalcResponse {
     adjustedPrice: prices.adjusted,
     materialPriceMode,
     fees,
-    skills: s.industrySkills,
+    skills,
     decisions: req.decisions,
     minBuildIskPerHour: req.minBuildIskPerHour ?? s.minBuildIskPerHour,
   });
@@ -203,10 +232,32 @@ export function calculate(req: CalcRequest): CalcResponse {
     jobs: tree.jobs.map((j) => ({ ...j, cost: j.cost.total, costBreakdown: j.cost, name: name(j.typeId) })),
     shopping: tree.shopping.map((l) => ({ ...l, name: name(l.typeId), volume: (sde.getType(l.typeId)?.volume ?? 0) * l.quantity })),
     invention: { options, chosen },
+    ownedBlueprint: ownedRoot,
+    skillsSource: levels ? "characters" : "settings",
     facilities: { manufacturing: dto(mfgProfile, mfgIdx), reaction: dto(rxProfile, rxIdx), costIndexSource: mfgIdx.source },
     prices: prices.meta(),
     sde: { kind, build },
     warnings: [...new Set(warnings)],
+  };
+}
+
+/**
+ * Invention skills from the activity's required skills: the "Encryption Methods" one counts /40,
+ * the two science skills /30. With characters, real levels; otherwise the settings.
+ */
+function inventionSkillsFor(
+  inv: BlueprintActivity,
+  levels: Map<number, number> | null,
+  fallback: InventionSkills,
+  skillName: (id: number) => string,
+): InventionSkills {
+  if (!levels) return fallback;
+  const enc = inv.skills.find((sk) => skillName(sk.typeId).includes("Encryption"));
+  const sci = inv.skills.filter((sk) => sk !== enc);
+  return {
+    encryption: enc ? levels.get(enc.typeId) ?? 0 : 0,
+    science1: sci[0] ? levels.get(sci[0].typeId) ?? 0 : 0,
+    science2: sci[1] ? levels.get(sci[1].typeId) ?? 0 : 0,
   };
 }
 

@@ -347,7 +347,7 @@ export function SettingsForm() {
   return (
     <section className="space-y-4">
       <h2 className="font-display text-3xl font-semibold">Налоги, скиллы, чертежи</h2>
-      <p className="max-w-[70ch] text-graphite">Пока задаются вручную. На этапе 2 подтянутся из скиллов персонажей через ESI.</p>
+      <p className="max-w-[70ch] text-graphite">Скиллы отсюда используются, пока не добавлены персонажи. Потом берутся реальные уровни из ESI.</p>
       <div className="grid gap-4 rounded border border-line bg-sheet/60 px-4 py-4 sm:grid-cols-2 lg:grid-cols-4">
         {pctField("Налог с продаж, %", "salesTax")}
         {pctField("Брокерская комиссия, %", "brokerFee")}

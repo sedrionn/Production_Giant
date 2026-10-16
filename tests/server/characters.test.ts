@@ -129,3 +129,29 @@ describe("character sync (SYNTHETIC ESI)", () => {
     expect(used2).toBe("ref2");
   });
 });
+
+describe("calculations use synced characters", () => {
+  it("owned Jackdaw BPC: ME 4 / TE 14, no invention cost, character skills", async () => {
+    const { calculate } = await import("@/server/calculate");
+    const r = calculate({ typeId: 34828, runs: 20 });
+    expect(r.request.blueprintSource).toBe("owned");
+    expect(r.request.me).toBe(4);
+    expect(r.request.te).toBe(14);
+    expect(r.summary.blueprintCost).toBe(0);
+    expect(r.ownedBlueprint).toMatchObject({ me: 4, runs: 20, isBpo: false });
+    expect(r.skillsSource).toBe("characters");
+  });
+
+  it("owned BPO ME10 used for an intermediate (R.A.M. Starship Tech)", async () => {
+    const { calculate } = await import("@/server/calculate");
+    const r = calculate({ typeId: 34828, runs: 20, decisions: { 11478: "build" } });
+    expect(r.jobs.find((j) => j.typeId === 11478)!.me).toBe(10);
+  });
+
+  it("explicit invention still possible", async () => {
+    const { calculate } = await import("@/server/calculate");
+    const r = calculate({ typeId: 34828, runs: 20, blueprintSource: "invention" });
+    expect(r.request.blueprintSource).toBe("invention");
+    expect(r.summary.blueprintCost).toBeGreaterThan(0);
+  });
+});

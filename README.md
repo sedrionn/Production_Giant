@@ -38,6 +38,25 @@ npm run dev               # http://localhost:3000
 
 После обновления кода, где менялся импорт SDE, пересобери базу: `npm run sde:download -- --force`.
 
+## Персонажи (EVE SSO)
+
+Один раз:
+1. На [developers.eveonline.com/applications](https://developers.eveonline.com/applications) создай приложение типа «Authentication & API Access».
+2. Callback URL: `http://localhost:3000/api/auth/callback`.
+3. Скоупы: `esi-skills.read_skills.v1`, `esi-characters.read_blueprints.v1`, `esi-industry.read_character_jobs.v1`, `esi-assets.read_assets.v1`, `esi-corporations.read_blueprints.v1`, `esi-industry.read_corporation_jobs.v1`, `esi-assets.read_corporation_assets.v1`.
+4. Создай в корне проекта `.env.local`:
+   ```
+   EVE_CLIENT_ID=...
+   EVE_CLIENT_SECRET=...
+   ```
+5. Перезапусти `npm run dev`, на странице «Персонажи» нажми «Добавить персонажа» и залогинься. Альтов добавляй так же по одному.
+
+Refresh-токены хранятся зашифрованными в `data/app.sqlite`, ключ лежит в `data/secret.key` (не коммитится). Корпоративные чертежи видны только персонажу с ролью Director, корп. джобы — с ролью Factory Manager.
+
+## Обзор «Что выгодно»
+
+Категории: мои чертежи, Калдари T1/T2, T3, реакции, риги T1/T2. По каждому предмету считается полное дерево, а партия подбирается так, чтобы джоба продукта шла около N дней (настройка). Кнопка «Обновить цены и объёмы категории» тянет цены Jita и историю продаж для всей категории, это может занять пару минут.
+
 ## Разработка
 
 ```bash

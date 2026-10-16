@@ -194,7 +194,7 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
                   <span className="ml-2 text-xs text-graphite">
                     {[
                       r.group,
-                      r.blueprintSource === "invention" ? "инвент" : r.blueprintSource === "owned" ? "свой чертёж" : "",
+                      SOURCE_LABEL[r.blueprintSource ?? ""] ?? "",
                       r.runs > 0 ? `${r.runs} ран.` : "",
                     ]
                       .filter(Boolean)
@@ -239,5 +239,6 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
   );
 }
 
+const SOURCE_LABEL: Record<string, string> = { invention: "инвент", bpo: "свой BPO", bpc: "свой BPC", none: "нет чертежа" };
 const tone = (v: number | null) => (v === null ? "text-graphite" : v >= 0 ? "text-gain" : "text-loss");
 const vol = (v: number) => (v >= 100 ? qty(Math.round(v)) : v >= 10 ? v.toFixed(0) : v.toFixed(1));

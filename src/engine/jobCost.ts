@@ -60,6 +60,8 @@ export interface IndustrySkills {
   reactions?: number;
   /** Level assumed for every other skill the blueprint requires (until characters are synced). */
   blueprintSkills?: number;
+  /** Real levels by skill type id (from a synced character); wins over blueprintSkills. */
+  levels?: Record<number, number>;
 }
 
 /**
@@ -75,7 +77,9 @@ export function skillTimeMultiplier(activity: Activity, s: IndustrySkills, requi
     (1 - SKILL_TIME.advancedIndustryPerLevel * (s.advancedIndustry ?? 0));
   const own = new Set<number>(Object.values(SKILL_IDS));
   for (const r of required) {
-    if (!own.has(r.typeId)) m *= 1 - SKILL_TIME.requiredSkillPerLevel * (s.blueprintSkills ?? 0);
+    if (own.has(r.typeId)) continue;
+    const level = s.levels ? (s.levels[r.typeId] ?? 0) : (s.blueprintSkills ?? 0);
+    m *= 1 - SKILL_TIME.requiredSkillPerLevel * level;
   }
   return m;
 }

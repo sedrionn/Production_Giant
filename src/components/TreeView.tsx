@@ -39,8 +39,8 @@ export function TreeView({
 
   return (
     <div className="overflow-x-auto">
-      <div className="min-w-[760px]">
-        <div className="grid grid-cols-[minmax(18rem,1fr)_7rem_9rem_6.5rem_6.5rem_5rem] gap-3 border-b border-line px-2 pb-2 text-sm text-graphite">
+      <div className="min-w-[880px]">
+        <div className="grid grid-cols-[minmax(18rem,1fr)_6rem_15rem_6.5rem_6.5rem_5rem] gap-3 border-b border-line px-2 pb-2 text-sm text-graphite">
           <span>Предмет</span>
           <span className="text-right">Нужно</span>
           <span>Решение</span>
@@ -84,7 +84,7 @@ function Row({
   return (
     <li className={depth ? "relative ml-4 border-l border-dashed border-line pl-3" : ""}>
       {depth > 0 && <span aria-hidden className="absolute top-[1.15rem] left-0 w-2.5 border-t border-dashed border-line" />}
-      <div className="grid grid-cols-[minmax(18rem,1fr)_7rem_9rem_6.5rem_6.5rem_5rem] items-center gap-3 rounded px-2 py-1.5 hover:bg-sheet/70">
+      <div className="grid grid-cols-[minmax(18rem,1fr)_6rem_15rem_6.5rem_6.5rem_5rem] items-center gap-3 rounded px-2 py-1.5 hover:bg-sheet/70">
         <span className="flex min-w-0 items-center gap-2">
           {built ? (
             <button
