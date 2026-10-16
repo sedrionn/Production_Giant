@@ -101,3 +101,66 @@ export const buildPlans = sqliteTable(
   },
   (t) => [index("build_plans_product").on(t.productTypeId)],
 );
+
+// ---- characters (stage 2) ----------------------------------------------------
+
+export const characters = sqliteTable("characters", {
+  characterId: integer("character_id").primaryKey(),
+  name: text("name").notNull(),
+  corporationId: integer("corporation_id"),
+  scopes: text("scopes", { mode: "json" }).$type<string[]>().notNull().default([]),
+  /** AES-GCM sealed (src/server/secret.ts). */
+  refreshToken: text("refresh_token").notNull(),
+  accessToken: text("access_token"),
+  accessExpiresAt: text("access_expires_at"),
+  lastSyncAt: text("last_sync_at"),
+  /** Human-readable problems from the last sync (e.g. no Director role for corp blueprints). */
+  lastSyncNotes: text("last_sync_notes", { mode: "json" }).$type<string[]>().notNull().default([]),
+  createdAt: text("created_at").notNull().default(now),
+});
+
+export const characterSkills = sqliteTable(
+  "character_skills",
+  {
+    characterId: integer("character_id").notNull(),
+    skillId: integer("skill_id").notNull(),
+    /** Active level (alpha clones may train more than they can use). */
+    level: integer("level").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.characterId, t.skillId] })],
+);
+
+export const ownedBlueprints = sqliteTable(
+  "owned_blueprints",
+  {
+    itemId: integer("item_id").primaryKey(),
+    ownerType: text("owner_type", { enum: ["character", "corporation"] }).notNull(),
+    ownerId: integer("owner_id").notNull(),
+    /** Character whose token fetched it. */
+    viaCharacterId: integer("via_character_id").notNull(),
+    typeId: integer("type_id").notNull(),
+    me: integer("me").notNull(),
+    te: integer("te").notNull(),
+    /** −1 = BPO (unlimited), otherwise runs left on the BPC. */
+    runs: integer("runs").notNull(),
+    quantity: integer("quantity").notNull(),
+    locationId: integer("location_id").notNull(),
+    locationFlag: text("location_flag").notNull(),
+  },
+  (t) => [index("owned_blueprints_type").on(t.typeId)],
+);
+
+export const industryJobs = sqliteTable("industry_jobs", {
+  jobId: integer("job_id").primaryKey(),
+  ownerType: text("owner_type", { enum: ["character", "corporation"] }).notNull(),
+  installerId: integer("installer_id").notNull(),
+  viaCharacterId: integer("via_character_id").notNull(),
+  activityId: integer("activity_id").notNull(),
+  blueprintTypeId: integer("blueprint_type_id").notNull(),
+  productTypeId: integer("product_type_id"),
+  runs: integer("runs").notNull(),
+  status: text("status").notNull(),
+  facilityId: integer("facility_id").notNull(),
+  startDate: text("start_date").notNull(),
+  endDate: text("end_date").notNull(),
+});

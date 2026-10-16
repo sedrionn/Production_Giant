@@ -1,5 +1,5 @@
 /**
- * Minimal public-ESI client (no auth yet — SSO comes in stage 2).
+ * Minimal ESI client: public calls, plus authed calls with a character's access token.
  * Node or server side only. Not reachable from cloud sessions.
  */
 import type { EsiIndustrySystem, EsiMarketHistoryDay, EsiMarketOrder, EsiMarketPrice } from "./types";
@@ -15,15 +15,17 @@ export class EsiError extends Error {
   }
 }
 
-async function esiFetch(url: string, attempt = 0): Promise<Response> {
-  const res = await fetch(url, { headers: { "User-Agent": USER_AGENT, Accept: "application/json" } });
+async function esiFetch(url: string, attempt = 0, token?: string): Promise<Response> {
+  const headers: Record<string, string> = { "User-Agent": USER_AGENT, Accept: "application/json" };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(url, { headers });
   // Error-limit protection: ESI bans clients that keep erroring.
   const remain = Number(res.headers.get("x-esi-error-limit-remain") ?? 100);
   const reset = Number(res.headers.get("x-esi-error-limit-reset") ?? 0);
   if (remain < 10 && reset > 0) await sleep(reset * 1000);
   if ((res.status === 420 || res.status >= 500) && attempt < 3) {
     await sleep(1000 * 2 ** attempt);
-    return esiFetch(url, attempt + 1);
+    return esiFetch(url, attempt + 1, token);
   }
   if (!res.ok) throw new EsiError(res.status, url, await res.text());
   return res;
@@ -36,16 +38,16 @@ function buildUrl(path: string, params: Record<string, string | number> = {}): s
   return u.toString();
 }
 
-export async function esiGet<T>(path: string, params?: Record<string, string | number>): Promise<T> {
-  return (await esiFetch(buildUrl(path, params))).json() as Promise<T>;
+export async function esiGet<T>(path: string, params?: Record<string, string | number>, token?: string): Promise<T> {
+  return (await esiFetch(buildUrl(path, params), 0, token)).json() as Promise<T>;
 }
 
 /** Follows X-Pages pagination and concatenates arrays. */
-export async function esiGetAllPages<T>(path: string, params: Record<string, string | number> = {}): Promise<T[]> {
-  const first = await esiFetch(buildUrl(path, { ...params, page: 1 }));
+export async function esiGetAllPages<T>(path: string, params: Record<string, string | number> = {}, token?: string): Promise<T[]> {
+  const first = await esiFetch(buildUrl(path, { ...params, page: 1 }), 0, token);
   const pages = Number(first.headers.get("x-pages") ?? 1);
   const out = (await first.json()) as T[];
-  for (let p = 2; p <= pages; p++) out.push(...(await esiGet<T[]>(path, { ...params, page: p })));
+  for (let p = 2; p <= pages; p++) out.push(...(await esiGet<T[]>(path, { ...params, page: p }, token)));
   return out;
 }
 
