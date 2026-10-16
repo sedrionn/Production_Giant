@@ -86,7 +86,7 @@ export function calculateJob(input: CalcInput): CalcResult {
 
   const { eiv, missing } = estimatedItemValue(act.materials, runs, input.adjustedPrice);
   if (missing.length) warnings.push(`no adjusted price for ${missing.join(", ")} (job cost understated)`);
-  const job = jobInstallCost(eiv, act.activity, input.systemCostIndex, facility);
+  const job = jobInstallCost(eiv, act.activity, input.systemCostIndex, facility, input.productClass);
 
   const outputUnits = outputQuantity(product, runs);
   const totalCost = materialCost + job.total;

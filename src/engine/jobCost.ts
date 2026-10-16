@@ -1,6 +1,6 @@
 import { ACTIVITY_EIV_FACTOR, SCC_SURCHARGE, SKILL_IDS, SKILL_TIME, STRUCTURES } from "./bonuses";
 import type { FacilityProfile } from "./facility";
-import { timeMultiplier, type ItemClass } from "./facility";
+import { costMultiplier, timeMultiplier, type ItemClass } from "./facility";
 import type { Activity, MaterialRequirement, SkillRequirement } from "./types";
 
 export type PriceLookup = (typeId: number) => number | undefined;
@@ -37,7 +37,7 @@ export interface JobCostBreakdown {
 /**
  * Job installation fee.
  *   base   = EIV × activityFactor
- *   gross  = base × costIndex × (1 − structureJobBonus) × (1 − systemJobBonus)
+ *   gross  = base × costIndex × (1 − structureJobBonus) × (1 − rigCostBonus) × (1 − systemJobBonus)
  *   taxes  = base × (facilityTax + SCC)
  */
 export function jobInstallCost(
@@ -45,10 +45,15 @@ export function jobInstallCost(
   activity: Activity,
   systemCostIndex: number,
   facility: FacilityProfile,
+  item?: ItemClass,
 ): JobCostBreakdown {
   const base = eiv * ACTIVITY_EIV_FACTOR[activity];
   const grossCost =
-    base * systemCostIndex * (1 - STRUCTURES[facility.structure].jobCostBonus) * (1 - (facility.systemJobBonus ?? 0));
+    base *
+    systemCostIndex *
+    (1 - STRUCTURES[facility.structure].jobCostBonus) *
+    costMultiplier(facility, activity, item) *
+    (1 - (facility.systemJobBonus ?? 0));
   const facilityTax = base * facility.facilityTax;
   const sccSurcharge = base * SCC_SURCHARGE;
   return { eiv, grossCost, facilityTax, sccSurcharge, total: grossCost + facilityTax + sccSurcharge };

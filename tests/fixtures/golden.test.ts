@@ -141,3 +141,31 @@ describe("in-game check: Jackdaw × 20 in Auner Sotiyo", () => {
     expect(materialMultiplier(nul, "manufacturing", t3comp)).toBeCloseTo(0.99 * (1 - 0.02 * 0.1), 10);
   });
 });
+
+describe("in-game rig attributes (Show Info, 2026-10-16)", () => {
+  it("L-Set Reactor Efficiency II in lowsec: ×1, not ×1.9", () => {
+    const tatara = {
+      structure: "tatara" as const,
+      security: "low" as const,
+      facilityTax: 0.01,
+      rigs: [{ activity: "reaction" as const, scopes: ["all" as const], material: 0.024, time: 0.24, security: { high: 0, low: 1, null: 1.1 } }],
+    };
+    expect(materialMultiplier(tatara, "reaction")).toBeCloseTo(1 - 0.024, 10);
+    expect(timeMultiplier(tatara, "reaction")).toBeCloseTo(0.75 * (1 - 0.24), 10); // Tatara role −25%
+    expect(materialMultiplier({ ...tatara, security: "null" }, "reaction")).toBeCloseTo(1 - 0.024 * 1.1, 10);
+  });
+
+  it("XL Lab Optimization cuts the cost-index part of invention by 10% × 1.9", () => {
+    const forge = {
+      structure: "sotiyo" as const,
+      security: "low" as const,
+      facilityTax: 0.01,
+      systemJobBonus: 0.5,
+      rigs: [{ activity: "invention" as const, scopes: ["all" as const], material: 0, time: 0.2, cost: 0.1 }],
+    };
+    const c = jobInstallCost(1_000_000, "invention", 0.1, forge);
+    expect(c.grossCost).toBeCloseTo(1_000_000 * 0.02 * 0.1 * 0.95 * (1 - 0.19) * 0.5);
+    // manufacturing untouched by the lab rig
+    expect(jobInstallCost(1_000_000, "manufacturing", 0.1, forge).grossCost).toBeCloseTo(100_000 * 0.95 * 0.5);
+  });
+});

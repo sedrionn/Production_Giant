@@ -27,6 +27,8 @@ export interface RigRule {
   material: number;
   /** Fraction, 0.2 = 20% faster (before security multiplier). */
   time: number;
+  /** Fraction off the cost-index part of the job fee (e.g. Lab Optimization −10%), before security multiplier. */
+  cost?: number;
   /**
    * The rig's own security multipliers (Show Info → "High/Low/Nullsec Bonus Multiplier").
    * Standard rigs: 1 / 1.9 / 2.1. Thukker rigs: 0.1 / 1.9 / 0.1. Omitted = standard.
@@ -82,13 +84,13 @@ export function applicableRigs(f: FacilityProfile, activity: Activity, item?: It
 }
 
 /** Effective bonus of one rig in this security band. */
-export function rigBonus(r: RigRule, key: "material" | "time", security: Security): number {
-  return r[key] * (r.security?.[security] ?? SECURITY_RIG_MULTIPLIER[security]);
+export function rigBonus(r: RigRule, key: "material" | "time" | "cost", security: Security): number {
+  return (r[key] ?? 0) * (r.security?.[security] ?? SECURITY_RIG_MULTIPLIER[security]);
 }
 
 // Rigs covering the same group can't be fitted twice in game; overlapping rules
 // (e.g. Thukker's general + capital-component bonus) → the best one wins.
-const best = (rules: RigRule[], key: "material" | "time", security: Security) =>
+const best = (rules: RigRule[], key: "material" | "time" | "cost", security: Security) =>
   Math.max(0, ...rules.map((r) => rigBonus(r, key, security)));
 
 /** Multiplier applied to base material quantity by the structure + rigs. */
@@ -105,6 +107,11 @@ export function timeMultiplier(f: FacilityProfile, activity: Activity, item?: It
   const role = 1 - (spec.timeBonus[activity] ?? 0);
   const rig = 1 - best(applicableRigs(f, activity, item), "time", f.security);
   return role * rig;
+}
+
+/** Multiplier on the cost-index part of the job fee from rigs (structure role bonus is separate). */
+export function costMultiplier(f: FacilityProfile, activity: Activity, item?: ItemClass): number {
+  return 1 - best(applicableRigs(f, activity, item), "cost", f.security);
 }
 
 /** Converts the stage-1 preset format ({ manufacturing: { material: "t2", time: "t1" } }) into rules. */

@@ -32,15 +32,23 @@ const SOTIYO_RIGS: RigRule[] = [
   },
   // Confirmed in game: −38% job time on Jackdaw = 20% × 1.9.
   { name: "Standup XL-Set Ship Manufacturing Efficiency I", activity: "manufacturing", scopes: ["ships"], material: 0.02, time: 0.2 },
-  // VERIFY: Lab Optimization attributes (time bonus; may also cut job cost).
-  { name: "Standup XL-Set Laboratory Optimization I", activity: "invention", scopes: ["all"], material: 0, time: 0.2 },
-  { name: "Standup XL-Set Laboratory Optimization I", activity: "copying", scopes: ["all"], material: 0, time: 0.2 },
+  // Show Info: time −20%, cost −10%, zones 1 / 1.9 / 2.1. Applies to invention, copying and research.
+  { name: "Standup XL-Set Laboratory Optimization I", activity: "invention", scopes: ["all"], material: 0, time: 0.2, cost: 0.1 },
+  { name: "Standup XL-Set Laboratory Optimization I", activity: "copying", scopes: ["all"], material: 0, time: 0.2, cost: 0.1 },
+  { name: "Standup XL-Set Laboratory Optimization I", activity: "research_material", scopes: ["all"], material: 0, time: 0.2, cost: 0.1 },
+  { name: "Standup XL-Set Laboratory Optimization I", activity: "research_time", scopes: ["all"], material: 0, time: 0.2, cost: 0.1 },
 ];
 
-// Fitted (Nick, 2026-10-16): Standup L-Set Reactor Efficiency II — covers biochemical, composite and hybrid reactions.
-// VERIFY: 2.4% / 24% and standard zone multipliers are the usual T2 values, not yet read from Show Info.
+// Show Info: ME −2.4%, time −24%, lowsec ×1, null/WH ×1.1, banned in highsec. Covers all reactions.
 const TATARA_RIGS: RigRule[] = [
-  { name: "Standup L-Set Reactor Efficiency II", activity: "reaction", scopes: ["all"], material: 0.024, time: 0.24 },
+  {
+    name: "Standup L-Set Reactor Efficiency II",
+    activity: "reaction",
+    scopes: ["all"],
+    material: 0.024,
+    time: 0.24,
+    security: { high: 0, low: 1, null: 1.1 },
+  },
 ];
 
 function main() {
@@ -79,7 +87,7 @@ function main() {
 
   console.log(`Auner: system ${auner.systemId}, security ${auner.security?.toFixed(2)}`);
   console.log(`OK: "${forge.name}" (производство, по умолчанию) и "${foundry.name}" (реакции).`);
-  console.log("Проверить в игре: атрибуты L-Set Reactor Efficiency II и Lab Optimization.");
+  console.log("Все риги заведены по Show Info из игры.");
 }
 
 main();

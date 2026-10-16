@@ -165,7 +165,7 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
         else inputs += m.quantity * (1 - me / 100) * mult * c;
       }
       const { eiv } = estimatedItemValue(r.materials, 1, ctx.adjustedPrice);
-      const job = jobInstallCost(eiv, r.activity, ctx.costIndex(r.activity), ctx.facility(r.activity)).total;
+      const job = jobInstallCost(eiv, r.activity, ctx.costIndex(r.activity), ctx.facility(r.activity), ctx.itemClass?.(typeId)).total;
       buildUnitCost = complete ? (inputs + job) / perRunOut : null;
       const { te } = levels(r);
       const perRun = jobTime(r.time, 1, te, r.activity, ctx.facility(r.activity), ctx.skills, ctx.itemClass?.(typeId), r.skills);
@@ -249,7 +249,7 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
         outputPerRun,
         output,
         surplus: output - node.demand,
-        cost: jobInstallCost(eiv, r.activity, ctx.costIndex(r.activity), facility),
+        cost: jobInstallCost(eiv, r.activity, ctx.costIndex(r.activity), facility, cls),
         timeSeconds: jobTime(r.time, runs, te, r.activity, facility, ctx.skills, cls, r.skills),
       };
       jobs.push(node.job);

@@ -60,7 +60,15 @@ const RIG_TEMPLATES: { label: string; rule: RigRule; extra?: RigRule[] }[] = [
   { label: "XL Ship Manufacturing", rule: { name: "Standup XL-Set Ship Manufacturing Efficiency I", activity: "manufacturing", scopes: ["ships"], material: 0.02, time: 0.2 } },
   { label: "XL Structure & Component", rule: { name: "Standup XL-Set Structure and Component Manufacturing Efficiency I", activity: "manufacturing", scopes: ["components", "structures"], material: 0.02, time: 0.2 } },
   { label: "XL Equipment & Consumable", rule: { name: "Standup XL-Set Equipment and Consumable Manufacturing Efficiency I", activity: "manufacturing", scopes: ["equipment", "fuel"], material: 0.02, time: 0.2 } },
-  { label: "XL Lab Optimization", rule: { name: "Standup XL-Set Laboratory Optimization I", activity: "invention", scopes: ["all"], material: 0, time: 0.2 } },
+  {
+    label: "XL Lab Optimization",
+    rule: { name: "Standup XL-Set Laboratory Optimization I", activity: "invention", scopes: ["all"], material: 0, time: 0.2, cost: 0.1 },
+    extra: [{ name: "Standup XL-Set Laboratory Optimization I", activity: "copying", scopes: ["all"], material: 0, time: 0.2, cost: 0.1 }],
+  },
+  {
+    label: "L Reactor Efficiency II",
+    rule: { name: "Standup L-Set Reactor Efficiency II", activity: "reaction", scopes: ["all"], material: 0.024, time: 0.24, security: { high: 0, low: 1, null: 1.1 } },
+  },
   { label: "Риг реакций", rule: { name: "", activity: "reaction", scopes: ["all"], material: 0.02, time: 0 } },
   { label: "Свой риг", rule: { name: "", activity: "manufacturing", scopes: ["all"], material: 0, time: 0 } },
 ];
@@ -249,6 +257,9 @@ function ProfileForm({ initial, onSave, onCancel, error }: { initial: Profile; o
               </L>
               <L label="Время, %" className="w-28">
                 <input type="number" step="1" min={0} max={50} value={pctIn(r.time)} onChange={(e) => setRig(i, { time: Number(e.target.value) / 100 })} className={input} />
+              </L>
+              <L label="Стоимость, %" className="w-28">
+                <input type="number" step="1" min={0} max={50} value={pctIn(r.cost ?? 0)} onChange={(e) => setRig(i, { cost: Number(e.target.value) / 100 })} className={input} />
               </L>
               <button type="button" onClick={() => set({ rigs: p.rigs.filter((_, k) => k !== i) })} className="pb-2 text-graphite hover:text-loss">
                 Убрать

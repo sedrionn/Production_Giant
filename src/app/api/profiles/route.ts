@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     for (const r of rigs) {
       if (!ACTIVITIES.includes(r.activity)) throw new Error(`Неизвестная работа рига: ${r.activity}`);
       if (!r.scopes?.length || r.scopes.some((x) => !SCOPES.includes(x))) throw new Error("У рига должны быть группы предметов");
-      for (const v of [r.material, r.time]) if (!(v >= 0 && v <= 0.5)) throw new Error("Бонус рига должен быть 0..50%");
+      for (const v of [r.material, r.time, r.cost ?? 0]) if (!(v >= 0 && v <= 0.5)) throw new Error("Бонус рига должен быть 0..50%");
       for (const v of Object.values(r.security ?? {})) if (!(v >= 0 && v <= 5)) throw new Error("Множитель зоны должен быть 0..5");
     }
     const tax = Number(b.facilityTax ?? 0);
