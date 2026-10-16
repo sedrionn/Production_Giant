@@ -1,0 +1,69 @@
+/**
+ * Item lists for the profitability overview. Each category is a filter over SDE
+ * products; "mine" (owned blueprints) is added on top when characters are synced.
+ */
+import type { SdeSource, SdeType } from "@/sde/types";
+
+export type CategoryKey = "mine" | "caldari_t1" | "caldari_t2" | "t3" | "components" | "reactions" | "rigs_t1" | "rigs_t2";
+
+export const RACE_CALDARI = 1;
+export const META = { t1: 1, t2: 2, t3: 14 } as const;
+const CATEGORY = { material: 4, ship: 6, module: 7, commodity: 17, subsystem: 32 } as const;
+
+/** Intermediates (components, R.A.M., fuel blocks, reaction products) — not end products. */
+export const isIntermediate = (t: SdeType) => t.categoryId === CATEGORY.commodity || t.categoryId === CATEGORY.material;
+
+export const CATEGORIES: { key: CategoryKey; label: string }[] = [
+  { key: "mine", label: "Мои чертежи" },
+  { key: "caldari_t1", label: "Калдари T1" },
+  { key: "caldari_t2", label: "Калдари T2" },
+  { key: "t3", label: "T3" },
+  { key: "components", label: "Компоненты" },
+  { key: "reactions", label: "Реакции" },
+  { key: "rigs_t1", label: "Риги T1" },
+  { key: "rigs_t2", label: "Риги T2" },
+];
+
+/** T1 items usually carry no meta group in the SDE. */
+const isMeta = (t: SdeType, meta: number) => (meta === META.t1 ? t.metaGroupId == null || t.metaGroupId === META.t1 : t.metaGroupId === meta);
+
+export function listCategory(sde: SdeSource, key: CategoryKey, ownedBlueprintIds: number[] = []): SdeType[] {
+  if (key === "reactions") return sde.listProducts("reaction");
+  if (key === "mine") {
+    const out = new Map<number, SdeType>();
+    for (const bpId of ownedBlueprintIds) {
+      const bp = sde.getBlueprint(bpId);
+      const productId = bp?.activities.manufacturing?.products[0]?.typeId ?? bp?.activities.reaction?.products[0]?.typeId;
+      const t = productId ? sde.getType(productId) : undefined;
+      // End products only; intermediates live in "Компоненты" / "Реакции".
+      if (t?.published && !isIntermediate(t)) out.set(t.typeId, t);
+    }
+    return [...out.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }
+  const made = sde.listProducts("manufacturing");
+  const groupName = (t: SdeType) => sde.getGroup(t.groupId)?.name ?? "";
+  const isRig = (t: SdeType) => t.categoryId === CATEGORY.module && groupName(t).startsWith("Rig ");
+  switch (key as Exclude<CategoryKey, "mine" | "reactions">) {
+    case "components":
+      return made.filter((t) => t.categoryId === CATEGORY.commodity);
+    case "caldari_t1":
+      return made.filter((t) => t.categoryId === CATEGORY.ship && t.raceId === RACE_CALDARI && isMeta(t, META.t1));
+    case "caldari_t2":
+      return made.filter((t) => t.categoryId === CATEGORY.ship && t.raceId === RACE_CALDARI && isMeta(t, META.t2));
+    case "t3":
+      return made.filter((t) => (t.categoryId === CATEGORY.ship && isMeta(t, META.t3)) || t.categoryId === CATEGORY.subsystem);
+    case "rigs_t1":
+      return made.filter((t) => isRig(t) && isMeta(t, META.t1));
+    case "rigs_t2":
+      return made.filter((t) => isRig(t) && isMeta(t, META.t2));
+  }
+}
+
+/** Why a category might come back empty — shown in the UI instead of a blank table. */
+export function categoryHint(sde: SdeSource & { hasRaces?: () => boolean }, key: CategoryKey, hasCharacters = true): string | null {
+  if (key === "mine" && !hasCharacters) return "Добавь персонажей на странице «Персонажи» — здесь появятся предметы по твоим чертежам";
+  if ((key === "caldari_t1" || key === "caldari_t2") && sde.hasRaces && !sde.hasRaces()) {
+    return "В SDE нет рас — пересобери базу: npm run sde:download -- --force";
+  }
+  return null;
+}

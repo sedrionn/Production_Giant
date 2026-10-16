@@ -1,0 +1,4507 @@
+{
+ "meta": {
+  "source": "CCP SDE (JSONL) via data/sde.sqlite",
+  "build": "3607705",
+  "capturedAt": "2026-10-16T00:07:47.903Z",
+  "roots": [
+   34828,
+   11478,
+   2185,
+   21017,
+   30305
+  ]
+ },
+ "types": [
+  {
+   "typeId": 34,
+   "name": "Tritanium",
+   "groupId": 18,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1857,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 35,
+   "name": "Pyerite",
+   "groupId": 18,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1857,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 36,
+   "name": "Mexallon",
+   "groupId": 18,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1857,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 37,
+   "name": "Isogen",
+   "groupId": 18,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1857,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 38,
+   "name": "Nocxium",
+   "groupId": 18,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1857,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 39,
+   "name": "Zydrine",
+   "groupId": 18,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1857,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 40,
+   "name": "Megacyte",
+   "groupId": 18,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1857,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 44,
+   "name": "Enriched Uranium",
+   "groupId": 1034,
+   "categoryId": 43,
+   "portionSize": 1,
+   "volume": 0.75,
+   "published": true,
+   "marketGroupId": 1335,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 2183,
+   "name": "Hammerhead I",
+   "groupId": 100,
+   "categoryId": 18,
+   "portionSize": 1,
+   "volume": 10,
+   "published": true,
+   "marketGroupId": 838,
+   "metaGroupId": 1
+  },
+  {
+   "typeId": 2184,
+   "name": "Hammerhead I Blueprint",
+   "groupId": 176,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1532,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 2185,
+   "name": "Hammerhead II",
+   "groupId": 100,
+   "categoryId": 18,
+   "portionSize": 1,
+   "volume": 10,
+   "published": true,
+   "marketGroupId": 838,
+   "metaGroupId": 2
+  },
+  {
+   "typeId": 2186,
+   "name": "Hammerhead II Blueprint",
+   "groupId": 176,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": null,
+   "metaGroupId": 2
+  },
+  {
+   "typeId": 2870,
+   "name": "Organic Mortar Applicators",
+   "groupId": 1041,
+   "categoryId": 43,
+   "portionSize": 1,
+   "volume": 50,
+   "published": true,
+   "marketGroupId": 1337,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 3380,
+   "name": "Industry",
+   "groupId": 268,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 369,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 3395,
+   "name": "Advanced Small Ship Construction",
+   "groupId": 268,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 369,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 3403,
+   "name": "Research",
+   "groupId": 270,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 375,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 3408,
+   "name": "Sleeper Encryption Methods",
+   "groupId": 270,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 375,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 3409,
+   "name": "Metallurgy",
+   "groupId": 270,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 375,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 3683,
+   "name": "Oxygen",
+   "groupId": 1042,
+   "categoryId": 43,
+   "portionSize": 1,
+   "volume": 0.19,
+   "published": true,
+   "marketGroupId": 1334,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 3689,
+   "name": "Mechanical Parts",
+   "groupId": 1034,
+   "categoryId": 43,
+   "portionSize": 1,
+   "volume": 0.75,
+   "published": true,
+   "marketGroupId": 1335,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 4051,
+   "name": "Nitrogen Fuel Block",
+   "groupId": 1136,
+   "categoryId": 4,
+   "portionSize": 40,
+   "volume": 5,
+   "published": true,
+   "marketGroupId": 1870,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 4246,
+   "name": "Hydrogen Fuel Block",
+   "groupId": 1136,
+   "categoryId": 4,
+   "portionSize": 40,
+   "volume": 5,
+   "published": true,
+   "marketGroupId": 1870,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 4247,
+   "name": "Helium Fuel Block",
+   "groupId": 1136,
+   "categoryId": 4,
+   "portionSize": 40,
+   "volume": 5,
+   "published": true,
+   "marketGroupId": 1870,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 4312,
+   "name": "Oxygen Fuel Block",
+   "groupId": 1136,
+   "categoryId": 4,
+   "portionSize": 40,
+   "volume": 5,
+   "published": true,
+   "marketGroupId": 1870,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 4313,
+   "name": "Oxygen Fuel Block Blueprint",
+   "groupId": 1137,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1920,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 4314,
+   "name": "Nitrogen Fuel Block Blueprint",
+   "groupId": 1137,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1920,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 4315,
+   "name": "Helium Fuel Block Blueprint",
+   "groupId": 1137,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1920,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 4316,
+   "name": "Hydrogen Fuel Block Blueprint",
+   "groupId": 1137,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1920,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 9832,
+   "name": "Coolant",
+   "groupId": 1034,
+   "categoryId": 43,
+   "portionSize": 1,
+   "volume": 0.75,
+   "published": true,
+   "marketGroupId": 1335,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 9834,
+   "name": "Guidance Systems",
+   "groupId": 1040,
+   "categoryId": 43,
+   "portionSize": 1,
+   "volume": 3,
+   "published": true,
+   "marketGroupId": 1336,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 9848,
+   "name": "Robotics",
+   "groupId": 1040,
+   "categoryId": 43,
+   "portionSize": 1,
+   "volume": 3,
+   "published": true,
+   "marketGroupId": 1336,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 11399,
+   "name": "Morphite",
+   "groupId": 18,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1857,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 11441,
+   "name": "Plasma Physics",
+   "groupId": 270,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 375,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 11446,
+   "name": "Graviton Physics",
+   "groupId": 270,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 375,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 11448,
+   "name": "Electromagnetic Physics",
+   "groupId": 270,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 375,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 11452,
+   "name": "Mechanical Engineering",
+   "groupId": 270,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 375,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 11453,
+   "name": "Electronic Engineering",
+   "groupId": 270,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 375,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 11454,
+   "name": "Caldari Starship Engineering",
+   "groupId": 270,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 375,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 11478,
+   "name": "R.A.M.- Starship Tech",
+   "groupId": 332,
+   "categoryId": 17,
+   "portionSize": 100,
+   "volume": 0.04,
+   "published": true,
+   "marketGroupId": 1908,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 11481,
+   "name": "R.A.M.- Robotics",
+   "groupId": 332,
+   "categoryId": 17,
+   "portionSize": 100,
+   "volume": 0.04,
+   "published": true,
+   "marketGroupId": 1908,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 11688,
+   "name": "Particle Accelerator Unit",
+   "groupId": 334,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 1,
+   "published": true,
+   "marketGroupId": 1888,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 11887,
+   "name": "R.A.M.- Robotics Blueprint",
+   "groupId": 356,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1918,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 11890,
+   "name": "R.A.M.- Starship Tech Blueprint",
+   "groupId": 356,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1918,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16272,
+   "name": "Heavy Water",
+   "groupId": 423,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.4,
+   "published": true,
+   "marketGroupId": 1033,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16273,
+   "name": "Liquid Ozone",
+   "groupId": 423,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.4,
+   "published": true,
+   "marketGroupId": 1033,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16274,
+   "name": "Helium Isotopes",
+   "groupId": 423,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.03,
+   "published": true,
+   "marketGroupId": 1033,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16275,
+   "name": "Strontium Clathrates",
+   "groupId": 423,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 3,
+   "published": true,
+   "marketGroupId": 1033,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16633,
+   "name": "Hydrocarbons",
+   "groupId": 427,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 501,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16634,
+   "name": "Atmospheric Gases",
+   "groupId": 427,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 501,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16635,
+   "name": "Evaporite Deposits",
+   "groupId": 427,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 501,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16636,
+   "name": "Silicates",
+   "groupId": 427,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 501,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16640,
+   "name": "Cobalt",
+   "groupId": 427,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 501,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16641,
+   "name": "Chromium",
+   "groupId": 427,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 501,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16642,
+   "name": "Vanadium",
+   "groupId": 427,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 501,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16643,
+   "name": "Cadmium",
+   "groupId": 427,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 501,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16644,
+   "name": "Platinum",
+   "groupId": 427,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 501,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16646,
+   "name": "Mercury",
+   "groupId": 427,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 501,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16647,
+   "name": "Caesium",
+   "groupId": 427,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 501,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16648,
+   "name": "Hafnium",
+   "groupId": 427,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 501,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16649,
+   "name": "Technetium",
+   "groupId": 427,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 501,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16650,
+   "name": "Dysprosium",
+   "groupId": 427,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.05,
+   "published": true,
+   "marketGroupId": 501,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16655,
+   "name": "Crystallite Alloy",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16659,
+   "name": "Carbon Polymers",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16662,
+   "name": "Platinum Technite",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16664,
+   "name": "Solerium",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16668,
+   "name": "Dysporite",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16670,
+   "name": "Crystalline Carbonide",
+   "groupId": 429,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 499,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16679,
+   "name": "Fullerides",
+   "groupId": 429,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.15,
+   "published": true,
+   "marketGroupId": 499,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 16682,
+   "name": "Hypersynaptic Fibers",
+   "groupId": 429,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.6,
+   "published": true,
+   "marketGroupId": 499,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 17344,
+   "name": "Particle Accelerator Unit Blueprint",
+   "groupId": 447,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1594,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 17887,
+   "name": "Oxygen Isotopes",
+   "groupId": 423,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.03,
+   "published": true,
+   "marketGroupId": 1033,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 17888,
+   "name": "Nitrogen Isotopes",
+   "groupId": 423,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.03,
+   "published": true,
+   "marketGroupId": 1033,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 17889,
+   "name": "Hydrogen Isotopes",
+   "groupId": 423,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.03,
+   "published": true,
+   "marketGroupId": 1033,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 17959,
+   "name": "Vanadium Hafnite",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 20412,
+   "name": "Datacore - Plasma Physics",
+   "groupId": 333,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 0.1,
+   "published": true,
+   "marketGroupId": 1880,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 20418,
+   "name": "Datacore - Electronic Engineering",
+   "groupId": 333,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 0.1,
+   "published": true,
+   "marketGroupId": 1880,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 20419,
+   "name": "Datacore - Graviton Physics",
+   "groupId": 333,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 0.1,
+   "published": true,
+   "marketGroupId": 1880,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 20424,
+   "name": "Datacore - Mechanical Engineering",
+   "groupId": 333,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 0.1,
+   "published": true,
+   "marketGroupId": 1880,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 21017,
+   "name": "Capital Armor Plates",
+   "groupId": 873,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 2000,
+   "published": true,
+   "marketGroupId": 781,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 21018,
+   "name": "Capital Armor Plates Blueprint",
+   "groupId": 915,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 796,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 22242,
+   "name": "Capital Ship Construction",
+   "groupId": 268,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 369,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 23121,
+   "name": "Gallente Encryption Methods",
+   "groupId": 270,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 375,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 29992,
+   "name": "Optimized Nano-Engines",
+   "groupId": 964,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 10,
+   "published": true,
+   "marketGroupId": 1147,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 29993,
+   "name": "Optimized Nano-Engines Blueprint",
+   "groupId": 965,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1191,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 29994,
+   "name": "Warfare Computation Core",
+   "groupId": 964,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 10,
+   "published": true,
+   "marketGroupId": 1147,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 29995,
+   "name": "Warfare Computation Core Blueprint",
+   "groupId": 965,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1191,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30002,
+   "name": "Fullerene Intercalated Sheets",
+   "groupId": 964,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 5,
+   "published": true,
+   "marketGroupId": 1147,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30003,
+   "name": "Fullerene Intercalated Sheets Blueprint",
+   "groupId": 965,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1191,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30018,
+   "name": "Fused Nanomechanical Engines",
+   "groupId": 966,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1862,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30019,
+   "name": "Powdered C-540 Graphite",
+   "groupId": 966,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1862,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30021,
+   "name": "Modified Fluid Router",
+   "groupId": 966,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1862,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30022,
+   "name": "Heuristic Selfassemblers",
+   "groupId": 966,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1862,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30024,
+   "name": "Cartesian Temporal Coordinator",
+   "groupId": 966,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1862,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30248,
+   "name": "Emergent Combat Analyzer",
+   "groupId": 966,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1862,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30251,
+   "name": "Neurovisual Input Matrix",
+   "groupId": 966,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1862,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30252,
+   "name": "Thermoelectric Catalysts",
+   "groupId": 966,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1862,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30254,
+   "name": "Electromechanical Hull Sheeting",
+   "groupId": 966,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1862,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30258,
+   "name": "Resonance Calibration Matrix",
+   "groupId": 966,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1862,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30259,
+   "name": "Melted Nanoribbons",
+   "groupId": 966,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1862,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30268,
+   "name": "Jump Drive Control Nexus",
+   "groupId": 966,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1862,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30269,
+   "name": "Defensive Control Node",
+   "groupId": 966,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1862,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30270,
+   "name": "Central System Controller",
+   "groupId": 966,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1862,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30271,
+   "name": "Emergent Combat Intelligence",
+   "groupId": 966,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1862,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30303,
+   "name": "Fulleroferrocene",
+   "groupId": 974,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.1,
+   "published": true,
+   "marketGroupId": 1860,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30304,
+   "name": "PPD Fullerene Fibers",
+   "groupId": 974,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.5,
+   "published": true,
+   "marketGroupId": 1860,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30305,
+   "name": "Fullerene Intercalated Graphite",
+   "groupId": 974,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.8,
+   "published": true,
+   "marketGroupId": 1860,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30306,
+   "name": "Methanofullerene",
+   "groupId": 974,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.75,
+   "published": true,
+   "marketGroupId": 1860,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30307,
+   "name": "Lanthanum Metallofullerene",
+   "groupId": 974,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 1,
+   "published": true,
+   "marketGroupId": 1860,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30308,
+   "name": "Scandium Metallofullerene",
+   "groupId": 974,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.65,
+   "published": true,
+   "marketGroupId": 1860,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30309,
+   "name": "Graphene Nanoribbons",
+   "groupId": 974,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 1.5,
+   "published": true,
+   "marketGroupId": 1860,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30310,
+   "name": "Carbon-86 Epoxy Resin",
+   "groupId": 974,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.4,
+   "published": true,
+   "marketGroupId": 1860,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30311,
+   "name": "C3-FTM Acid",
+   "groupId": 974,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 1860,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30370,
+   "name": "Fullerite-C50",
+   "groupId": 711,
+   "categoryId": 2,
+   "portionSize": 1,
+   "volume": 1,
+   "published": true,
+   "marketGroupId": 1859,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30371,
+   "name": "Fullerite-C60",
+   "groupId": 711,
+   "categoryId": 2,
+   "portionSize": 1,
+   "volume": 1,
+   "published": true,
+   "marketGroupId": 1859,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30372,
+   "name": "Fullerite-C70",
+   "groupId": 711,
+   "categoryId": 2,
+   "portionSize": 1,
+   "volume": 1,
+   "published": true,
+   "marketGroupId": 1859,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30373,
+   "name": "Fullerite-C72",
+   "groupId": 711,
+   "categoryId": 2,
+   "portionSize": 1,
+   "volume": 2,
+   "published": true,
+   "marketGroupId": 1859,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30374,
+   "name": "Fullerite-C84",
+   "groupId": 711,
+   "categoryId": 2,
+   "portionSize": 1,
+   "volume": 2,
+   "published": true,
+   "marketGroupId": 1859,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30375,
+   "name": "Fullerite-C28",
+   "groupId": 711,
+   "categoryId": 2,
+   "portionSize": 1,
+   "volume": 2,
+   "published": true,
+   "marketGroupId": 1859,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30376,
+   "name": "Fullerite-C32",
+   "groupId": 711,
+   "categoryId": 2,
+   "portionSize": 1,
+   "volume": 5,
+   "published": true,
+   "marketGroupId": 1859,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30377,
+   "name": "Fullerite-C320",
+   "groupId": 711,
+   "categoryId": 2,
+   "portionSize": 1,
+   "volume": 5,
+   "published": true,
+   "marketGroupId": 1859,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30378,
+   "name": "Fullerite-C540",
+   "groupId": 711,
+   "categoryId": 2,
+   "portionSize": 1,
+   "volume": 10,
+   "published": true,
+   "marketGroupId": 1859,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30464,
+   "name": "Metallofullerene Plating",
+   "groupId": 964,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 5,
+   "published": true,
+   "marketGroupId": 1147,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30465,
+   "name": "Metallofullerene Plating Blueprint",
+   "groupId": 965,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1191,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30466,
+   "name": "Electromechanical Interface Nexus",
+   "groupId": 964,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 10,
+   "published": true,
+   "marketGroupId": 1147,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30467,
+   "name": "Electromechanical Interface Nexus Blueprint",
+   "groupId": 965,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1191,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30476,
+   "name": "Fulleroferrocene Power Conduits",
+   "groupId": 964,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 5,
+   "published": true,
+   "marketGroupId": 1147,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30477,
+   "name": "Fulleroferrocene Power Conduits Blueprint",
+   "groupId": 965,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1191,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30478,
+   "name": "Reconfigured Subspace Calibrator",
+   "groupId": 964,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 10,
+   "published": true,
+   "marketGroupId": 1147,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 30479,
+   "name": "Reconfigured Subspace Calibrator Blueprint",
+   "groupId": 965,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1191,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 34396,
+   "name": "Self-Assembling Nanolattice",
+   "groupId": 964,
+   "categoryId": 17,
+   "portionSize": 1,
+   "volume": 5,
+   "published": true,
+   "marketGroupId": 1147,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 34397,
+   "name": "Self-Assembling Nanolattice Blueprint",
+   "groupId": 965,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1191,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 34412,
+   "name": "Small Intact Hull Section",
+   "groupId": 997,
+   "categoryId": 34,
+   "portionSize": 1,
+   "volume": 20,
+   "published": true,
+   "marketGroupId": 1909,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 34414,
+   "name": "Small Malfunctioning Hull Section",
+   "groupId": 997,
+   "categoryId": 34,
+   "portionSize": 1,
+   "volume": 20,
+   "published": true,
+   "marketGroupId": 1909,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 34416,
+   "name": "Small Wrecked Hull Section",
+   "groupId": 997,
+   "categoryId": 34,
+   "portionSize": 1,
+   "volume": 20,
+   "published": true,
+   "marketGroupId": 1909,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 34828,
+   "name": "Jackdaw",
+   "groupId": 1305,
+   "categoryId": 6,
+   "portionSize": 1,
+   "volume": 47000,
+   "published": true,
+   "marketGroupId": 2021,
+   "metaGroupId": 14
+  },
+  {
+   "typeId": 34829,
+   "name": "Jackdaw Blueprint",
+   "groupId": 1309,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": null,
+   "metaGroupId": 14
+  },
+  {
+   "typeId": 45746,
+   "name": "Reactions",
+   "groupId": 1218,
+   "categoryId": 16,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 1323,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 46157,
+   "name": "Methanofullerene Reaction Formula",
+   "groupId": 1889,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2404,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 46158,
+   "name": "Fulleroferrocene Reaction Formula",
+   "groupId": 1889,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2404,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 46159,
+   "name": "PPD Fullerene Fibers Reaction Formula",
+   "groupId": 1889,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2404,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 46160,
+   "name": "Fullerene Intercalated Graphite Reaction Formula",
+   "groupId": 1889,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2404,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 46161,
+   "name": "Lanthanum Metallofullerene Reaction Formula",
+   "groupId": 1889,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2404,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 46162,
+   "name": "Scandium Metallofullerene Reaction Formula",
+   "groupId": 1889,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2404,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 46163,
+   "name": "Graphene Nanoribbons Reaction Formula",
+   "groupId": 1889,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2404,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 46164,
+   "name": "Carbon-86 Epoxy Resin Reaction Formula",
+   "groupId": 1889,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2404,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 46165,
+   "name": "C3-FTM Acid Reaction Formula",
+   "groupId": 1889,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2404,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 46167,
+   "name": "Carbon Polymers Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 46169,
+   "name": "Crystallite Alloy Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 46170,
+   "name": "Dysporite Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 46177,
+   "name": "Platinum Technite Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 46180,
+   "name": "Solerium Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 46183,
+   "name": "Vanadium Hafnite Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 46205,
+   "name": "Crystalline Carbonide Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 46209,
+   "name": "Fullerides Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 46212,
+   "name": "Hypersynaptic Fibers Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 57453,
+   "name": "Carbon Fiber",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 57454,
+   "name": "Oxy-Organic Solvents",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.1,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 57455,
+   "name": "Thermosetting Polymer",
+   "groupId": 428,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.2,
+   "published": true,
+   "marketGroupId": 500,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 57457,
+   "name": "Reinforced Carbon Fiber",
+   "groupId": 429,
+   "categoryId": 4,
+   "portionSize": 1,
+   "volume": 0.1,
+   "published": true,
+   "marketGroupId": 499,
+   "metaGroupId": null
+  },
+  {
+   "typeId": 57490,
+   "name": "Carbon Fiber Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": 1
+  },
+  {
+   "typeId": 57491,
+   "name": "Oxy-Organic Solvents Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": 1
+  },
+  {
+   "typeId": 57493,
+   "name": "Reinforced Carbon Fiber Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": 1
+  },
+  {
+   "typeId": 57494,
+   "name": "Thermosetting Polymer Reaction Formula",
+   "groupId": 1888,
+   "categoryId": 9,
+   "portionSize": 1,
+   "volume": 0.01,
+   "published": true,
+   "marketGroupId": 2403,
+   "metaGroupId": 1
+  }
+ ],
+ "blueprints": [
+  {
+   "blueprintTypeId": 2184,
+   "maxProductionLimit": 300,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 2184,
+     "activity": "copying",
+     "time": 480,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "invention": {
+     "blueprintTypeId": 2184,
+     "activity": "invention",
+     "time": 15900,
+     "materials": [
+      {
+       "typeId": 20419,
+       "quantity": 2
+      },
+      {
+       "typeId": 20418,
+       "quantity": 2
+      }
+     ],
+     "products": [
+      {
+       "typeId": 2186,
+       "quantity": 10,
+       "probability": 0.34
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 11453,
+       "level": 1
+      },
+      {
+       "typeId": 11446,
+       "level": 1
+      },
+      {
+       "typeId": 23121,
+       "level": 1
+      }
+     ]
+    },
+    "manufacturing": {
+     "blueprintTypeId": 2184,
+     "activity": "manufacturing",
+     "time": 600,
+     "materials": [
+      {
+       "typeId": 34,
+       "quantity": 3413
+      },
+      {
+       "typeId": 35,
+       "quantity": 2
+      },
+      {
+       "typeId": 36,
+       "quantity": 224
+      },
+      {
+       "typeId": 37,
+       "quantity": 11
+      },
+      {
+       "typeId": 39,
+       "quantity": 4
+      }
+     ],
+     "products": [
+      {
+       "typeId": 2183,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 2184,
+     "activity": "research_material",
+     "time": 210,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 2184,
+     "activity": "research_time",
+     "time": 210,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 2186,
+   "maxProductionLimit": 10,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 2186,
+     "activity": "copying",
+     "time": 2400,
+     "materials": [
+      {
+       "typeId": 11466,
+       "quantity": 1
+      },
+      {
+       "typeId": 3812,
+       "quantity": 20
+      }
+     ],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 11446,
+       "level": 1
+      },
+      {
+       "typeId": 11453,
+       "level": 1
+      }
+     ]
+    },
+    "manufacturing": {
+     "blueprintTypeId": 2186,
+     "activity": "manufacturing",
+     "time": 3000,
+     "materials": [
+      {
+       "typeId": 2183,
+       "quantity": 1
+      },
+      {
+       "typeId": 11688,
+       "quantity": 1
+      },
+      {
+       "typeId": 9834,
+       "quantity": 3
+      },
+      {
+       "typeId": 9848,
+       "quantity": 3
+      },
+      {
+       "typeId": 11481,
+       "quantity": 1
+      },
+      {
+       "typeId": 11399,
+       "quantity": 3
+      }
+     ],
+     "products": [
+      {
+       "typeId": 2185,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 5
+      },
+      {
+       "typeId": 11446,
+       "level": 1
+      },
+      {
+       "typeId": 11453,
+       "level": 1
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 2186,
+     "activity": "research_material",
+     "time": 1050,
+     "materials": [
+      {
+       "typeId": 11466,
+       "quantity": 1
+      },
+      {
+       "typeId": 9836,
+       "quantity": 2
+      },
+      {
+       "typeId": 3814,
+       "quantity": 1
+      }
+     ],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3409,
+       "level": 5
+      },
+      {
+       "typeId": 11446,
+       "level": 1
+      },
+      {
+       "typeId": 11453,
+       "level": 1
+      }
+     ]
+    },
+    "research_time": {
+     "blueprintTypeId": 2186,
+     "activity": "research_time",
+     "time": 1050,
+     "materials": [
+      {
+       "typeId": 11466,
+       "quantity": 1
+      },
+      {
+       "typeId": 9836,
+       "quantity": 2
+      },
+      {
+       "typeId": 3814,
+       "quantity": 3
+      }
+     ],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3403,
+       "level": 5
+      },
+      {
+       "typeId": 11446,
+       "level": 1
+      },
+      {
+       "typeId": 11453,
+       "level": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 4313,
+   "maxProductionLimit": 200,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 4313,
+     "activity": "copying",
+     "time": 720,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 4313,
+     "activity": "manufacturing",
+     "time": 900,
+     "materials": [
+      {
+       "typeId": 9848,
+       "quantity": 1
+      },
+      {
+       "typeId": 44,
+       "quantity": 4
+      },
+      {
+       "typeId": 3689,
+       "quantity": 4
+      },
+      {
+       "typeId": 9832,
+       "quantity": 9
+      },
+      {
+       "typeId": 16275,
+       "quantity": 20
+      },
+      {
+       "typeId": 3683,
+       "quantity": 22
+      },
+      {
+       "typeId": 16272,
+       "quantity": 170
+      },
+      {
+       "typeId": 16273,
+       "quantity": 350
+      },
+      {
+       "typeId": 17887,
+       "quantity": 450
+      }
+     ],
+     "products": [
+      {
+       "typeId": 4312,
+       "quantity": 40
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 4313,
+     "activity": "research_material",
+     "time": 315,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 4313,
+     "activity": "research_time",
+     "time": 315,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 4314,
+   "maxProductionLimit": 200,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 4314,
+     "activity": "copying",
+     "time": 720,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 4314,
+     "activity": "manufacturing",
+     "time": 900,
+     "materials": [
+      {
+       "typeId": 9848,
+       "quantity": 1
+      },
+      {
+       "typeId": 44,
+       "quantity": 4
+      },
+      {
+       "typeId": 3689,
+       "quantity": 4
+      },
+      {
+       "typeId": 9832,
+       "quantity": 9
+      },
+      {
+       "typeId": 16275,
+       "quantity": 20
+      },
+      {
+       "typeId": 3683,
+       "quantity": 22
+      },
+      {
+       "typeId": 16272,
+       "quantity": 170
+      },
+      {
+       "typeId": 16273,
+       "quantity": 350
+      },
+      {
+       "typeId": 17888,
+       "quantity": 450
+      }
+     ],
+     "products": [
+      {
+       "typeId": 4051,
+       "quantity": 40
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 4314,
+     "activity": "research_material",
+     "time": 315,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 4314,
+     "activity": "research_time",
+     "time": 315,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 4315,
+   "maxProductionLimit": 200,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 4315,
+     "activity": "copying",
+     "time": 720,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 4315,
+     "activity": "manufacturing",
+     "time": 900,
+     "materials": [
+      {
+       "typeId": 9848,
+       "quantity": 1
+      },
+      {
+       "typeId": 44,
+       "quantity": 4
+      },
+      {
+       "typeId": 3689,
+       "quantity": 4
+      },
+      {
+       "typeId": 9832,
+       "quantity": 9
+      },
+      {
+       "typeId": 16275,
+       "quantity": 20
+      },
+      {
+       "typeId": 3683,
+       "quantity": 22
+      },
+      {
+       "typeId": 16272,
+       "quantity": 170
+      },
+      {
+       "typeId": 16273,
+       "quantity": 350
+      },
+      {
+       "typeId": 16274,
+       "quantity": 450
+      }
+     ],
+     "products": [
+      {
+       "typeId": 4247,
+       "quantity": 40
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 4315,
+     "activity": "research_material",
+     "time": 315,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 4315,
+     "activity": "research_time",
+     "time": 315,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 4316,
+   "maxProductionLimit": 200,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 4316,
+     "activity": "copying",
+     "time": 720,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 4316,
+     "activity": "manufacturing",
+     "time": 900,
+     "materials": [
+      {
+       "typeId": 9848,
+       "quantity": 1
+      },
+      {
+       "typeId": 44,
+       "quantity": 4
+      },
+      {
+       "typeId": 3689,
+       "quantity": 4
+      },
+      {
+       "typeId": 9832,
+       "quantity": 9
+      },
+      {
+       "typeId": 16275,
+       "quantity": 20
+      },
+      {
+       "typeId": 3683,
+       "quantity": 22
+      },
+      {
+       "typeId": 16272,
+       "quantity": 170
+      },
+      {
+       "typeId": 16273,
+       "quantity": 350
+      },
+      {
+       "typeId": 17889,
+       "quantity": 450
+      }
+     ],
+     "products": [
+      {
+       "typeId": 4246,
+       "quantity": 40
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 4316,
+     "activity": "research_material",
+     "time": 315,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 4316,
+     "activity": "research_time",
+     "time": 315,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 11887,
+   "maxProductionLimit": 200,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 11887,
+     "activity": "copying",
+     "time": 2000,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 11887,
+     "activity": "manufacturing",
+     "time": 2500,
+     "materials": [
+      {
+       "typeId": 34,
+       "quantity": 556
+      },
+      {
+       "typeId": 35,
+       "quantity": 444
+      },
+      {
+       "typeId": 36,
+       "quantity": 222
+      },
+      {
+       "typeId": 37,
+       "quantity": 82
+      },
+      {
+       "typeId": 38,
+       "quantity": 36
+      }
+     ],
+     "products": [
+      {
+       "typeId": 11481,
+       "quantity": 100
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 11887,
+     "activity": "research_material",
+     "time": 2100,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 11887,
+     "activity": "research_time",
+     "time": 2100,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 11890,
+   "maxProductionLimit": 200,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 11890,
+     "activity": "copying",
+     "time": 2000,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 11890,
+     "activity": "manufacturing",
+     "time": 2500,
+     "materials": [
+      {
+       "typeId": 34,
+       "quantity": 556
+      },
+      {
+       "typeId": 35,
+       "quantity": 444
+      },
+      {
+       "typeId": 36,
+       "quantity": 222
+      },
+      {
+       "typeId": 37,
+       "quantity": 82
+      },
+      {
+       "typeId": 38,
+       "quantity": 36
+      }
+     ],
+     "products": [
+      {
+       "typeId": 11478,
+       "quantity": 100
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 11890,
+     "activity": "research_material",
+     "time": 2100,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 11890,
+     "activity": "research_time",
+     "time": 2100,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 17344,
+   "maxProductionLimit": 4000,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 17344,
+     "activity": "copying",
+     "time": 120,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 17344,
+     "activity": "manufacturing",
+     "time": 150,
+     "materials": [
+      {
+       "typeId": 16682,
+       "quantity": 1
+      },
+      {
+       "typeId": 16670,
+       "quantity": 31
+      },
+      {
+       "typeId": 16679,
+       "quantity": 11
+      }
+     ],
+     "products": [
+      {
+       "typeId": 11688,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 1
+      },
+      {
+       "typeId": 11453,
+       "level": 3
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 17344,
+     "activity": "research_material",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3409,
+       "level": 5
+      }
+     ]
+    },
+    "research_time": {
+     "blueprintTypeId": 17344,
+     "activity": "research_time",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": [
+      {
+       "typeId": 3403,
+       "level": 5
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 21018,
+   "maxProductionLimit": 40,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 21018,
+     "activity": "copying",
+     "time": 12800,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 21018,
+     "activity": "manufacturing",
+     "time": 16000,
+     "materials": [
+      {
+       "typeId": 2870,
+       "quantity": 5
+      },
+      {
+       "typeId": 57457,
+       "quantity": 100
+      },
+      {
+       "typeId": 40,
+       "quantity": 308
+      },
+      {
+       "typeId": 39,
+       "quantity": 615
+      },
+      {
+       "typeId": 38,
+       "quantity": 1200
+      },
+      {
+       "typeId": 37,
+       "quantity": 12000
+      },
+      {
+       "typeId": 34,
+       "quantity": 45000
+      },
+      {
+       "typeId": 36,
+       "quantity": 45000
+      },
+      {
+       "typeId": 35,
+       "quantity": 157500
+      }
+     ],
+     "products": [
+      {
+       "typeId": 21017,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 22242,
+       "level": 1
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 21018,
+     "activity": "research_material",
+     "time": 6300,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 21018,
+     "activity": "research_time",
+     "time": 6300,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 29993,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 29993,
+     "activity": "copying",
+     "time": 480,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 29993,
+     "activity": "manufacturing",
+     "time": 600,
+     "materials": [
+      {
+       "typeId": 30304,
+       "quantity": 11
+      },
+      {
+       "typeId": 30018,
+       "quantity": 4
+      },
+      {
+       "typeId": 30307,
+       "quantity": 7
+      },
+      {
+       "typeId": 30021,
+       "quantity": 3
+      },
+      {
+       "typeId": 30254,
+       "quantity": 10
+      },
+      {
+       "typeId": 30019,
+       "quantity": 2
+      },
+      {
+       "typeId": 30309,
+       "quantity": 7
+      }
+     ],
+     "products": [
+      {
+       "typeId": 29992,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 5
+      },
+      {
+       "typeId": 11448,
+       "level": 2
+      },
+      {
+       "typeId": 11452,
+       "level": 2
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 29993,
+     "activity": "research_material",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 29993,
+     "activity": "research_time",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 29995,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 29995,
+     "activity": "copying",
+     "time": 480,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 29995,
+     "activity": "manufacturing",
+     "time": 600,
+     "materials": [
+      {
+       "typeId": 30305,
+       "quantity": 11
+      },
+      {
+       "typeId": 30019,
+       "quantity": 2
+      },
+      {
+       "typeId": 30308,
+       "quantity": 22
+      },
+      {
+       "typeId": 30021,
+       "quantity": 3
+      },
+      {
+       "typeId": 30248,
+       "quantity": 4
+      },
+      {
+       "typeId": 30254,
+       "quantity": 10
+      },
+      {
+       "typeId": 30309,
+       "quantity": 7
+      }
+     ],
+     "products": [
+      {
+       "typeId": 29994,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 5
+      },
+      {
+       "typeId": 11448,
+       "level": 2
+      },
+      {
+       "typeId": 11452,
+       "level": 2
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 29995,
+     "activity": "research_material",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 29995,
+     "activity": "research_time",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 30003,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 30003,
+     "activity": "copying",
+     "time": 480,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 30003,
+     "activity": "manufacturing",
+     "time": 600,
+     "materials": [
+      {
+       "typeId": 30304,
+       "quantity": 6
+      },
+      {
+       "typeId": 30305,
+       "quantity": 2
+      },
+      {
+       "typeId": 30019,
+       "quantity": 4
+      },
+      {
+       "typeId": 30021,
+       "quantity": 6
+      },
+      {
+       "typeId": 30251,
+       "quantity": 55
+      },
+      {
+       "typeId": 30259,
+       "quantity": 2
+      },
+      {
+       "typeId": 30303,
+       "quantity": 33
+      }
+     ],
+     "products": [
+      {
+       "typeId": 30002,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 5
+      },
+      {
+       "typeId": 11448,
+       "level": 2
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 30003,
+     "activity": "research_material",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 30003,
+     "activity": "research_time",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 30465,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 30465,
+     "activity": "copying",
+     "time": 480,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 30465,
+     "activity": "manufacturing",
+     "time": 600,
+     "materials": [
+      {
+       "typeId": 30304,
+       "quantity": 4
+      },
+      {
+       "typeId": 30021,
+       "quantity": 4
+      },
+      {
+       "typeId": 30254,
+       "quantity": 6
+      },
+      {
+       "typeId": 30303,
+       "quantity": 17
+      }
+     ],
+     "products": [
+      {
+       "typeId": 30464,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 5
+      },
+      {
+       "typeId": 11448,
+       "level": 2
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 30465,
+     "activity": "research_material",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 30465,
+     "activity": "research_time",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 30467,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 30467,
+     "activity": "copying",
+     "time": 480,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 30467,
+     "activity": "manufacturing",
+     "time": 600,
+     "materials": [
+      {
+       "typeId": 30304,
+       "quantity": 11
+      },
+      {
+       "typeId": 30307,
+       "quantity": 7
+      },
+      {
+       "typeId": 30021,
+       "quantity": 3
+      },
+      {
+       "typeId": 30024,
+       "quantity": 4
+      },
+      {
+       "typeId": 30254,
+       "quantity": 10
+      },
+      {
+       "typeId": 30019,
+       "quantity": 2
+      },
+      {
+       "typeId": 30309,
+       "quantity": 7
+      }
+     ],
+     "products": [
+      {
+       "typeId": 30466,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 5
+      },
+      {
+       "typeId": 11448,
+       "level": 2
+      },
+      {
+       "typeId": 11452,
+       "level": 2
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 30467,
+     "activity": "research_material",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 30467,
+     "activity": "research_time",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 30477,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 30477,
+     "activity": "copying",
+     "time": 480,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 30477,
+     "activity": "manufacturing",
+     "time": 600,
+     "materials": [
+      {
+       "typeId": 30304,
+       "quantity": 11
+      },
+      {
+       "typeId": 30306,
+       "quantity": 60
+      },
+      {
+       "typeId": 30019,
+       "quantity": 3
+      },
+      {
+       "typeId": 30308,
+       "quantity": 44
+      },
+      {
+       "typeId": 30021,
+       "quantity": 4
+      },
+      {
+       "typeId": 30251,
+       "quantity": 4
+      },
+      {
+       "typeId": 30254,
+       "quantity": 6
+      },
+      {
+       "typeId": 30303,
+       "quantity": 28
+      }
+     ],
+     "products": [
+      {
+       "typeId": 30476,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 5
+      },
+      {
+       "typeId": 11448,
+       "level": 2
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 30477,
+     "activity": "research_material",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 30477,
+     "activity": "research_time",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 30479,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 30479,
+     "activity": "copying",
+     "time": 480,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 30479,
+     "activity": "manufacturing",
+     "time": 600,
+     "materials": [
+      {
+       "typeId": 30307,
+       "quantity": 7
+      },
+      {
+       "typeId": 30021,
+       "quantity": 3
+      },
+      {
+       "typeId": 30254,
+       "quantity": 10
+      },
+      {
+       "typeId": 30309,
+       "quantity": 7
+      },
+      {
+       "typeId": 30258,
+       "quantity": 4
+      },
+      {
+       "typeId": 30019,
+       "quantity": 2
+      },
+      {
+       "typeId": 30303,
+       "quantity": 11
+      }
+     ],
+     "products": [
+      {
+       "typeId": 30478,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 5
+      },
+      {
+       "typeId": 11446,
+       "level": 2
+      },
+      {
+       "typeId": 11448,
+       "level": 2
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 30479,
+     "activity": "research_material",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 30479,
+     "activity": "research_time",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 34397,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 34397,
+     "activity": "copying",
+     "time": 480,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 34397,
+     "activity": "manufacturing",
+     "time": 600,
+     "materials": [
+      {
+       "typeId": 30311,
+       "quantity": 5
+      },
+      {
+       "typeId": 30310,
+       "quantity": 13
+      },
+      {
+       "typeId": 30270,
+       "quantity": 1
+      },
+      {
+       "typeId": 30269,
+       "quantity": 1
+      },
+      {
+       "typeId": 30271,
+       "quantity": 1
+      },
+      {
+       "typeId": 30303,
+       "quantity": 300
+      },
+      {
+       "typeId": 30309,
+       "quantity": 15
+      },
+      {
+       "typeId": 30022,
+       "quantity": 2
+      },
+      {
+       "typeId": 30268,
+       "quantity": 1
+      },
+      {
+       "typeId": 30307,
+       "quantity": 40
+      },
+      {
+       "typeId": 30251,
+       "quantity": 15
+      },
+      {
+       "typeId": 30252,
+       "quantity": 1
+      }
+     ],
+     "products": [
+      {
+       "typeId": 34396,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 5
+      },
+      {
+       "typeId": 11448,
+       "level": 2
+      },
+      {
+       "typeId": 11452,
+       "level": 2
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 34397,
+     "activity": "research_material",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 34397,
+     "activity": "research_time",
+     "time": 105,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 34412,
+   "maxProductionLimit": 300,
+   "activities": {
+    "invention": {
+     "blueprintTypeId": 34412,
+     "activity": "invention",
+     "time": 3600,
+     "materials": [
+      {
+       "typeId": 20412,
+       "quantity": 3
+      },
+      {
+       "typeId": 20424,
+       "quantity": 3
+      }
+     ],
+     "products": [
+      {
+       "typeId": 34318,
+       "quantity": 20,
+       "probability": 0.26
+      },
+      {
+       "typeId": 34563,
+       "quantity": 20,
+       "probability": 0.26
+      },
+      {
+       "typeId": 34829,
+       "quantity": 20,
+       "probability": 0.26
+      },
+      {
+       "typeId": 35684,
+       "quantity": 20,
+       "probability": 0.26
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3408,
+       "level": 1
+      },
+      {
+       "typeId": 11441,
+       "level": 1
+      },
+      {
+       "typeId": 11452,
+       "level": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 34414,
+   "maxProductionLimit": 300,
+   "activities": {
+    "invention": {
+     "blueprintTypeId": 34414,
+     "activity": "invention",
+     "time": 3600,
+     "materials": [
+      {
+       "typeId": 20412,
+       "quantity": 3
+      },
+      {
+       "typeId": 20424,
+       "quantity": 3
+      }
+     ],
+     "products": [
+      {
+       "typeId": 34318,
+       "quantity": 10,
+       "probability": 0.21
+      },
+      {
+       "typeId": 34563,
+       "quantity": 10,
+       "probability": 0.21
+      },
+      {
+       "typeId": 34829,
+       "quantity": 10,
+       "probability": 0.21
+      },
+      {
+       "typeId": 35684,
+       "quantity": 10,
+       "probability": 0.21
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3408,
+       "level": 1
+      },
+      {
+       "typeId": 11441,
+       "level": 1
+      },
+      {
+       "typeId": 11452,
+       "level": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 34416,
+   "maxProductionLimit": 300,
+   "activities": {
+    "invention": {
+     "blueprintTypeId": 34416,
+     "activity": "invention",
+     "time": 3600,
+     "materials": [
+      {
+       "typeId": 20412,
+       "quantity": 3
+      },
+      {
+       "typeId": 20424,
+       "quantity": 3
+      }
+     ],
+     "products": [
+      {
+       "typeId": 34318,
+       "quantity": 3,
+       "probability": 0.14
+      },
+      {
+       "typeId": 34563,
+       "quantity": 3,
+       "probability": 0.14
+      },
+      {
+       "typeId": 34829,
+       "quantity": 3,
+       "probability": 0.14
+      },
+      {
+       "typeId": 35684,
+       "quantity": 3,
+       "probability": 0.14
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3408,
+       "level": 1
+      },
+      {
+       "typeId": 11441,
+       "level": 1
+      },
+      {
+       "typeId": 11452,
+       "level": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 34829,
+   "maxProductionLimit": 1,
+   "activities": {
+    "copying": {
+     "blueprintTypeId": 34829,
+     "activity": "copying",
+     "time": 144000,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "manufacturing": {
+     "blueprintTypeId": 34829,
+     "activity": "manufacturing",
+     "time": 180000,
+     "materials": [
+      {
+       "typeId": 30466,
+       "quantity": 2
+      },
+      {
+       "typeId": 30002,
+       "quantity": 2
+      },
+      {
+       "typeId": 30476,
+       "quantity": 2
+      },
+      {
+       "typeId": 30464,
+       "quantity": 8
+      },
+      {
+       "typeId": 29992,
+       "quantity": 2
+      },
+      {
+       "typeId": 30478,
+       "quantity": 2
+      },
+      {
+       "typeId": 34396,
+       "quantity": 3
+      },
+      {
+       "typeId": 29994,
+       "quantity": 2
+      },
+      {
+       "typeId": 11478,
+       "quantity": 10
+      }
+     ],
+     "products": [
+      {
+       "typeId": 34828,
+       "quantity": 1
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 3380,
+       "level": 5
+      },
+      {
+       "typeId": 3395,
+       "level": 5
+      },
+      {
+       "typeId": 11454,
+       "level": 5
+      },
+      {
+       "typeId": 11452,
+       "level": 4
+      }
+     ]
+    },
+    "research_material": {
+     "blueprintTypeId": 34829,
+     "activity": "research_material",
+     "time": 63000,
+     "materials": [],
+     "products": [],
+     "skills": []
+    },
+    "research_time": {
+     "blueprintTypeId": 34829,
+     "activity": "research_time",
+     "time": 63000,
+     "materials": [],
+     "products": [],
+     "skills": []
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46157,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46157,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4246,
+       "quantity": 5
+      },
+      {
+       "typeId": 30372,
+       "quantity": 100
+      },
+      {
+       "typeId": 30373,
+       "quantity": 100
+      },
+      {
+       "typeId": 37,
+       "quantity": 300
+      }
+     ],
+     "products": [
+      {
+       "typeId": 30306,
+       "quantity": 160
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46158,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46158,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4312,
+       "quantity": 5
+      },
+      {
+       "typeId": 30371,
+       "quantity": 100
+      },
+      {
+       "typeId": 30370,
+       "quantity": 200
+      },
+      {
+       "typeId": 34,
+       "quantity": 1000
+      }
+     ],
+     "products": [
+      {
+       "typeId": 30303,
+       "quantity": 1000
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46159,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46159,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4246,
+       "quantity": 5
+      },
+      {
+       "typeId": 30371,
+       "quantity": 100
+      },
+      {
+       "typeId": 30370,
+       "quantity": 300
+      },
+      {
+       "typeId": 35,
+       "quantity": 800
+      }
+     ],
+     "products": [
+      {
+       "typeId": 30304,
+       "quantity": 250
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46160,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46160,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4246,
+       "quantity": 5
+      },
+      {
+       "typeId": 30371,
+       "quantity": 100
+      },
+      {
+       "typeId": 30372,
+       "quantity": 100
+      },
+      {
+       "typeId": 36,
+       "quantity": 600
+      }
+     ],
+     "products": [
+      {
+       "typeId": 30305,
+       "quantity": 120
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46161,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46161,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4312,
+       "quantity": 5
+      },
+      {
+       "typeId": 30372,
+       "quantity": 100
+      },
+      {
+       "typeId": 30374,
+       "quantity": 100
+      },
+      {
+       "typeId": 38,
+       "quantity": 200
+      }
+     ],
+     "products": [
+      {
+       "typeId": 30307,
+       "quantity": 120
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46162,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46162,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4247,
+       "quantity": 5
+      },
+      {
+       "typeId": 39,
+       "quantity": 25
+      },
+      {
+       "typeId": 30373,
+       "quantity": 100
+      },
+      {
+       "typeId": 30375,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 30308,
+       "quantity": 160
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46163,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46163,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4051,
+       "quantity": 5
+      },
+      {
+       "typeId": 30375,
+       "quantity": 100
+      },
+      {
+       "typeId": 30376,
+       "quantity": 100
+      },
+      {
+       "typeId": 38,
+       "quantity": 400
+      }
+     ],
+     "products": [
+      {
+       "typeId": 30309,
+       "quantity": 120
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46164,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46164,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4051,
+       "quantity": 5
+      },
+      {
+       "typeId": 39,
+       "quantity": 30
+      },
+      {
+       "typeId": 30376,
+       "quantity": 100
+      },
+      {
+       "typeId": 30377,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 30310,
+       "quantity": 160
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46165,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46165,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4247,
+       "quantity": 5
+      },
+      {
+       "typeId": 40,
+       "quantity": 80
+      },
+      {
+       "typeId": 30374,
+       "quantity": 100
+      },
+      {
+       "typeId": 30378,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 30311,
+       "quantity": 100
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46167,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46167,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4247,
+       "quantity": 5
+      },
+      {
+       "typeId": 16633,
+       "quantity": 100
+      },
+      {
+       "typeId": 16636,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16659,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 2
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46169,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46169,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4247,
+       "quantity": 5
+      },
+      {
+       "typeId": 16640,
+       "quantity": 100
+      },
+      {
+       "typeId": 16643,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16655,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 2
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46170,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46170,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4247,
+       "quantity": 5
+      },
+      {
+       "typeId": 16646,
+       "quantity": 100
+      },
+      {
+       "typeId": 16650,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16668,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 2
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46177,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46177,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4051,
+       "quantity": 5
+      },
+      {
+       "typeId": 16644,
+       "quantity": 100
+      },
+      {
+       "typeId": 16649,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16662,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 2
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46180,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46180,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4312,
+       "quantity": 5
+      },
+      {
+       "typeId": 16641,
+       "quantity": 100
+      },
+      {
+       "typeId": 16647,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16664,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 2
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46183,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46183,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4246,
+       "quantity": 5
+      },
+      {
+       "typeId": 16642,
+       "quantity": 100
+      },
+      {
+       "typeId": 16648,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 17959,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 2
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46205,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46205,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4247,
+       "quantity": 5
+      },
+      {
+       "typeId": 16655,
+       "quantity": 100
+      },
+      {
+       "typeId": 16659,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16670,
+       "quantity": 10000
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46209,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46209,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4051,
+       "quantity": 5
+      },
+      {
+       "typeId": 16659,
+       "quantity": 100
+      },
+      {
+       "typeId": 16662,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16679,
+       "quantity": 3000
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 46212,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 46212,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4312,
+       "quantity": 5
+      },
+      {
+       "typeId": 16664,
+       "quantity": 100
+      },
+      {
+       "typeId": 16668,
+       "quantity": 100
+      },
+      {
+       "typeId": 17959,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 16682,
+       "quantity": 750
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 57490,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 57490,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4246,
+       "quantity": 5
+      },
+      {
+       "typeId": 16633,
+       "quantity": 100
+      },
+      {
+       "typeId": 16635,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 57453,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 1
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 57491,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 57491,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4312,
+       "quantity": 5
+      },
+      {
+       "typeId": 16633,
+       "quantity": 2000
+      },
+      {
+       "typeId": 16634,
+       "quantity": 2000
+      }
+     ],
+     "products": [
+      {
+       "typeId": 57454,
+       "quantity": 10
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 2
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 57493,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 57493,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 57453,
+       "quantity": 200
+      },
+      {
+       "typeId": 57454,
+       "quantity": 1
+      },
+      {
+       "typeId": 57455,
+       "quantity": 200
+      }
+     ],
+     "products": [
+      {
+       "typeId": 57457,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 3
+      }
+     ]
+    }
+   }
+  },
+  {
+   "blueprintTypeId": 57494,
+   "maxProductionLimit": 1000,
+   "activities": {
+    "reaction": {
+     "blueprintTypeId": 57494,
+     "activity": "reaction",
+     "time": 10800,
+     "materials": [
+      {
+       "typeId": 4312,
+       "quantity": 5
+      },
+      {
+       "typeId": 16634,
+       "quantity": 100
+      },
+      {
+       "typeId": 16636,
+       "quantity": 100
+      }
+     ],
+     "products": [
+      {
+       "typeId": 57455,
+       "quantity": 200
+      }
+     ],
+     "skills": [
+      {
+       "typeId": 45746,
+       "level": 1
+      }
+     ]
+    }
+   }
+  }
+ ]
+}
