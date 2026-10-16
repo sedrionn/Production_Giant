@@ -13,7 +13,8 @@
     "sde:download": "tsx scripts/sde-download.ts",
     "fixtures:capture": "tsx scripts/fixtures-capture.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx scripts/db-migrate.ts"
+    "db:migrate": "tsx scripts/db-migrate.ts",
+    "presets:auner": "tsx scripts/setup-auner.ts"
   },
   "dependencies": {
     "better-sqlite3": "^12.10.0",
