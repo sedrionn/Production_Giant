@@ -4,7 +4,7 @@
  */
 import type Database from "better-sqlite3";
 import type { Blueprint } from "@/engine/types";
-import type { SdeGroup, SdeType } from "./types";
+import type { SdeGroup, SdeSystem, SdeType } from "./types";
 
 export const SDE_SCHEMA = `
 CREATE TABLE IF NOT EXISTS sde_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -34,6 +34,10 @@ CREATE TABLE IF NOT EXISTS sde_bp_products (
   type_id INTEGER NOT NULL, quantity INTEGER NOT NULL, probability REAL
 );
 CREATE INDEX IF NOT EXISTS sde_bp_products_type ON sde_bp_products(type_id, activity);
+CREATE TABLE IF NOT EXISTS sde_systems (
+  system_id INTEGER PRIMARY KEY, name TEXT NOT NULL, security REAL
+);
+CREATE INDEX IF NOT EXISTS sde_systems_name ON sde_systems(name COLLATE NOCASE);
 CREATE TABLE IF NOT EXISTS sde_bp_skills (
   blueprint_type_id INTEGER NOT NULL, activity TEXT NOT NULL,
   type_id INTEGER NOT NULL, level INTEGER NOT NULL
@@ -94,6 +98,18 @@ export function insertBlueprints(db: Database.Database, blueprints: Iterable<Blu
   return n;
 }
 
+export function insertSystems(db: Database.Database, systems: Iterable<SdeSystem>): number {
+  const stmt = db.prepare("INSERT OR REPLACE INTO sde_systems VALUES (?, ?, ?)");
+  let n = 0;
+  db.transaction(() => {
+    for (const s of systems) {
+      stmt.run(s.systemId, s.name, s.security);
+      n++;
+    }
+  })();
+  return n;
+}
+
 export function setMeta(db: Database.Database, meta: Record<string, string>): void {
   const stmt = db.prepare("INSERT OR REPLACE INTO sde_meta VALUES (?, ?)");
   for (const [k, v] of Object.entries(meta)) stmt.run(k, v);
@@ -117,6 +133,7 @@ export function sanityCheck(db: Database.Database): SdeSanityReport {
     invention: count("SELECT COUNT(*) n FROM sde_bp_activities WHERE activity='invention'"),
     materials: count("SELECT COUNT(*) n FROM sde_bp_materials"),
     typesWithoutCategory: count("SELECT COUNT(*) n FROM sde_types WHERE category_id IS NULL"),
+    systems: count("SELECT COUNT(*) n FROM sde_systems"),
   };
   const problems: string[] = [];
   if (counts.types < 20_000) problems.push(`too few types (${counts.types})`);

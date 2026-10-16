@@ -1,12 +1,12 @@
 import { describe, expect, it, beforeAll } from "vitest";
 import path from "node:path";
 import Database from "better-sqlite3";
-import { createSdeSchema, insertBlueprints, insertGroups, insertTypes, sanityCheck } from "@/sde/build";
-import { parseBlueprintRecord, parseGroupRecord, parseTypeRecord } from "@/sde/parse";
+import { createSdeSchema, insertBlueprints, insertGroups, insertSystems, insertTypes, sanityCheck } from "@/sde/build";
+import { parseBlueprintRecord, parseGroupRecord, parseSystemRecord, parseTypeRecord } from "@/sde/parse";
 import { SqliteSdeSource } from "@/sde/sqliteSource";
 import { FixtureSdeSource } from "@/sde/fixtureSource";
 import { findEntry, listZipEntries, readJsonlEntry, type JsonRecord } from "@/sde/zipJsonl";
-import type { SdeGroup, SdeSource, SdeType } from "@/sde/types";
+import type { SdeGroup, SdeSource, SdeSystem, SdeType } from "@/sde/types";
 import type { Blueprint } from "@/engine/types";
 
 // SYNTHETIC mini SDE in the official JSONL shape (tests/data/mini-sde.zip).
@@ -21,6 +21,7 @@ async function readAll(entry: string): Promise<JsonRecord[]> {
 let groups: SdeGroup[];
 let types: SdeType[];
 let bps: Blueprint[];
+let systems: SdeSystem[];
 let skipped = { groups: 0, types: 0, bps: 0 };
 
 beforeAll(async () => {
@@ -28,6 +29,7 @@ beforeAll(async () => {
   const g = await readAll(findEntry(entries, "groups.jsonl")!);
   const t = await readAll(findEntry(entries, "types.jsonl")!);
   const b = await readAll(findEntry(entries, "blueprints.jsonl")!);
+  systems = (await readAll(findEntry(entries, "mapSolarSystems.jsonl")!)).map(parseSystemRecord).filter((x): x is SdeSystem => x !== null);
   groups = g.map(parseGroupRecord).filter((x): x is SdeGroup => x !== null);
   const gc = new Map(groups.map((x) => [x.groupId, x.categoryId]));
   types = t.map((r) => parseTypeRecord(r, gc)).filter((x): x is SdeType => x !== null);
@@ -70,12 +72,25 @@ describe("SdeSource implementations agree", () => {
     insertGroups(db, groups);
     insertTypes(db, types);
     insertBlueprints(db, bps);
+    insertSystems(db, systems);
     sqlite = new SqliteSdeSource(db);
     fixture = new FixtureSdeSource({
       meta: { source: "test", capturedAt: "", roots: [] },
       types,
       blueprints: bps,
+      systems,
     });
+  });
+
+  it.each(["sqlite", "fixture"])("%s: systems", (name) => {
+    const src = name === "sqlite" ? sqlite : fixture;
+    expect(src.getSystem(30000142)).toEqual({ systemId: 30000142, name: "Jita", security: 0.9459 });
+    expect(src.searchSystems("peri").map((s) => s.name)).toEqual(["Perimeter"]);
+  });
+
+  it.each(["sqlite", "fixture"])("%s: searchBuildable returns only producible types", (name) => {
+    const src = name === "sqlite" ? sqlite : fixture;
+    expect(src.searchBuildable("r").map((t) => t.typeId)).toEqual([11478]);
   });
 
   it.each(["sqlite", "fixture"])("%s: getType", (name) => {

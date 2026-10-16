@@ -11,9 +11,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { once } from "node:events";
 import Database from "better-sqlite3";
-import { createSdeSchema, insertBlueprints, insertGroups, insertTypes, sanityCheck, setMeta } from "../src/sde/build";
-import { parseBlueprintRecord, parseGroupRecord, parseTypeRecord } from "../src/sde/parse";
-import type { SdeGroup, SdeType } from "../src/sde/types";
+import { createSdeSchema, insertBlueprints, insertGroups, insertSystems, insertTypes, sanityCheck, setMeta } from "../src/sde/build";
+import { parseBlueprintRecord, parseGroupRecord, parseSystemRecord, parseTypeRecord } from "../src/sde/parse";
+import type { SdeGroup, SdeSystem, SdeType } from "../src/sde/types";
 import type { Blueprint } from "../src/engine/types";
 import { findEntry, listZipEntries, readJsonlEntry } from "../src/sde/zipJsonl";
 
@@ -134,7 +134,7 @@ async function main() {
   db.pragma("synchronous = OFF");
   createSdeSchema(db);
 
-  const skipped: Record<string, number> = { groups: 0, types: 0, blueprints: 0 };
+  const skipped: Record<string, number> = { groups: 0, types: 0, blueprints: 0, systems: 0 };
   const firstSkipped: Record<string, unknown> = {};
   const skip = (kind: string, r: unknown) => {
     skipped[kind]++;
@@ -169,7 +169,22 @@ async function main() {
   });
   insertBlueprints(db, bps);
 
-  stepTo(`sanity check (blueprints: ${bps.length})`);
+  // Optional: solar systems (names for cost-index lookup). Missing/odd file must not fail the import.
+  const systemsEntry = findEntry(entries, "mapSolarSystems.jsonl");
+  if (systemsEntry) {
+    stepTo(`parsing solar systems (blueprints: ${bps.length})`);
+    const systems: SdeSystem[] = [];
+    await readJsonlEntry(zipPath, systemsEntry, (r) => {
+      const sys = parseSystemRecord(r);
+      if (sys) systems.push(sys);
+      else skip("systems", r);
+    });
+    insertSystems(db, systems);
+  } else {
+    console.warn("! mapSolarSystems.jsonl not found — system search will be unavailable");
+  }
+
+  stepTo("sanity check");
   setMeta(db, { build, source: ZIP_URL, importedAt: new Date().toISOString() });
   const report = sanityCheck(db);
   db.close();

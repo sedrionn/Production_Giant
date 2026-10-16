@@ -16,7 +16,7 @@ import path from "node:path";
 import Database from "better-sqlite3";
 import { SqliteSdeSource } from "../src/sde/sqliteSource";
 import { collectTree } from "../src/sde/collect";
-import type { SdeSubset, SdeType } from "../src/sde/types";
+import type { SdeSubset, SdeSystem, SdeType } from "../src/sde/types";
 import type { Blueprint } from "../src/engine/types";
 import { getIndustrySystems, getMarketPrices, getRegionOrders, mapLimit } from "../src/esi/client";
 import { adjustedPriceMap, aggregateOrders, costIndicesBySystem } from "../src/esi/transform";
@@ -74,6 +74,7 @@ async function main() {
     meta: { source: "CCP SDE (JSONL) via data/sde.sqlite", build, capturedAt: new Date().toISOString(), roots },
     types: types.sort((a, b) => a.typeId - b.typeId),
     blueprints: blueprints.sort((a, b) => a.blueprintTypeId - b.blueprintTypeId),
+    systems: [SYSTEM_JITA, ...EXTRA_SYSTEMS].map((id) => sde.getSystem(id)).filter((x): x is SdeSystem => !!x),
   };
   write(path.join(OUT_SDE, "subset.json"), subset);
   console.log(`  ${types.length} types, ${blueprints.length} blueprints, ${tree.leafTypeIds.size} raw leaves`);

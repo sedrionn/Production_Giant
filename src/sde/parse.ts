@@ -8,7 +8,7 @@
  * cannot parse is returned as `null` so the importer can count and report it.
  */
 import type { Activity, BlueprintActivity, Blueprint } from "@/engine/types";
-import type { SdeGroup, SdeType } from "./types";
+import type { SdeGroup, SdeSystem, SdeType } from "./types";
 
 type Rec = Record<string, unknown>;
 
@@ -54,6 +54,13 @@ export function parseGroupRecord(r: Rec): SdeGroup | null {
   const categoryId = num(pick(r, "categoryID", "categoryId"));
   if (groupId === null || categoryId === null) return null;
   return { groupId, categoryId, name: localized(pick(r, "name", "groupName")) ?? "" };
+}
+
+export function parseSystemRecord(r: Rec): SdeSystem | null {
+  const systemId = keyOf(r, "solarSystemID", "solarSystemId");
+  const name = localized(pick(r, "name", "solarSystemName"));
+  if (systemId === null || name === null) return null;
+  return { systemId, name, security: num(pick(r, "securityStatus", "security")) };
 }
 
 const ACTIVITY_ALIASES: Record<string, Activity> = {

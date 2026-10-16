@@ -1,15 +1,17 @@
 import type { Activity, Blueprint } from "@/engine/types";
-import type { ProducerRef, SdeSource, SdeSubset, SdeType } from "./types";
+import type { ProducerRef, SdeSource, SdeSubset, SdeSystem, SdeType } from "./types";
 
 export class FixtureSdeSource implements SdeSource {
   private types = new Map<number, SdeType>();
   private blueprints = new Map<number, Blueprint>();
   private producers = new Map<number, ProducerRef[]>();
+  private systems = new Map<number, SdeSystem>();
 
   constructor(...subsets: SdeSubset[]) {
     for (const s of subsets) {
       for (const t of s.types) this.types.set(t.typeId, t);
       for (const b of s.blueprints) this.blueprints.set(b.blueprintTypeId, b);
+      for (const sys of s.systems ?? []) this.systems.set(sys.systemId, sys);
     }
     for (const bp of this.blueprints.values()) {
       for (const act of Object.values(bp.activities)) {
@@ -44,5 +46,20 @@ export class FixtureSdeSource implements SdeSource {
       if (out.length >= limit) break;
     }
     return out;
+  }
+
+  searchBuildable(query: string, limit = 20): SdeType[] {
+    return this.searchTypes(query, 10_000)
+      .filter((t) => t.published && (this.findProducers(t.typeId, "manufacturing").length || this.findProducers(t.typeId, "reaction").length))
+      .slice(0, limit);
+  }
+
+  getSystem(systemId: number) {
+    return this.systems.get(systemId);
+  }
+
+  searchSystems(query: string, limit = 20): SdeSystem[] {
+    const q = query.toLowerCase();
+    return [...this.systems.values()].filter((s) => s.name.toLowerCase().includes(q)).slice(0, limit);
   }
 }

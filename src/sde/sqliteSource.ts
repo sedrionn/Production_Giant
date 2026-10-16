@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 import type { Activity, Blueprint, BlueprintActivity } from "@/engine/types";
-import type { ProducerRef, SdeSource, SdeType } from "./types";
+import type { ProducerRef, SdeSource, SdeSystem, SdeType } from "./types";
 
 interface TypeRow {
   type_id: number;
@@ -100,5 +100,43 @@ export class SqliteSdeSource implements SdeSource {
       .prepare("SELECT * FROM sde_types WHERE published = 1 AND name LIKE ? ORDER BY length(name) LIMIT ?")
       .all(`%${query}%`, limit) as TypeRow[];
     return rows.map(toType);
+  }
+
+  searchBuildable(query: string, limit = 20): SdeType[] {
+    const rows = this.db
+      .prepare(
+        `SELECT t.* FROM sde_types t
+         WHERE t.published = 1 AND t.name LIKE ?
+           AND EXISTS (SELECT 1 FROM sde_bp_products p
+                       WHERE p.type_id = t.type_id AND p.activity IN ('manufacturing','reaction'))
+         ORDER BY (t.name LIKE ?) DESC, length(t.name) LIMIT ?`,
+      )
+      .all(`%${query}%`, `${query}%`, limit) as TypeRow[];
+    return rows.map(toType);
+  }
+
+  getSystem(systemId: number): SdeSystem | undefined {
+    if (!this.hasSystems()) return undefined;
+    const r = this.db.prepare("SELECT system_id, name, security FROM sde_systems WHERE system_id = ?").get(systemId) as
+      | { system_id: number; name: string; security: number | null }
+      | undefined;
+    return r && { systemId: r.system_id, name: r.name, security: r.security };
+  }
+
+  searchSystems(query: string, limit = 20): SdeSystem[] {
+    if (!this.hasSystems()) return [];
+    const rows = this.db
+      .prepare(
+        "SELECT system_id, name, security FROM sde_systems WHERE name LIKE ? ORDER BY (name LIKE ?) DESC, length(name) LIMIT ?",
+      )
+      .all(`%${query}%`, `${query}%`, limit) as { system_id: number; name: string; security: number | null }[];
+    return rows.map((r) => ({ systemId: r.system_id, name: r.name, security: r.security }));
+  }
+
+  private systemsTable?: boolean;
+  /** Databases imported before systems were added have no sde_systems table. */
+  private hasSystems(): boolean {
+    this.systemsTable ??= !!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='sde_systems'").get();
+    return this.systemsTable;
   }
 }

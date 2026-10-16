@@ -19,6 +19,12 @@ export interface SdeGroup {
   name: string;
 }
 
+export interface SdeSystem {
+  systemId: number;
+  name: string;
+  security: number | null;
+}
+
 export interface ProducerRef {
   blueprintTypeId: number;
   activity: Activity;
@@ -35,6 +41,10 @@ export interface SdeSource {
   /** Blueprints whose `activity` produces `productTypeId` (manufacturing/reaction/invention…). */
   findProducers(productTypeId: number, activity?: Activity): ProducerRef[];
   searchTypes(query: string, limit?: number): SdeType[];
+  /** Published types that some manufacturing/reaction job produces. */
+  searchBuildable(query: string, limit?: number): SdeType[];
+  getSystem(systemId: number): SdeSystem | undefined;
+  searchSystems(query: string, limit?: number): SdeSystem[];
 }
 
 /** Shape of fixtures/sde/*.json */
@@ -42,4 +52,5 @@ export interface SdeSubset {
   meta: { source: string; build?: string | number; capturedAt: string; roots: number[] };
   types: SdeType[];
   blueprints: Blueprint[];
+  systems?: SdeSystem[];
 }
