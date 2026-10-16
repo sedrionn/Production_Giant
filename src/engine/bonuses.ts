@@ -134,3 +134,12 @@ export const MARKET = {
   factionStandingFactor: 0.0003, // verify — per standing point
   corpStandingFactor: 0.0002, // verify — per standing point
 } as const;
+
+/** Invention. chance = base × (1 + encryption/40 + (science1 + science2)/30) × decryptor. */
+export const INVENTION = {
+  encryptionDivisor: 40, // verify
+  scienceDivisor: 30, // verify
+  /** ME/TE of an invented BPC without decryptor. */
+  baseMe: 2, // verify
+  baseTe: 4, // verify
+} as const;

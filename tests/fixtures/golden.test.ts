@@ -6,6 +6,8 @@ import { describe, expect, it } from "vitest";
 import { loadFixtures } from "./loadFixtures";
 import { materialsForJob, runsNeeded } from "@/engine/materials";
 import { materialMultiplier, NPC_STATION } from "@/engine/facility";
+import { buildTree, type TreeContext } from "@/engine/tree";
+import { recipeLookup } from "@/sde/recipes";
 
 const fx = loadFixtures();
 const JACKDAW = 34828;
@@ -37,5 +39,46 @@ describe("old sheet bug #1 on real data: R.A.M.", () => {
     expect(runsNeeded(act.products[0], 192)).toBe(2);
     const trit = materialsForJob(act.materials, 2, 10).find((m) => m.typeId === 34)!;
     expect(trit.quantity).toBeLessThan(1200);
+  });
+});
+
+describe("build tree on REAL data", () => {
+  const sotiyo = { structure: "sotiyo" as const, security: "null" as const, rigs: {}, facilityTax: 0 };
+  const tatara = { structure: "tatara" as const, security: "null" as const, rigs: {}, facilityTax: 0 };
+  const ci = fx.costIndices(30000144);
+  const ctx: TreeContext = {
+    recipe: recipeLookup(fx.sde),
+    blueprintLevels: () => ({ me: 10, te: 20 }),
+    facility: (a) => (a === "reaction" ? tatara : sotiyo),
+    costIndex: (a) => ci[a] ?? 0,
+    quote: fx.quote,
+    adjustedPrice: fx.adjustedPrice,
+    materialPriceMode: "sell",
+    fees: { salesTax: 0.03375, brokerFee: 0.015 },
+  };
+
+  it.each([
+    ["Jackdaw", JACKDAW, 20],
+    ["Hammerhead II", 2185, 100],
+    ["Capital Armor Plates", 21017, 10],
+  ])("%s: consistent totals, every job reachable, no warnings", (_, typeId, runs) => {
+    const t = buildTree(typeId, runs, ctx);
+    expect(t.warnings).toEqual([]);
+    expect(t.jobs.at(-1)!.typeId).toBe(typeId);
+    expect(t.materialCost).toBeCloseTo(t.shopping.reduce((s, l) => s + (l.cost ?? 0), 0));
+    // each type appears at most once as a job (aggregation)
+    const ids = t.jobs.map((j) => j.typeId);
+    expect(new Set(ids).size).toBe(ids.length);
+    // every built job's output covers its demand
+    for (const j of t.jobs) expect(j.output).toBeGreaterThanOrEqual(t.nodes.get(j.typeId)!.demand);
+    // reactions run without ME
+    for (const j of t.jobs.filter((x) => x.activity === "reaction")) expect(j.me).toBe(0);
+  });
+
+  it("Jackdaw: polymer reactions aggregate into single jobs", () => {
+    const t = buildTree(JACKDAW, 20, ctx);
+    const fullero = t.jobs.filter((j) => fx.sde.getType(j.typeId)?.name === "Fulleroferrocene");
+    expect(fullero).toHaveLength(1);
+    expect(fullero[0].activity).toBe("reaction");
   });
 });
