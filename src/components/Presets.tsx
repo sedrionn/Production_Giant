@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import type { AppSettings } from "@/db/seed";
-import type { RigTier } from "@/engine/bonuses";
-import type { RigSetup } from "@/engine/facility";
+import type { RigScope } from "@/engine/bonuses";
+import type { RigRule } from "@/engine/facility";
+import type { Activity } from "@/engine/types";
 import { Search } from "./ItemSearch";
 
 interface Profile {
@@ -11,10 +12,11 @@ interface Profile {
   name: string;
   structureType: string;
   security: string;
-  rigs: Record<string, RigSetup>;
+  rigs: RigRule[];
   solarSystemId: number | null;
   systemName?: string | null;
   facilityTax: number;
+  systemJobBonus: number;
   isDefault: boolean;
 }
 
@@ -31,11 +33,30 @@ const SECURITY = [
   ["low", "лоусек"],
   ["null", "нули / ВХ"],
 ] as const;
-const TIERS: [RigTier, string][] = [
-  ["none", "нет"],
-  ["t1", "T1"],
-  ["t2", "T2"],
+const SCOPES: [RigScope, string][] = [
+  ["ships", "корабли"],
+  ["components", "компоненты"],
+  ["structures", "структуры"],
+  ["equipment", "модули, дроны, патроны"],
+  ["fuel", "топливо"],
+  ["all", "всё"],
 ];
+const RIG_ACTIVITIES: [Activity, string][] = [
+  ["manufacturing", "производство"],
+  ["reaction", "реакции"],
+  ["invention", "инвент"],
+  ["copying", "копирование"],
+];
+/** Starting points; base values must be checked against Show Info → Attributes on the rig. */
+const RIG_TEMPLATES: { label: string; rule: RigRule }[] = [
+  { label: "XL Ship Manufacturing", rule: { name: "Standup XL-Set Ship Manufacturing Efficiency I", activity: "manufacturing", scopes: ["ships"], material: 0.02, time: 0.2 } },
+  { label: "XL Structure & Component", rule: { name: "Standup XL-Set Structure and Component Manufacturing Efficiency I", activity: "manufacturing", scopes: ["components", "structures"], material: 0.02, time: 0.2 } },
+  { label: "XL Equipment & Consumable", rule: { name: "Standup XL-Set Equipment and Consumable Manufacturing Efficiency I", activity: "manufacturing", scopes: ["equipment", "fuel"], material: 0.02, time: 0.2 } },
+  { label: "XL Lab Optimization", rule: { name: "Standup XL-Set Laboratory Optimization I", activity: "invention", scopes: ["all"], material: 0, time: 0.2 } },
+  { label: "Риг реакций", rule: { name: "", activity: "reaction", scopes: ["all"], material: 0.02, time: 0 } },
+  { label: "Свой риг", rule: { name: "", activity: "manufacturing", scopes: ["all"], material: 0, time: 0 } },
+];
+
 const isRefinery = (t: string) => t === "tatara" || t === "athanor";
 
 export function Presets() {
@@ -67,7 +88,7 @@ export function Presets() {
         <h2 className="font-display text-3xl font-semibold">Структуры</h2>
         <button
           onClick={() =>
-            setEditing({ name: "", structureType: "sotiyo", security: "null", rigs: {}, solarSystemId: null, facilityTax: 0, isDefault: false })
+            setEditing({ name: "", structureType: "sotiyo", security: "null", rigs: [], solarSystemId: null, facilityTax: 0, systemJobBonus: 0, isDefault: false })
           }
           className="rounded bg-marker px-3 py-1.5 font-medium text-ink hover:bg-marker/90"
         >
@@ -75,8 +96,8 @@ export function Presets() {
         </button>
       </div>
       <p className="max-w-[70ch] text-graphite">
-        Система нужна для cost index: без неё стоимость джоб считается только из налогов. Риги задаются на тип работ: в игре они
-        действуют на группы предметов, разбивка по группам будет позже.
+        Система нужна для cost index: без неё стоимость джоб считается только из налогов. Каждый риг действует на свою работу и
+        свои группы предметов, как в игре.
       </p>
 
       <ul className="divide-y divide-line rounded border border-line bg-sheet/60">
@@ -94,6 +115,7 @@ export function Presets() {
             </span>
             <span className="text-graphite">{rigSummary(p)}</span>
             <span className="text-graphite">налог {(p.facilityTax * 100).toFixed(2)}%</span>
+            {p.systemJobBonus > 0 && <span className="text-gain">скидка системы −{Math.round(p.systemJobBonus * 100)}%</span>}
             <span className="ml-auto flex gap-3">
               <button onClick={() => setEditing(p)} className="text-marker hover:underline">
                 Изменить
@@ -112,18 +134,17 @@ export function Presets() {
 }
 
 function rigSummary(p: Profile): string {
-  const parts = Object.entries(p.rigs)
-    .filter(([, r]) => r.material !== "none" || r.time !== "none")
-    .map(([a, r]) => `${a === "reaction" ? "реакции" : a === "manufacturing" ? "произв." : a}: ME ${r.material.toUpperCase()}, TE ${r.time.toUpperCase()}`);
-  return parts.length ? parts.join("; ") : "без ригов";
+  if (!p.rigs.length) return "без ригов";
+  return `${p.rigs.length} ${p.rigs.length === 1 ? "риг" : p.rigs.length < 5 ? "рига" : "ригов"}`;
 }
+
+const pctIn = (v: number) => +(v * 100).toFixed(3);
 
 function ProfileForm({ initial, onSave, onCancel, error }: { initial: Profile; onSave: (p: Profile) => void; onCancel: () => void; error: string | null }) {
   const [p, setP] = useState<Profile>(initial);
   const set = (patch: Partial<Profile>) => setP((x) => ({ ...x, ...patch }));
-  const rigActivities = isRefinery(p.structureType) ? (["reaction"] as const) : (["manufacturing", "invention"] as const);
-  const setRig = (activity: string, patch: Partial<RigSetup>) =>
-    set({ rigs: { ...p.rigs, [activity]: { ...(p.rigs[activity] ?? { material: "none", time: "none" }), ...patch } } });
+  const setRig = (i: number, patch: Partial<RigRule>) => set({ rigs: p.rigs.map((r, k) => (k === i ? { ...r, ...patch } : r)) });
+  const templates = RIG_TEMPLATES.filter((t) => (isRefinery(p.structureType) ? t.rule.activity === "reaction" || !t.rule.name : t.rule.activity !== "reaction"));
 
   return (
     <form
@@ -139,7 +160,7 @@ function ProfileForm({ initial, onSave, onCancel, error }: { initial: Profile; o
           <input value={p.name} onChange={(e) => set({ name: e.target.value })} required className={input} />
         </L>
         <L label="Тип">
-          <select value={p.structureType} onChange={(e) => set({ structureType: e.target.value, rigs: {} })} className={input}>
+          <select value={p.structureType} onChange={(e) => set({ structureType: e.target.value })} className={input}>
             {STRUCTURES.map(([v, l]) => (
               <option key={v} value={v}>
                 {l}
@@ -167,7 +188,19 @@ function ProfileForm({ initial, onSave, onCancel, error }: { initial: Profile; o
             className={input}
           />
         </L>
-        <L label="Система" className="sm:col-span-2">
+        <L label="Скидка системы на джобы, %">
+          <input
+            type="number"
+            step="1"
+            min={0}
+            max={100}
+            value={+(p.systemJobBonus * 100).toFixed(2)}
+            onChange={(e) => set({ systemJobBonus: Math.min(100, Math.max(0, Number(e.target.value))) / 100 })}
+            className={input}
+          />
+          <span className="block text-xs text-graphite">Например, бонус ФВ. Уменьшает часть джобы от cost index.</span>
+        </L>
+        <L label="Система">
           <Search
             endpoint="/api/systems"
             idKey="systemId"
@@ -182,25 +215,65 @@ function ProfileForm({ initial, onSave, onCancel, error }: { initial: Profile; o
         </label>
       </div>
 
-      <fieldset className="space-y-2">
+      <fieldset className="space-y-3">
         <legend className="text-sm text-graphite">Риги</legend>
-        {rigActivities.map((a) => (
-          <div key={a} className="flex flex-wrap items-center gap-4">
-            <span className="w-28">{a === "reaction" ? "Реакции" : a === "manufacturing" ? "Производство" : "Инвент"}</span>
-            {(["material", "time"] as const).map((k) => (
-              <label key={k} className="flex items-center gap-2 whitespace-nowrap text-sm text-graphite">
-                {k === "material" ? "ME-риг" : "TE-риг"}
-                <select value={p.rigs[a]?.[k] ?? "none"} onChange={(e) => setRig(a, { [k]: e.target.value as RigTier })} className={`${input} w-24`}>
-                  {TIERS.map(([v, l]) => (
+        <p className="max-w-[75ch] text-sm text-graphite">
+          Бонусы вводи базовые, как в игре в Show Info → Attributes у самого рига. Множитель зоны (лоусек ×1.9, нули ×2.1)
+          приложение применит само. Группы смотри в описании рига.
+        </p>
+        {p.rigs.map((r, i) => (
+          <div key={i} className="space-y-2 rounded border border-line bg-ink/40 px-3 py-3">
+            <div className="flex flex-wrap items-end gap-3">
+              <L label="Риг" className="min-w-[16rem] flex-1">
+                <input value={r.name ?? ""} onChange={(e) => setRig(i, { name: e.target.value })} placeholder="Название рига" className={input} />
+              </L>
+              <L label="Работа">
+                <select value={r.activity} onChange={(e) => setRig(i, { activity: e.target.value as Activity })} className={input}>
+                  {RIG_ACTIVITIES.map(([v, l]) => (
                     <option key={v} value={v}>
                       {l}
                     </option>
                   ))}
                 </select>
-              </label>
-            ))}
+              </L>
+              <L label="Материалы, %" className="w-28">
+                <input type="number" step="0.1" min={0} max={50} value={pctIn(r.material)} onChange={(e) => setRig(i, { material: Number(e.target.value) / 100 })} className={input} />
+              </L>
+              <L label="Время, %" className="w-28">
+                <input type="number" step="1" min={0} max={50} value={pctIn(r.time)} onChange={(e) => setRig(i, { time: Number(e.target.value) / 100 })} className={input} />
+              </L>
+              <button type="button" onClick={() => set({ rigs: p.rigs.filter((_, k) => k !== i) })} className="pb-2 text-graphite hover:text-loss">
+                Убрать
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+              {SCOPES.map(([v, l]) => (
+                <label key={v} className="flex items-center gap-1.5">
+                  <input
+                    type="checkbox"
+                    className="accent-[var(--marker)]"
+                    checked={r.scopes.includes(v)}
+                    onChange={(e) => setRig(i, { scopes: e.target.checked ? [...r.scopes, v] : r.scopes.filter((x) => x !== v) })}
+                  />
+                  {l}
+                </label>
+              ))}
+            </div>
           </div>
         ))}
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-graphite">Добавить:</span>
+          {templates.map((t) => (
+            <button
+              key={t.label}
+              type="button"
+              onClick={() => set({ rigs: [...p.rigs, { ...t.rule, scopes: [...t.rule.scopes] }] })}
+              className="rounded px-2 py-1 text-chalk ring-1 ring-line hover:ring-marker"
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </fieldset>
 
       {error && <p className="text-loss">{error}</p>}

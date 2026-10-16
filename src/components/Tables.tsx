@@ -9,7 +9,7 @@ const ACTIVITY: Record<string, string> = { manufacturing: "производст�
 export function JobsTable({ jobs }: { jobs: CalcResponse["jobs"] }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[720px] text-left">
+      <table className="w-full min-w-[980px] whitespace-nowrap text-left">
         <thead className="border-b border-line text-sm text-graphite">
           <tr>
             <th className="py-2 pr-3 font-normal">Что</th>
@@ -18,6 +18,10 @@ export function JobsTable({ jobs }: { jobs: CalcResponse["jobs"] }) {
             <th className="py-2 pr-3 text-right font-normal">ME / TE</th>
             <th className="py-2 pr-3 text-right font-normal">Выход</th>
             <th className="py-2 pr-3 text-right font-normal">Излишек</th>
+            <th className="py-2 pr-3 text-right font-normal" title="Estimated Item Value: базовые материалы × adjusted price × раны">EIV</th>
+            <th className="py-2 pr-3 text-right font-normal" title="EIV × cost index с бонусами структуры и системы">Индекс</th>
+            <th className="py-2 pr-3 text-right font-normal" title="Налог владельца структуры">Налог</th>
+            <th className="py-2 pr-3 text-right font-normal" title="SCC surcharge">SCC</th>
             <th className="py-2 pr-3 text-right font-normal">Джоба</th>
             <th className="py-2 text-right font-normal">Время</th>
           </tr>
@@ -31,6 +35,10 @@ export function JobsTable({ jobs }: { jobs: CalcResponse["jobs"] }) {
               <td className="py-1.5 pr-3 text-right text-graphite">{j.activity === "reaction" ? "—" : `${j.me} / ${j.te}`}</td>
               <td className="py-1.5 pr-3 text-right">{qty(j.output)}</td>
               <td className={`py-1.5 pr-3 text-right ${j.surplus ? "text-marker" : "text-graphite"}`}>{j.surplus ? qty(j.surplus) : "—"}</td>
+              <td className="py-1.5 pr-3 text-right text-graphite" title={full(j.costBreakdown.eiv)}>{isk(j.costBreakdown.eiv)}</td>
+              <td className="py-1.5 pr-3 text-right text-graphite" title={full(j.costBreakdown.grossCost)}>{isk(j.costBreakdown.grossCost)}</td>
+              <td className="py-1.5 pr-3 text-right text-graphite" title={full(j.costBreakdown.facilityTax)}>{isk(j.costBreakdown.facilityTax)}</td>
+              <td className="py-1.5 pr-3 text-right text-graphite" title={full(j.costBreakdown.sccSurcharge)}>{isk(j.costBreakdown.sccSurcharge)}</td>
               <td className="py-1.5 pr-3 text-right" title={full(j.cost)}>{isk(j.cost)}</td>
               <td className="py-1.5 text-right text-graphite">{duration(j.timeSeconds)}</td>
             </tr>

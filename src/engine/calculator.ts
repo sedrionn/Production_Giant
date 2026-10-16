@@ -3,7 +3,7 @@
  * The full build tree (build vs buy per node, reactions, invention, stock)
  * comes in stage 1c on top of these same pieces.
  */
-import { assertSupports, materialMultiplier, type FacilityProfile } from "./facility";
+import { assertSupports, materialMultiplier, type FacilityProfile, type ItemClass } from "./facility";
 import { estimatedItemValue, jobInstallCost, jobTime, type IndustrySkills, type JobCostBreakdown } from "./jobCost";
 import { materialsForJob, outputQuantity } from "./materials";
 import {
@@ -22,6 +22,8 @@ export interface CalcInput {
   me: number;
   te: number;
   facility: FacilityProfile;
+  /** Product's category/group — decides which rigs apply. */
+  productClass?: ItemClass;
   systemCostIndex: number;
   skills?: IndustrySkills;
   quotes: (typeId: number) => MarketQuote | undefined;
@@ -68,7 +70,7 @@ export function calculateJob(input: CalcInput): CalcResult {
 
   const warnings: string[] = [];
   const me = act.activity === "manufacturing" ? input.me : 0;
-  const mult = materialMultiplier(facility, act.activity);
+  const mult = materialMultiplier(facility, act.activity, input.productClass);
   const acqFee = acquisitionFeeRate(input.materialPriceMode, input.fees);
 
   const materials: CalcMaterialLine[] = materialsForJob(act.materials, runs, me, mult).map((m) => {
@@ -95,7 +97,7 @@ export function calculateJob(input: CalcInput): CalcResult {
   const saleFees = grossRevenue === null ? null : grossRevenue * saleFeeRate(input.productPriceMode, input.fees);
   const netRevenue = grossRevenue === null || saleFees === null ? null : grossRevenue - saleFees;
   const profit = netRevenue === null ? null : netRevenue - totalCost;
-  const timeSeconds = jobTime(act.time, runs, input.te, act.activity, facility, input.skills);
+  const timeSeconds = jobTime(act.time, runs, input.te, act.activity, facility, input.skills, input.productClass);
 
   return {
     productTypeId: product.typeId,

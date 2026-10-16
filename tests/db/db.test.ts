@@ -10,7 +10,7 @@ describe("app db", () => {
     const profiles = db.select().from(structureProfiles).all();
     expect(profiles.map((p) => p.structureType)).toEqual(["sotiyo", "tatara", "npc_station"]);
     expect(profiles.filter((p) => p.isDefault)).toHaveLength(1);
-    expect(profiles[0].rigs).toEqual({});
+    expect(profiles[0].rigs).toEqual([]);
     const s = Object.fromEntries(db.select().from(settings).all().map((r) => [r.key, r.value]));
     expect(s.materialPriceMode).toBe("sell");
   });

@@ -43,8 +43,8 @@ describe("old sheet bug #1 on real data: R.A.M.", () => {
 });
 
 describe("build tree on REAL data", () => {
-  const sotiyo = { structure: "sotiyo" as const, security: "null" as const, rigs: {}, facilityTax: 0 };
-  const tatara = { structure: "tatara" as const, security: "null" as const, rigs: {}, facilityTax: 0 };
+  const sotiyo = { structure: "sotiyo" as const, security: "null" as const, rigs: [], facilityTax: 0 };
+  const tatara = { structure: "tatara" as const, security: "null" as const, rigs: [], facilityTax: 0 };
   const ci = fx.costIndices(30000144);
   const ctx: TreeContext = {
     recipe: recipeLookup(fx.sde),

@@ -19,6 +19,30 @@ export type StructureType =
 export type Security = "high" | "low" | "null"; // "null" also covers wormholes
 export type RigTier = "none" | "t1" | "t2";
 
+/**
+ * Item groups a rig can cover. Mapped from SDE categories/groups.
+ * Check the rig's description in game (Show Info) to pick the right scopes.
+ */
+export type RigScope = "all" | "ships" | "components" | "structures" | "equipment" | "fuel";
+
+export const RIG_SCOPE_CATEGORIES: Record<RigScope, number[]> = {
+  all: [],
+  ships: [6], // Ship
+  components: [17], // Commodity: advanced, capital, T3 (hybrid tech) components, R.A.M.
+  structures: [22, 23, 65, 66], // Deployable, Starbase, Structure, Structure Module
+  equipment: [7, 8, 18, 32, 87], // Module, Charge, Drone, Subsystem, Fighter
+  fuel: [],
+};
+
+export const RIG_SCOPE_GROUPS: Record<RigScope, number[]> = {
+  all: [],
+  ships: [],
+  components: [],
+  structures: [],
+  equipment: [],
+  fuel: [1136], // Fuel Block
+};
+
 export interface StructureSpec {
   label: string;
   /** Activities this structure can run at all. */

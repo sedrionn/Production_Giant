@@ -8,6 +8,20 @@
       "when": 1792108133124,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792142076707,
+      "tag": "0001_system_job_bonus",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792142203859,
+      "tag": "0002_rigs_rules",
+      "breakpoints": true
     }
   ]
 }

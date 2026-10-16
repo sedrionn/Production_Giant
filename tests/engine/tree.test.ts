@@ -26,8 +26,8 @@ function mk(bp: number, activity: "manufacturing" | "reaction", mats: [number, n
   };
 }
 const q = (sell: number | null): MarketQuote => ({ typeId: 0, buyMax: null, sellMin: sell });
-const npc: FacilityProfile = { structure: "npc_station", security: "high", rigs: {}, facilityTax: 0 };
-const tatara: FacilityProfile = { structure: "tatara", security: "null", rigs: {}, facilityTax: 0 };
+const npc: FacilityProfile = { structure: "npc_station", security: "high", rigs: [], facilityTax: 0 };
+const tatara: FacilityProfile = { structure: "tatara", security: "null", rigs: [], facilityTax: 0 };
 
 function ctx(over: Partial<TreeContext> = {}, prices: Record<number, number | null> = {}): TreeContext {
   const base: Record<number, number | null> = { 1: 1_000_000, 2: 5_000, 3: 5_000, 4: 30, 5: 10, ...prices };

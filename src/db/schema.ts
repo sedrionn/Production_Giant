@@ -4,7 +4,7 @@
  */
 import { sql } from "drizzle-orm";
 import { index, integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import type { RigSetup } from "@/engine/facility";
+import type { RigRule } from "@/engine/facility";
 import type { Activity } from "@/engine/types";
 
 const now = sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`;
@@ -17,11 +17,13 @@ export const structureProfiles = sqliteTable("structure_profiles", {
     enum: ["npc_station", "raitaru", "azbel", "sotiyo", "athanor", "tatara"],
   }).notNull(),
   security: text("security", { enum: ["high", "low", "null"] }).notNull(),
-  /** { manufacturing: { material: "t2", time: "t1" }, reaction: {…} } */
-  rigs: text("rigs", { mode: "json" }).$type<Partial<Record<Activity, RigSetup>>>().notNull().default({}),
+  /** RigRule[] (older presets may hold the stage-1 object form — see normalizeRigs). */
+  rigs: text("rigs", { mode: "json" }).$type<RigRule[]>().notNull().default([]),
   solarSystemId: integer("solar_system_id"),
   /** Fraction, 0.01 = 1% */
   facilityTax: real("facility_tax").notNull().default(0),
+  /** Extra system discount on the cost-index part (e.g. Faction Warfare), fraction 0.5 = −50%. */
+  systemJobBonus: real("system_job_bonus").notNull().default(0),
   isDefault: integer("is_default", { mode: "boolean" }).notNull().default(false),
   createdAt: text("created_at").notNull().default(now),
 });

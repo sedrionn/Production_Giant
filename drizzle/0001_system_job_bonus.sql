@@ -1,0 +1,1 @@
+ALTER TABLE `structure_profiles` ADD `system_job_bonus` real DEFAULT 0 NOT NULL;

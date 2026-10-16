@@ -1,13 +1,16 @@
 import { deleteProfile, getSde, listProfiles, upsertProfile, type ProfileInput } from "@/server/data";
 import { fail, int, ok } from "../_util";
+import { normalizeRigs } from "@/engine/facility";
+import type { RigScope } from "@/engine/bonuses";
+import { ACTIVITIES } from "@/engine/types";
 
 const STRUCTURES = ["npc_station", "raitaru", "azbel", "sotiyo", "athanor", "tatara"];
 const SECURITY = ["high", "low", "null"];
-const TIERS = ["none", "t1", "t2"];
+const SCOPES: RigScope[] = ["all", "ships", "components", "structures", "equipment", "fuel"];
 
 function withSystemNames() {
   const sde = getSde().source;
-  return listProfiles().map((p) => ({ ...p, systemName: p.solarSystemId ? sde.getSystem(p.solarSystemId)?.name ?? null : null }));
+  return listProfiles().map((p) => ({ ...p, rigs: normalizeRigs(p.rigs), systemName: p.solarSystemId ? sde.getSystem(p.solarSystemId)?.name ?? null : null }));
 }
 
 export async function GET() {
@@ -21,19 +24,25 @@ export async function POST(req: Request) {
     if (!b.name?.trim()) throw new Error("Нужно название");
     if (!STRUCTURES.includes(b.structureType)) throw new Error("Неизвестная структура");
     if (!SECURITY.includes(b.security)) throw new Error("Неизвестная зона безопасности");
-    for (const r of Object.values(b.rigs ?? {})) {
-      if (r && (!TIERS.includes(r.material) || !TIERS.includes(r.time))) throw new Error("Неверный тир рига");
+    const rigs = normalizeRigs(b.rigs);
+    for (const r of rigs) {
+      if (!ACTIVITIES.includes(r.activity)) throw new Error(`Неизвестная работа рига: ${r.activity}`);
+      if (!r.scopes?.length || r.scopes.some((x) => !SCOPES.includes(x))) throw new Error("У рига должны быть группы предметов");
+      for (const v of [r.material, r.time]) if (!(v >= 0 && v <= 0.5)) throw new Error("Бонус рига должен быть 0..50%");
     }
     const tax = Number(b.facilityTax ?? 0);
     if (!(tax >= 0 && tax <= 0.5)) throw new Error("Налог должен быть 0..50%");
+    const sysBonus = Number(b.systemJobBonus ?? 0);
+    if (!(sysBonus >= 0 && sysBonus <= 1)) throw new Error("Скидка системы должна быть 0..100%");
     upsertProfile({
       id: b.id ? int(b.id, "id", { min: 1 }) : undefined,
       name: b.name.trim(),
       structureType: b.structureType,
       security: b.security,
-      rigs: b.rigs ?? {},
+      rigs,
       solarSystemId: b.solarSystemId ? int(b.solarSystemId, "system", { min: 1 }) : null,
       facilityTax: tax,
+      systemJobBonus: sysBonus,
       isDefault: !!b.isDefault,
     });
     return ok(withSystemNames());

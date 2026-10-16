@@ -1,5 +1,5 @@
 /** Assembles engine inputs from SDE + settings + profiles + prices and returns a UI-ready result. */
-import type { FacilityProfile } from "@/engine/facility";
+import { normalizeRigs, type FacilityProfile } from "@/engine/facility";
 import { inventionCost, type InventionResult } from "@/engine/invention";
 import type { PriceMode } from "@/engine/pricing";
 import { summarizeProfit, type ProfitSummary } from "@/engine/profit";
@@ -34,7 +34,7 @@ export interface NodeDTO {
   buyUnitCost: number | null;
   buildUnitCost: number | null;
   activity: Activity | null;
-  job: (Omit<TreeJob, "cost"> & { cost: number }) | null;
+  job: (Omit<TreeJob, "cost"> & { cost: number; costBreakdown: TreeJob["cost"] }) | null;
   children: { typeId: number; quantity: number }[];
 }
 
@@ -67,11 +67,17 @@ export interface ProfileDTO {
   costIndices: Partial<Record<Activity, number>>;
 }
 
-const NPC_FALLBACK: FacilityProfile = { structure: "npc_station", security: "high", rigs: {}, facilityTax: 0.0025 };
+const NPC_FALLBACK: FacilityProfile = { structure: "npc_station", security: "high", rigs: [], facilityTax: 0.0025 };
 
 function toFacility(p: Profile | undefined): FacilityProfile {
   if (!p) return NPC_FALLBACK;
-  return { structure: p.structureType, security: p.security, rigs: p.rigs, facilityTax: p.facilityTax };
+  return {
+    structure: p.structureType,
+    security: p.security,
+    rigs: normalizeRigs(p.rigs),
+    facilityTax: p.facilityTax,
+    systemJobBonus: p.systemJobBonus,
+  };
 }
 
 export function calculate(req: CalcRequest): CalcResponse {
@@ -143,6 +149,10 @@ export function calculate(req: CalcRequest): CalcResponse {
     recipe,
     blueprintLevels: (bp) => (bp === rootRecipe.blueprintTypeId ? { me, te } : { me: s.defaultMe, te: s.defaultTe }),
     facility: (a) => toFacility(a === "reaction" ? rxProfile : mfgProfile),
+    itemClass: (id) => {
+      const t = sde.getType(id);
+      return t && { categoryId: t.categoryId, groupId: t.groupId };
+    },
     costIndex: (a) => (a === "reaction" ? rxIdx.indices.reaction : mfgIdx.indices[a]) ?? 0,
     quote: prices.quote,
     adjustedPrice: prices.adjusted,
@@ -164,7 +174,7 @@ export function calculate(req: CalcRequest): CalcResponse {
     buyUnitCost: n.buyUnitCost,
     buildUnitCost: n.buildUnitCost,
     activity: recipe(n.typeId)?.activity ?? null,
-    job: n.job ? { ...n.job, cost: n.job.cost.total } : null,
+    job: n.job ? { ...n.job, cost: n.job.cost.total, costBreakdown: n.job.cost } : null,
     children: n.children,
   }));
 
@@ -186,7 +196,7 @@ export function calculate(req: CalcRequest): CalcResponse {
     product: { typeId: req.typeId, name: name(req.typeId) },
     summary,
     nodes,
-    jobs: tree.jobs.map((j) => ({ ...j, cost: j.cost.total, name: name(j.typeId) })),
+    jobs: tree.jobs.map((j) => ({ ...j, cost: j.cost.total, costBreakdown: j.cost, name: name(j.typeId) })),
     shopping: tree.shopping.map((l) => ({ ...l, name: name(l.typeId), volume: (sde.getType(l.typeId)?.volume ?? 0) * l.quantity })),
     invention: { options, chosen },
     facilities: { manufacturing: dto(mfgProfile, mfgIdx), reaction: dto(rxProfile, rxIdx), costIndexSource: mfgIdx.source },

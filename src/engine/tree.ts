@@ -11,7 +11,7 @@
  *                  ME rounding per job → demand on inputs. Shared intermediates
  *                  (e.g. Fulleroferrocene used by 4 components) become ONE job.
  */
-import { materialMultiplier, type FacilityProfile } from "./facility";
+import { materialMultiplier, type FacilityProfile, type ItemClass } from "./facility";
 import { estimatedItemValue, jobInstallCost, jobTime, type IndustrySkills, type JobCostBreakdown } from "./jobCost";
 import { materialsForJob } from "./materials";
 import { acquisitionFeeRate, quotePrice, type FeeRates, type MarketQuote, type PriceMode } from "./pricing";
@@ -25,6 +25,8 @@ export interface TreeContext {
   /** ME/TE for the blueprint (owned BPO/BPC levels, or defaults). */
   blueprintLevels(blueprintTypeId: number, activity: Activity): { me: number; te: number };
   facility(activity: Activity): FacilityProfile;
+  /** Category/group of a type — decides which rigs apply. Optional: without it only "all" rigs apply. */
+  itemClass?(typeId: number): ItemClass | undefined;
   costIndex(activity: Activity): number;
   quote(typeId: number): MarketQuote | undefined;
   adjustedPrice(typeId: number): number | undefined;
@@ -145,7 +147,7 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
     if (d.recipe && !forcedBuy) {
       const r = d.recipe;
       const { me } = levels(r);
-      const mult = materialMultiplier(ctx.facility(r.activity), r.activity);
+      const mult = materialMultiplier(ctx.facility(r.activity), r.activity, ctx.itemClass?.(typeId));
       const perRunOut = r.products.find((p) => p.typeId === typeId)?.quantity ?? 1;
       let inputs = 0;
       let complete = true;
@@ -214,7 +216,8 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
       if (runs === 0) continue;
       const facility = ctx.facility(r.activity);
       const { me, te } = levels(r);
-      const mats = materialsForJob(r.materials, runs, me, materialMultiplier(facility, r.activity));
+      const cls = ctx.itemClass?.(t);
+      const mats = materialsForJob(r.materials, runs, me, materialMultiplier(facility, r.activity, cls));
       node.children = mats.map((m) => ({ typeId: m.typeId, quantity: m.quantity }));
       for (const m of mats) add(m.typeId, m.quantity);
       const { eiv, missing } = estimatedItemValue(r.materials, runs, ctx.adjustedPrice);
@@ -231,7 +234,7 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
         output,
         surplus: output - node.demand,
         cost: jobInstallCost(eiv, r.activity, ctx.costIndex(r.activity), facility),
-        timeSeconds: jobTime(r.time, runs, te, r.activity, facility, ctx.skills),
+        timeSeconds: jobTime(r.time, runs, te, r.activity, facility, ctx.skills, cls),
       };
       jobs.push(node.job);
     } else {

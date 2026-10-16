@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { materialQuantity, materialsForJob, outputQuantity, runsNeeded } from "@/engine/materials";
-import { materialMultiplier, NPC_STATION, type FacilityProfile } from "@/engine/facility";
+import { materialMultiplier, normalizeRigs, NPC_STATION, type FacilityProfile } from "@/engine/facility";
 
 describe("materialQuantity", () => {
   it("ME 0 is base × runs", () => {
@@ -61,12 +61,12 @@ describe("facility multipliers", () => {
   const sotiyoNull: FacilityProfile = {
     structure: "sotiyo",
     security: "null",
-    rigs: { manufacturing: { material: "t2", time: "t2" } },
+    rigs: [{ activity: "manufacturing", scopes: ["all"], material: 0.024, time: 0.24 }],
     facilityTax: 0.01,
   };
 
   it("Sotiyo role bonus only, no rigs", () => {
-    const f: FacilityProfile = { ...sotiyoNull, rigs: {} };
+    const f: FacilityProfile = { ...sotiyoNull, rigs: [] };
     expect(materialMultiplier(f, "manufacturing")).toBeCloseTo(0.99, 10);
   });
 
@@ -74,8 +74,35 @@ describe("facility multipliers", () => {
     expect(materialMultiplier(sotiyoNull, "manufacturing")).toBeCloseTo(0.99 * (1 - 0.024 * 2.1), 10);
   });
 
+  it("scoped rigs: ship rig hits ships only, component rig hits components only", () => {
+    const auner: FacilityProfile = {
+      structure: "sotiyo",
+      security: "low",
+      rigs: [
+        { name: "XL Ship ME I", activity: "manufacturing", scopes: ["ships"], material: 0.02, time: 0.2 },
+        { name: "XL Thukker Structure & Component", activity: "manufacturing", scopes: ["components", "structures"], material: 0.03, time: 0.2 },
+      ],
+      facilityTax: 0.01,
+    };
+    const ship = { categoryId: 6, groupId: 1305 };
+    const component = { categoryId: 17, groupId: 964 };
+    const drone = { categoryId: 18, groupId: 100 };
+    expect(materialMultiplier(auner, "manufacturing", ship)).toBeCloseTo(0.99 * (1 - 0.02 * 1.9), 10);
+    expect(materialMultiplier(auner, "manufacturing", component)).toBeCloseTo(0.99 * (1 - 0.03 * 1.9), 10);
+    expect(materialMultiplier(auner, "manufacturing", drone)).toBeCloseTo(0.99, 10);
+    expect(materialMultiplier(auner, "manufacturing")).toBeCloseTo(0.99, 10); // unknown item: only "all" rigs
+  });
+
+  it("stage-1 preset format converts to rules", () => {
+    expect(normalizeRigs({ manufacturing: { material: "t2", time: "none" }, reaction: { material: "none", time: "none" } })).toEqual([
+      { activity: "manufacturing", scopes: ["all"], material: 0.024, time: 0 },
+    ]);
+    expect(normalizeRigs([])).toEqual([]);
+    expect(normalizeRigs(null)).toEqual([]);
+  });
+
   it("role material bonus does not apply to reactions", () => {
-    const tatara: FacilityProfile = { structure: "tatara", security: "low", rigs: {}, facilityTax: 0 };
+    const tatara: FacilityProfile = { structure: "tatara", security: "low", rigs: [], facilityTax: 0 };
     expect(materialMultiplier(tatara, "reaction")).toBe(1);
   });
 });

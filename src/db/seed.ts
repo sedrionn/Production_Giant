@@ -43,8 +43,8 @@ export function seedDefaults(db: BetterSQLite3Database<typeof schema>): void {
   if (n === 0) {
     db.insert(structureProfiles)
       .values([
-        { name: "Sotiyo (main)", structureType: "sotiyo", security: "null", rigs: {}, facilityTax: 0, isDefault: true },
-        { name: "Tatara (reactions)", structureType: "tatara", security: "null", rigs: {}, facilityTax: 0 },
+        { name: "Sotiyo (main)", structureType: "sotiyo", security: "null", rigs: [], facilityTax: 0, isDefault: true },
+        { name: "Tatara (reactions)", structureType: "tatara", security: "null", rigs: [], facilityTax: 0 },
         { name: "NPC Station (Jita)", structureType: "npc_station", security: "high", solarSystemId: 30000142, facilityTax: 0.0025 },
       ])
       .run();

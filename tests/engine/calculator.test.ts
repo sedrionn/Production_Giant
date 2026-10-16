@@ -70,7 +70,7 @@ describe("calculateJob", () => {
       calculateJob({
         ...base,
         activity: { ...act, activity: "reaction" },
-        facility: { structure: "sotiyo", security: "null", rigs: {}, facilityTax: 0 },
+        facility: { structure: "sotiyo", security: "null", rigs: [], facilityTax: 0 },
       }),
     ).toThrow(/cannot run reaction/);
   });

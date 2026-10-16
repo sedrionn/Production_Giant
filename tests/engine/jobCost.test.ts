@@ -31,7 +31,7 @@ describe("jobInstallCost", () => {
   });
 
   it("Sotiyo job bonus reduces only the gross part", () => {
-    const sotiyo: FacilityProfile = { structure: "sotiyo", security: "null", rigs: {}, facilityTax: 0 };
+    const sotiyo: FacilityProfile = { structure: "sotiyo", security: "null", rigs: [], facilityTax: 0 };
     const c = jobInstallCost(1_000_000, "manufacturing", 0.1, sotiyo);
     expect(c.grossCost).toBeCloseTo(100_000 * 0.95);
     expect(c.facilityTax).toBe(0);
@@ -60,7 +60,7 @@ describe("jobTime", () => {
     const f: FacilityProfile = {
       structure: "sotiyo",
       security: "high",
-      rigs: { manufacturing: { material: "none", time: "t1" } },
+      rigs: [{ activity: "manufacturing", scopes: ["all"], material: 0, time: 0.2 }],
       facilityTax: 0,
     };
     expect(jobTime(1000, 1, 0, "manufacturing", f)).toBeCloseTo(1000 * 0.7 * 0.8);
@@ -68,7 +68,17 @@ describe("jobTime", () => {
 
   it("TE is ignored for reactions; reactions skill applies", () => {
     expect(skillTimeMultiplier("reaction", { reactions: 5 })).toBeCloseTo(0.8);
-    const tatara: FacilityProfile = { structure: "tatara", security: "low", rigs: {}, facilityTax: 0 };
+    const tatara: FacilityProfile = { structure: "tatara", security: "low", rigs: [], facilityTax: 0 };
     expect(jobTime(1000, 1, 20, "reaction", tatara)).toBeCloseTo(750);
+  });
+});
+
+describe("system job bonus (e.g. Faction Warfare)", () => {
+  it("halves only the cost-index part, taxes untouched", () => {
+    const f: FacilityProfile = { structure: "sotiyo", security: "low", rigs: [], facilityTax: 0.01, systemJobBonus: 0.5 };
+    const c = jobInstallCost(1_000_000, "manufacturing", 0.1, f);
+    expect(c.grossCost).toBeCloseTo(100_000 * 0.95 * 0.5);
+    expect(c.facilityTax).toBeCloseTo(10_000);
+    expect(c.sccSurcharge).toBeCloseTo(1_000_000 * SCC_SURCHARGE);
   });
 });
