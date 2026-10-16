@@ -21,6 +21,15 @@ export interface EsiMarketOrder {
   range?: string;
 }
 
+export interface EsiMarketHistoryDay {
+  date: string; // YYYY-MM-DD
+  average: number;
+  highest: number;
+  lowest: number;
+  order_count: number;
+  volume: number;
+}
+
 export const REGION_THE_FORGE = 10000002;
 export const STATION_JITA_4_4 = 60003760;
 export const SYSTEM_JITA = 30000142;

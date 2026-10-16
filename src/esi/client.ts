@@ -2,7 +2,7 @@
  * Minimal public-ESI client (no auth yet — SSO comes in stage 2).
  * Node or server side only. Not reachable from cloud sessions.
  */
-import type { EsiIndustrySystem, EsiMarketOrder, EsiMarketPrice } from "./types";
+import type { EsiIndustrySystem, EsiMarketHistoryDay, EsiMarketOrder, EsiMarketPrice } from "./types";
 
 export const ESI_BASE = "https://esi.evetech.net/latest";
 export const USER_AGENT = "production-giant (personal EVE industry tool; github.com/sedrionn/production_giant)";
@@ -53,6 +53,9 @@ export const getMarketPrices = () => esiGet<EsiMarketPrice[]>("/markets/prices/"
 export const getIndustrySystems = () => esiGet<EsiIndustrySystem[]>("/industry/systems/");
 export const getRegionOrders = (regionId: number, typeId: number) =>
   esiGetAllPages<EsiMarketOrder>(`/markets/${regionId}/orders/`, { order_type: "all", type_id: typeId });
+
+export const getMarketHistory = (regionId: number, typeId: number) =>
+  esiGet<EsiMarketHistoryDay[]>(`/markets/${regionId}/history/`, { type_id: typeId });
 
 /** Runs `fn` over items with bounded concurrency (be nice to ESI). */
 export async function mapLimit<T, R>(items: T[], limit: number, fn: (t: T, i: number) => Promise<R>): Promise<R[]> {

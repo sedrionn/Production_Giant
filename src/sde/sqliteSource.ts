@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 import type { Activity, Blueprint, BlueprintActivity } from "@/engine/types";
-import type { ProducerRef, SdeSource, SdeSystem, SdeType } from "./types";
+import type { ProducerRef, SdeGroup, SdeSource, SdeSystem, SdeType } from "./types";
 
 interface TypeRow {
   type_id: number;
@@ -12,6 +12,7 @@ interface TypeRow {
   published: number;
   market_group_id: number | null;
   meta_group_id: number | null;
+  race_id?: number | null;
 }
 
 function toType(r: TypeRow): SdeType {
@@ -25,6 +26,7 @@ function toType(r: TypeRow): SdeType {
     published: r.published === 1,
     marketGroupId: r.market_group_id,
     metaGroupId: r.meta_group_id,
+    raceId: r.race_id ?? null,
   };
 }
 
@@ -138,5 +140,28 @@ export class SqliteSdeSource implements SdeSource {
   private hasSystems(): boolean {
     this.systemsTable ??= !!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='sde_systems'").get();
     return this.systemsTable;
+  }
+
+  listProducts(activity: "manufacturing" | "reaction"): SdeType[] {
+    const rows = this.db
+      .prepare(
+        `SELECT DISTINCT t.* FROM sde_types t JOIN sde_bp_products p ON p.type_id = t.type_id
+         WHERE p.activity = ? AND t.published = 1 ORDER BY t.name`,
+      )
+      .all(activity) as TypeRow[];
+    return rows.map(toType);
+  }
+
+  getGroup(groupId: number): SdeGroup | undefined {
+    const r = this.db.prepare("SELECT group_id, category_id, name FROM sde_groups WHERE group_id = ?").get(groupId) as
+      | { group_id: number; category_id: number; name: string }
+      | undefined;
+    return r && { groupId: r.group_id, categoryId: r.category_id, name: r.name };
+  }
+
+  /** True when the SDE was imported with race ids (needed for "Caldari ships"). */
+  hasRaces(): boolean {
+    const cols = this.db.prepare("PRAGMA table_info(sde_types)").all() as { name: string }[];
+    return cols.some((c) => c.name === "race_id");
   }
 }

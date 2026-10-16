@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS sde_groups (
 CREATE TABLE IF NOT EXISTS sde_types (
   type_id INTEGER PRIMARY KEY, name TEXT NOT NULL, group_id INTEGER NOT NULL,
   category_id INTEGER, portion_size INTEGER NOT NULL, volume REAL NOT NULL,
-  published INTEGER NOT NULL, market_group_id INTEGER, meta_group_id INTEGER
+  published INTEGER NOT NULL, market_group_id INTEGER, meta_group_id INTEGER, race_id INTEGER
 );
 CREATE INDEX IF NOT EXISTS sde_types_name ON sde_types(name COLLATE NOCASE);
 CREATE TABLE IF NOT EXISTS sde_blueprints (
@@ -61,13 +61,13 @@ export function insertGroups(db: Database.Database, groups: Iterable<SdeGroup>):
 }
 
 export function insertTypes(db: Database.Database, types: Iterable<SdeType>): number {
-  const stmt = db.prepare("INSERT OR REPLACE INTO sde_types VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+  const stmt = db.prepare("INSERT OR REPLACE INTO sde_types VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
   let n = 0;
   db.transaction(() => {
     for (const t of types) {
       stmt.run(
         t.typeId, t.name, t.groupId, t.categoryId, t.portionSize, t.volume,
-        t.published ? 1 : 0, t.marketGroupId, t.metaGroupId,
+        t.published ? 1 : 0, t.marketGroupId, t.metaGroupId, t.raceId ?? null,
       );
       n++;
     }

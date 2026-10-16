@@ -11,6 +11,8 @@ export interface SdeType {
   published: boolean;
   marketGroupId: number | null;
   metaGroupId: number | null;
+  /** 1 Caldari, 2 Minmatar, 4 Amarr, 8 Gallente… Absent in SDE imports made before 2026-10-16. */
+  raceId?: number | null;
 }
 
 export interface SdeGroup {
@@ -43,6 +45,9 @@ export interface SdeSource {
   searchTypes(query: string, limit?: number): SdeType[];
   /** Published types that some manufacturing/reaction job produces. */
   searchBuildable(query: string, limit?: number): SdeType[];
+  /** Every published type produced by `activity` (for the profitability overview). */
+  listProducts(activity: "manufacturing" | "reaction"): SdeType[];
+  getGroup(groupId: number): SdeGroup | undefined;
   getSystem(systemId: number): SdeSystem | undefined;
   searchSystems(query: string, limit?: number): SdeSystem[];
 }
@@ -53,4 +58,5 @@ export interface SdeSubset {
   types: SdeType[];
   blueprints: Blueprint[];
   systems?: SdeSystem[];
+  groups?: SdeGroup[];
 }

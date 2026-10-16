@@ -10,7 +10,7 @@ import { eq, inArray } from "drizzle-orm";
 import type { MarketQuote } from "@/engine/pricing";
 import type { Activity } from "@/engine/types";
 import { openAppDb, type AppDb } from "@/db/client";
-import { adjustedPrices, costIndices, priceCache, settings, structureProfiles } from "@/db/schema";
+import { adjustedPrices, costIndices, marketStats, priceCache, settings, structureProfiles } from "@/db/schema";
 import { DEFAULT_SETTINGS, type AppSettings } from "@/db/seed";
 import { FixtureSdeSource } from "@/sde/fixtureSource";
 import { SqliteSdeSource } from "@/sde/sqliteSource";
@@ -201,4 +201,22 @@ export function costIndicesFor(systemId: number | null | undefined): { indices: 
   }
   const f = fixtures()?.indices[systemId];
   return f ? { indices: f, source: "fixtures" } : { indices: {}, source: "none" };
+}
+
+export interface VolumeInfo {
+  avgDailyVolume7d: number;
+  avgDailyVolume30d: number;
+  avgPrice30d: number | null;
+  updatedAt: string;
+}
+
+export function volumesFor(typeIds: number[], regionId: number): Map<number, VolumeInfo> {
+  const out = new Map<number, VolumeInfo>();
+  const ids = [...new Set(typeIds)];
+  for (let i = 0; i < ids.length; i += 500) {
+    for (const r of getDb().select().from(marketStats).where(inArray(marketStats.typeId, ids.slice(i, i + 500))).all()) {
+      if (r.regionId === regionId) out.set(r.typeId, r);
+    }
+  }
+  return out;
 }

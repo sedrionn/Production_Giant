@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adjustedPriceMap, aggregateOrders, costIndicesBySystem } from "@/esi/transform";
+import { adjustedPriceMap, aggregateOrders, costIndicesBySystem, volumeStats } from "@/esi/transform";
 import { STATION_JITA_4_4 } from "@/esi/types";
 import type { EsiMarketOrder } from "@/esi/types";
 
@@ -55,5 +55,19 @@ describe("costIndicesBySystem", () => {
       },
     ]);
     expect(m.get(30000142)).toEqual({ manufacturing: 0.05, research_material: 0.01, reaction: 0.02 });
+  });
+});
+
+describe("volumeStats", () => {
+  // SYNTHETIC history: ESI omits days without trades.
+  const h = (date: string, volume: number, average = 100) => ({ date, volume, average, highest: average, lowest: average, order_count: 1 });
+  it("averages over 7/30 days, missing days count as zero, today excluded", () => {
+    const s = volumeStats(1, [h("2026-10-16", 999), h("2026-10-15", 70), h("2026-10-09", 7), h("2026-10-08", 30), h("2026-09-16", 3000)], "2026-10-16");
+    expect(s.avgDailyVolume7d).toBeCloseTo((70 + 7) / 7);
+    expect(s.avgDailyVolume30d).toBeCloseTo((70 + 7 + 30 + 3000) / 30);
+  });
+  it("volume-weighted price, null when nothing traded", () => {
+    expect(volumeStats(1, [h("2026-10-15", 1, 100), h("2026-10-14", 3, 200)], "2026-10-16").avgPrice30d).toBeCloseTo(175);
+    expect(volumeStats(1, [], "2026-10-16").avgPrice30d).toBeNull();
   });
 });

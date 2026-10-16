@@ -1,7 +1,7 @@
 /** Pure transforms from raw ESI data to engine-friendly shapes. Fully unit-tested. */
 import type { Activity } from "@/engine/types";
 import type { MarketQuote } from "@/engine/pricing";
-import type { EsiIndustrySystem, EsiMarketOrder, EsiMarketPrice } from "./types";
+import type { EsiIndustrySystem, EsiMarketHistoryDay, EsiMarketOrder, EsiMarketPrice } from "./types";
 
 /**
  * Best bid/ask at one station.
@@ -54,4 +54,32 @@ export function costIndicesBySystem(systems: EsiIndustrySystem[]): Map<number, C
     m.set(s.solar_system_id, ci);
   }
   return m;
+}
+
+export interface VolumeStats {
+  typeId: number;
+  /** Units traded per day, averaged over the last 7 / 30 days (days without trades count as 0). */
+  avgDailyVolume7d: number;
+  avgDailyVolume30d: number;
+  /** Volume-weighted average price over 30 days; null if nothing traded. */
+  avgPrice30d: number | null;
+}
+
+/** Region market history → average daily volume. `today` = YYYY-MM-DD (UTC). */
+export function volumeStats(typeId: number, history: EsiMarketHistoryDay[], today: string): VolumeStats {
+  const end = Date.parse(today + "T00:00:00Z");
+  const day = 86_400_000;
+  let v7 = 0;
+  let v30 = 0;
+  let isk30 = 0;
+  for (const h of history) {
+    const age = (end - Date.parse(h.date + "T00:00:00Z")) / day;
+    // ESI history ends yesterday; "last 7 days" = ages 1..7.
+    if (age >= 1 && age <= 7) v7 += h.volume;
+    if (age >= 1 && age <= 30) {
+      v30 += h.volume;
+      isk30 += h.volume * h.average;
+    }
+  }
+  return { typeId, avgDailyVolume7d: v7 / 7, avgDailyVolume30d: v30 / 30, avgPrice30d: v30 ? isk30 / v30 : null };
 }

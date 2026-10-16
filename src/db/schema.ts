@@ -44,6 +44,20 @@ export const priceCache = sqliteTable(
   (t) => [primaryKey({ columns: [t.typeId, t.locationId] })],
 );
 
+/** Traded volume from region market history (refreshed with prices). */
+export const marketStats = sqliteTable(
+  "market_stats",
+  {
+    typeId: integer("type_id").notNull(),
+    regionId: integer("region_id").notNull(),
+    avgDailyVolume7d: real("avg_daily_volume_7d").notNull(),
+    avgDailyVolume30d: real("avg_daily_volume_30d").notNull(),
+    avgPrice30d: real("avg_price_30d"),
+    updatedAt: text("updated_at").notNull().default(now),
+  },
+  (t) => [primaryKey({ columns: [t.typeId, t.regionId] })],
+);
+
 /** CCP adjusted/average prices (/markets/prices) — used for EIV, not for profit. */
 export const adjustedPrices = sqliteTable("adjusted_prices", {
   typeId: integer("type_id").primaryKey(),

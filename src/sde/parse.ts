@@ -46,6 +46,7 @@ export function parseTypeRecord(r: Rec, groupCategory: Map<number, number>): Sde
     published: pick(r, "published") === true,
     marketGroupId: num(pick(r, "marketGroupID", "marketGroupId")),
     metaGroupId: num(pick(r, "metaGroupID", "metaGroupId")),
+    raceId: num(pick(r, "raceID", "raceId")),
   };
 }
 
