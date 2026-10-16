@@ -17,11 +17,11 @@
   },
   "dependencies": {
     "better-sqlite3": "^12.10.0",
-    "drizzle-orm": "^0.44.5",
-    "next": "15.5.4",
+    "drizzle-orm": "^0.45.3",
+    "next": "^15.5.27",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "yauzl": "^3.2.0"
+    "yauzl": "^3.4.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -33,7 +33,7 @@
     "@types/yauzl": "^2.10.3",
     "drizzle-kit": "^0.31.4",
     "eslint": "^9",
-    "eslint-config-next": "15.5.4",
+    "eslint-config-next": "^15.5.27",
     "tailwindcss": "^4",
     "tsx": "^4.20.5",
     "typescript": "^5",
