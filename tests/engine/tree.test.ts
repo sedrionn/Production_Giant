@@ -138,3 +138,24 @@ describe("buildTree — robustness", () => {
     expect(r.warnings.join(" ")).toMatch(/no market price/);
   });
 });
+
+describe("buildTree — ISK/h threshold for intermediates", () => {
+  // compA: build 500/unit vs buy 5000 → saves 4500 per unit; job 1h per unit (no bonuses) → 4500/h
+  it("builds when savings/h ≥ threshold", () => {
+    const r = buildTree(1, 1, ctx({ minBuildIskPerHour: 4000 }));
+    expect(r.nodes.get(2)!.decision).toBe("build");
+    expect(r.nodes.get(2)!.buildSavingsPerHour).toBeCloseTo(4500);
+  });
+
+  it("buys when cheaper to build but savings/h below threshold", () => {
+    const r = buildTree(1, 1, ctx({ minBuildIskPerHour: 100_000 }));
+    expect(r.nodes.get(2)!.decision).toBe("buy");
+    expect(r.nodes.get(2)!.reason).toBe("below threshold");
+  });
+
+  it("never applies to the root, and manual override still wins", () => {
+    const r = buildTree(1, 1, ctx({ minBuildIskPerHour: 1e12, decisions: { 2: "build" } }));
+    expect(r.nodes.get(1)!.decision).toBe("build");
+    expect(r.nodes.get(2)!.decision).toBe("build");
+  });
+});

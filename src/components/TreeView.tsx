@@ -8,6 +8,7 @@ import { full, isk, qty } from "@/lib/format";
 const REASON: Record<string, string> = {
   root: "",
   cheaper: "дешевле",
+  "below threshold": "выгода ниже порога",
   override: "вручную",
   "no recipe": "нет чертежа",
   "no market price": "нет на рынке",
@@ -121,7 +122,15 @@ function Row({
           ) : (
             <span className="px-2 text-sm text-graphite">{depth === 0 ? "строить" : "купить"}</span>
           )}
-          {REASON[node.reason] && <span className="truncate text-xs text-graphite">{REASON[node.reason]}</span>}
+          {REASON[node.reason] && (
+            <span
+              className="truncate text-xs text-graphite"
+              title={node.buildSavingsPerHour !== null ? `Постройка вместо покупки: ${isk(node.buildSavingsPerHour, true)} ISK за час джобы` : undefined}
+            >
+              {REASON[node.reason]}
+              {node.buildSavingsPerHour !== null && node.buildSavingsPerHour > 0 && `, ${isk(node.buildSavingsPerHour, true)}/ч`}
+            </span>
+          )}
         </span>
         <span className={`text-right ${cheaper === "buy" ? "text-chalk" : "text-graphite"}`} title={full(node.buyUnitCost)}>
           {isk(node.buyUnitCost)}

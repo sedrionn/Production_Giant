@@ -351,6 +351,16 @@ export function SettingsForm() {
       <div className="grid gap-4 rounded border border-line bg-sheet/60 px-4 py-4 sm:grid-cols-2 lg:grid-cols-4">
         {pctField("Налог с продаж, %", "salesTax")}
         {pctField("Брокерская комиссия, %", "brokerFee")}
+        <L label="Строить компонент, если выгода от, ISK/ч">
+          <input
+            type="number"
+            step={10000}
+            min={0}
+            value={s.minBuildIskPerHour}
+            onChange={(e) => set({ minBuildIskPerHour: Math.max(0, Math.round(Number(e.target.value))) })}
+            className={input}
+          />
+        </L>
         {lvl("ME чертежей компонентов", s.defaultMe, (n) => set({ defaultMe: n }), 10)}
         {lvl("TE чертежей компонентов", s.defaultTe, (n) => set({ defaultTe: n }), 20)}
         {lvl("Industry", s.industrySkills.industry, (n) => set({ industrySkills: { ...s.industrySkills, industry: n } }))}

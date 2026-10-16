@@ -23,6 +23,7 @@ export interface CalcRequest {
   productPriceMode?: PriceMode;
   manufacturingProfileId?: number;
   reactionProfileId?: number;
+  minBuildIskPerHour?: number;
 }
 
 export interface NodeDTO {
@@ -33,6 +34,7 @@ export interface NodeDTO {
   demand: number;
   buyUnitCost: number | null;
   buildUnitCost: number | null;
+  buildSavingsPerHour: number | null;
   activity: Activity | null;
   job: (Omit<TreeJob, "cost"> & { cost: number; costBreakdown: TreeJob["cost"] }) | null;
   children: { typeId: number; quantity: number }[];
@@ -160,6 +162,7 @@ export function calculate(req: CalcRequest): CalcResponse {
     fees,
     skills: s.industrySkills,
     decisions: req.decisions,
+    minBuildIskPerHour: req.minBuildIskPerHour ?? s.minBuildIskPerHour,
   });
   warnings.push(...tree.warnings.map((w) => localizeWarning(w, name)));
 
@@ -173,6 +176,7 @@ export function calculate(req: CalcRequest): CalcResponse {
     demand: n.demand,
     buyUnitCost: n.buyUnitCost,
     buildUnitCost: n.buildUnitCost,
+    buildSavingsPerHour: n.buildSavingsPerHour,
     activity: recipe(n.typeId)?.activity ?? null,
     job: n.job ? { ...n.job, cost: n.job.cost.total, costBreakdown: n.job.cost } : null,
     children: n.children,

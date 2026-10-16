@@ -35,6 +35,11 @@ export interface TreeContext {
   skills?: IndustrySkills;
   /** Manual overrides per type. */
   decisions?: Record<number, Decision>;
+  /**
+   * Build an intermediate only if it saves at least this much ISK per hour of its own
+   * job time vs buying it. 0/undefined = build whenever cheaper. Root is always built.
+   */
+  minBuildIskPerHour?: number;
 }
 
 export interface TreeEdge {
@@ -54,6 +59,8 @@ export interface TreeNode {
   buyUnitCost: number | null;
   /** Estimated unit cost if built with the chosen sub-decisions (null = cannot build or unpriced inputs). */
   buildUnitCost: number | null;
+  /** (buy − build) per hour of this node's own job time; null when not comparable. */
+  buildSavingsPerHour: number | null;
   /** Present when built. */
   job?: TreeJob;
   /** Inputs of this node's job (only when built). */
@@ -144,6 +151,7 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
     const buyUnitCost = price === null ? null : price * (1 + acqFee);
 
     let buildUnitCost: number | null = null;
+    let hoursPerUnit: number | null = null;
     if (d.recipe && !forcedBuy) {
       const r = d.recipe;
       const { me } = levels(r);
@@ -159,7 +167,13 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
       const { eiv } = estimatedItemValue(r.materials, 1, ctx.adjustedPrice);
       const job = jobInstallCost(eiv, r.activity, ctx.costIndex(r.activity), ctx.facility(r.activity)).total;
       buildUnitCost = complete ? (inputs + job) / perRunOut : null;
+      const { te } = levels(r);
+      const perRun = jobTime(r.time, 1, te, r.activity, ctx.facility(r.activity), ctx.skills, ctx.itemClass?.(typeId), r.skills);
+      hoursPerUnit = perRun / 3600 / perRunOut;
     }
+    const buildSavingsPerHour =
+      buildUnitCost !== null && buyUnitCost !== null && hoursPerUnit ? (buyUnitCost - buildUnitCost) / hoursPerUnit : null;
+    const minPerHour = ctx.minBuildIskPerHour ?? 0;
 
     const override = ctx.decisions?.[typeId];
     let decision: Decision;
@@ -169,12 +183,14 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
     else if (!d.recipe) [decision, reason] = ["buy", "no recipe"];
     else if (override) [decision, reason] = [override, "override"];
     else if (buyUnitCost === null && buildUnitCost !== null) [decision, reason] = ["build", "no market price"];
-    else if (buildUnitCost !== null && buyUnitCost !== null && buildUnitCost < buyUnitCost) [decision, reason] = ["build", "cheaper"];
+    else if (buildUnitCost !== null && buyUnitCost !== null && buildUnitCost < buyUnitCost) {
+      [decision, reason] = (buildSavingsPerHour ?? Infinity) >= minPerHour ? ["build", "cheaper"] : ["buy", "below threshold"];
+    }
     else [decision, reason] = ["buy", buildUnitCost === null ? "build unpriced" : "cheaper"];
 
     const cost = decision === "build" ? buildUnitCost : buyUnitCost;
     if (!forcedBuy) {
-      nodes.set(typeId, { typeId, decision, reason, demand: 0, buyUnitCost, buildUnitCost, children: [] });
+      nodes.set(typeId, { typeId, decision, reason, demand: 0, buyUnitCost, buildUnitCost, buildSavingsPerHour, children: [] });
       unitCost.set(typeId, cost);
     }
     return cost;
@@ -205,7 +221,7 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
   for (const t of order) {
     const node = nodes.get(t) ?? {
       // cyclic-only child, never decided normally
-      typeId: t, decision: "buy" as const, reason: "cycle", demand: 0, buyUnitCost: null, buildUnitCost: null, children: [],
+      typeId: t, decision: "buy" as const, reason: "cycle", demand: 0, buyUnitCost: null, buildUnitCost: null, buildSavingsPerHour: null, children: [],
     };
     nodes.set(t, node);
     const r = info.get(t)!.recipe;
