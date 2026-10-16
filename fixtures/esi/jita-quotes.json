@@ -1,69 +1,69 @@
 {
- "capturedAt": "2026-10-16T16:22:36.524Z",
+ "capturedAt": "2026-10-16T16:31:30.894Z",
  "locationId": 60003760,
  "quotes": {
   "34": {
    "typeId": 34,
    "buyMax": 3.68,
    "sellMin": 3.9,
-   "buyVolume": 8776893666,
-   "sellVolume": 7061238246
+   "buyVolume": 8775891294,
+   "sellVolume": 7049069258
   },
   "35": {
    "typeId": 35,
    "buyMax": 16.44,
    "sellMin": 17,
-   "buyVolume": 1768776615,
-   "sellVolume": 7001184674
+   "buyVolume": 1768418588,
+   "sellVolume": 6992215651
   },
   "36": {
    "typeId": 36,
    "buyMax": 51.32,
-   "sellMin": 53.37,
-   "buyVolume": 1601463935,
-   "sellVolume": 1533941393
+   "sellMin": 53.42,
+   "buyVolume": 1601357507,
+   "sellVolume": 1531758557
   },
   "37": {
    "typeId": 37,
    "buyMax": 172.3,
-   "sellMin": 178.8,
+   "sellMin": 178.7,
    "buyVolume": 311036328,
-   "sellVolume": 762663055
+   "sellVolume": 762817487
   },
   "38": {
    "typeId": 38,
    "buyMax": 649,
    "sellMin": 676.5,
-   "buyVolume": 180238000,
-   "sellVolume": 205011707
+   "buyVolume": 180234359,
+   "sellVolume": 204937553
   },
   "39": {
    "typeId": 39,
    "buyMax": 1064,
    "sellMin": 1077,
    "buyVolume": 1029330873,
-   "sellVolume": 91593645
+   "sellVolume": 91580584
   },
   "40": {
    "typeId": 40,
-   "buyMax": 2121,
-   "sellMin": 2173,
-   "buyVolume": 31504266,
-   "sellVolume": 100751857
+   "buyMax": 2120,
+   "sellMin": 2172,
+   "buyVolume": 31503404,
+   "sellVolume": 101201334
   },
   "44": {
    "typeId": 44,
    "buyMax": 13660,
-   "sellMin": 14320,
+   "sellMin": 14310,
    "buyVolume": 1599900,
-   "sellVolume": 1777404
+   "sellVolume": 1796033
   },
   "638": {
    "typeId": 638,
    "buyMax": 138000000,
-   "sellMin": 147900000,
+   "sellMin": 148400000,
    "buyVolume": 100028,
-   "sellVolume": 682
+   "sellVolume": 678
   },
   "688": {
    "typeId": 688,
@@ -91,28 +91,28 @@
    "buyMax": 706000,
    "sellMin": 811400,
    "buyVolume": 10002312,
-   "sellVolume": 14965
+   "sellVolume": 14960
   },
   "2312": {
    "typeId": 2312,
    "buyMax": 12650,
-   "sellMin": 13510,
+   "sellMin": 13490,
    "buyVolume": 144670,
-   "sellVolume": 3072989
+   "sellVolume": 3081989
   },
   "2319": {
    "typeId": 2319,
    "buyMax": 9712,
    "sellMin": 10090,
-   "buyVolume": 366421,
+   "buyVolume": 357901,
    "sellVolume": 1146316
   },
   "2401": {
    "typeId": 2401,
-   "buyMax": 648.3,
-   "sellMin": 717.1,
+   "buyMax": 648.7,
+   "sellMin": 717,
    "buyVolume": 10350527,
-   "sellVolume": 42855037
+   "sellVolume": 43443185
   },
   "2463": {
    "typeId": 2463,
@@ -180,65 +180,65 @@
   "3645": {
    "typeId": 3645,
    "buyMax": 441,
-   "sellMin": 474.7,
+   "sellMin": 474.6,
    "buyVolume": 11771744,
-   "sellVolume": 14880030
+   "sellVolume": 15521645
   },
   "3683": {
    "typeId": 3683,
    "buyMax": 411,
-   "sellMin": 446.5,
+   "sellMin": 446.3,
    "buyVolume": 5805891,
-   "sellVolume": 35768990
+   "sellVolume": 35959824
   },
   "3689": {
    "typeId": 3689,
-   "buyMax": 9954,
+   "buyMax": 9955,
    "sellMin": 10200,
-   "buyVolume": 217795,
+   "buyVolume": 204726,
    "sellVolume": 2765438
   },
   "3775": {
    "typeId": 3775,
    "buyMax": 12440,
-   "sellMin": 12810,
+   "sellMin": 12740,
    "buyVolume": 177106,
-   "sellVolume": 2448861
+   "sellVolume": 2451486
   },
   "3828": {
    "typeId": 3828,
-   "buyMax": 9705,
+   "buyMax": 9711,
    "sellMin": 10280,
    "buyVolume": 641097,
-   "sellVolume": 1720591
+   "sellVolume": 1739212
   },
   "4051": {
    "typeId": 4051,
    "buyMax": 17010,
    "sellMin": 17900,
    "buyVolume": 1877881,
-   "sellVolume": 2067355
+   "sellVolume": 2077555
   },
   "4246": {
    "typeId": 4246,
    "buyMax": 17630,
-   "sellMin": 18640,
+   "sellMin": 18500,
    "buyVolume": 2535668,
-   "sellVolume": 2166965
+   "sellVolume": 2182190
   },
   "4247": {
    "typeId": 4247,
    "buyMax": 18390,
-   "sellMin": 19720,
+   "sellMin": 19710,
    "buyVolume": 1422533,
-   "sellVolume": 1427912
+   "sellVolume": 1435613
   },
   "4312": {
    "typeId": 4312,
    "buyMax": 16920,
-   "sellMin": 18360,
+   "sellMin": 17990,
    "buyVolume": 1193801,
-   "sellVolume": 801799
+   "sellVolume": 854608
   },
   "4313": {
    "typeId": 4313,
@@ -270,17 +270,17 @@
   },
   "9832": {
    "typeId": 9832,
-   "buyMax": 9943,
-   "sellMin": 10950,
-   "buyVolume": 575473,
-   "sellVolume": 2664681
+   "buyMax": 9944,
+   "sellMin": 10940,
+   "buyVolume": 546708,
+   "sellVolume": 2855070
   },
   "9834": {
    "typeId": 9834,
    "buyMax": 80880,
    "sellMin": 83500,
    "buyVolume": 168384,
-   "sellVolume": 203268
+   "sellVolume": 203257
   },
   "9848": {
    "typeId": 9848,
@@ -293,13 +293,13 @@
    "typeId": 11399,
    "buyMax": 17800,
    "sellMin": 17860,
-   "buyVolume": 1012298335,
-   "sellVolume": 4158948
+   "buyVolume": 1012297770,
+   "sellVolume": 4148801
   },
   "11433": {
    "typeId": 11433,
    "buyMax": 1741000,
-   "sellMin": 2467000,
+   "sellMin": 2466000,
    "buyVolume": 199,
    "sellVolume": 164
   },
@@ -308,7 +308,7 @@
    "buyMax": 32360,
    "sellMin": 553700,
    "buyVolume": 2219,
-   "sellVolume": 102
+   "sellVolume": 101
   },
   "11443": {
    "typeId": 11443,
@@ -320,7 +320,7 @@
   "11446": {
    "typeId": 11446,
    "buyMax": 940500,
-   "sellMin": 1633000,
+   "sellMin": 1632000,
    "buyVolume": 30,
    "sellVolume": 98
   },
@@ -341,9 +341,9 @@
   "11453": {
    "typeId": 11453,
    "buyMax": 12000000,
-   "sellMin": 19990000,
+   "sellMin": 19980000,
    "buyVolume": 29,
-   "sellVolume": 7
+   "sellVolume": 13
   },
   "11454": {
    "typeId": 11454,
@@ -364,7 +364,7 @@
    "buyMax": 628.5,
    "sellMin": 745.8,
    "buyVolume": 113186,
-   "sellVolume": 1418131
+   "sellVolume": 1418119
   },
   "11481": {
    "typeId": 11481,
@@ -378,7 +378,7 @@
    "buyMax": 125.6,
    "sellMin": 430,
    "buyVolume": 281385,
-   "sellVolume": 449780
+   "sellVolume": 449770
   },
   "11529": {
    "typeId": 11529,
@@ -399,7 +399,7 @@
    "buyMax": 19670,
    "sellMin": 20490,
    "buyVolume": 281244,
-   "sellVolume": 238332
+   "sellVolume": 238196
   },
   "11540": {
    "typeId": 11540,
@@ -467,9 +467,9 @@
   "16238": {
    "typeId": 16238,
    "buyMax": 519900,
-   "sellMin": 570500,
-   "buyVolume": 10000884,
-   "sellVolume": 1585
+   "sellMin": 570400,
+   "buyVolume": 10000883,
+   "sellVolume": 1592
   },
   "16239": {
    "typeId": 16239,
@@ -488,16 +488,16 @@
   "16273": {
    "typeId": 16273,
    "buyMax": 78.8,
-   "sellMin": 85.96,
+   "sellMin": 85.95,
    "buyVolume": 203017371,
-   "sellVolume": 345541137
+   "sellVolume": 345540537
   },
   "16274": {
    "typeId": 16274,
    "buyMax": 708,
    "sellMin": 722.8,
    "buyVolume": 251469202,
-   "sellVolume": 295475593
+   "sellVolume": 295175593
   },
   "16275": {
    "typeId": 16275,
@@ -508,7 +508,7 @@
   },
   "16633": {
    "typeId": 16633,
-   "buyMax": 412.3,
+   "buyMax": 412.5,
    "sellMin": 439.6,
    "buyVolume": 29888023,
    "sellVolume": 52180468
@@ -544,9 +544,9 @@
   "16640": {
    "typeId": 16640,
    "buyMax": 578.5,
-   "sellMin": 599.7,
+   "sellMin": 599.6,
    "buyVolume": 24539227,
-   "sellVolume": 31021673
+   "sellVolume": 31029713
   },
   "16641": {
    "typeId": 16641,
@@ -558,9 +558,9 @@
   "16642": {
    "typeId": 16642,
    "buyMax": 2325,
-   "sellMin": 2439,
+   "sellMin": 2438,
    "buyVolume": 7217550,
-   "sellVolume": 13082429
+   "sellVolume": 13086457
   },
   "16643": {
    "typeId": 16643,
@@ -607,9 +607,9 @@
   "16650": {
    "typeId": 16650,
    "buyMax": 50500,
-   "sellMin": 51290,
+   "sellMin": 51280,
    "buyVolume": 11309465,
-   "sellVolume": 2597765
+   "sellVolume": 2606604
   },
   "16651": {
    "typeId": 16651,
@@ -627,9 +627,9 @@
   },
   "16653": {
    "typeId": 16653,
-   "buyMax": 27420,
+   "buyMax": 27430,
    "sellMin": 29870,
-   "buyVolume": 1578485,
+   "buyVolume": 1591485,
    "sellVolume": 3975701
   },
   "16654": {
@@ -740,9 +740,9 @@
   "16671": {
    "typeId": 16671,
    "buyMax": 76.56,
-   "sellMin": 80,
+   "sellMin": 79.99,
    "buyVolume": 91098947,
-   "sellVolume": 414900636
+   "sellVolume": 419877502
   },
   "16678": {
    "typeId": 16678,
@@ -754,13 +754,13 @@
   "16679": {
    "typeId": 16679,
    "buyMax": 634.9,
-   "sellMin": 656.6,
+   "sellMin": 655,
    "buyVolume": 3683734,
-   "sellVolume": 234965842
+   "sellVolume": 235326924
   },
   "16680": {
    "typeId": 16680,
-   "buyMax": 923.4,
+   "buyMax": 923.6,
    "sellMin": 988,
    "buyVolume": 37125838,
    "sellVolume": 16424941
@@ -775,9 +775,9 @@
   "16682": {
    "typeId": 16682,
    "buyMax": 6039,
-   "sellMin": 6053,
+   "sellMin": 6052,
    "buyVolume": 1684374,
-   "sellVolume": 10154705
+   "sellVolume": 10234705
   },
   "16683": {
    "typeId": 16683,
@@ -791,7 +791,7 @@
    "buyMax": 47140,
    "sellMin": 48360,
    "buyVolume": 306717,
-   "sellVolume": 6070890
+   "sellVolume": 6070690
   },
   "17327": {
    "typeId": 17327,
@@ -865,17 +865,17 @@
   },
   "17888": {
    "typeId": 17888,
-   "buyMax": 593.9,
+   "buyMax": 594.1,
    "sellMin": 608,
-   "buyVolume": 334971668,
-   "sellVolume": 237106946
+   "buyVolume": 344971668,
+   "sellVolume": 236806946
   },
   "17889": {
    "typeId": 17889,
    "buyMax": 523.1,
    "sellMin": 526.9,
    "buyVolume": 324005983,
-   "sellVolume": 100826884
+   "sellVolume": 99546884
   },
   "17959": {
    "typeId": 17959,
@@ -894,16 +894,16 @@
   "20171": {
    "typeId": 20171,
    "buyMax": 88000,
-   "sellMin": 88480,
+   "sellMin": 93050,
    "buyVolume": 18403,
-   "sellVolume": 74835
+   "sellVolume": 74510
   },
   "20411": {
    "typeId": 20411,
-   "buyMax": 91010,
+   "buyMax": 90510,
    "sellMin": 97960,
-   "buyVolume": 30532,
-   "sellVolume": 196977
+   "buyVolume": 27243,
+   "sellVolume": 197153
   },
   "20412": {
    "typeId": 20412,
@@ -915,16 +915,16 @@
   "20414": {
    "typeId": 20414,
    "buyMax": 90280,
-   "sellMin": 94000,
-   "buyVolume": 41324,
-   "sellVolume": 189183
+   "sellMin": 95000,
+   "buyVolume": 41305,
+   "sellVolume": 188593
   },
   "20418": {
    "typeId": 20418,
    "buyMax": 91550,
    "sellMin": 93750,
    "buyVolume": 68331,
-   "sellVolume": 191680
+   "sellVolume": 191670
   },
   "20419": {
    "typeId": 20419,
@@ -936,8 +936,8 @@
   "20424": {
    "typeId": 20424,
    "buyMax": 23030,
-   "sellMin": 24500,
-   "buyVolume": 87418,
+   "sellMin": 24340,
+   "buyVolume": 87372,
    "sellVolume": 280329
   },
   "21017": {
@@ -973,7 +973,7 @@
    "buyMax": 41780000,
    "sellMin": 42520000,
    "buyVolume": 1000109,
-   "sellVolume": 670
+   "sellVolume": 660
   },
   "22465": {
    "typeId": 22465,
@@ -1005,37 +1005,37 @@
   },
   "25606": {
    "typeId": 25606,
-   "buyMax": 9113,
-   "sellMin": 9114,
-   "buyVolume": 227918,
-   "sellVolume": 706908
+   "buyMax": 9114,
+   "sellMin": 9570,
+   "buyVolume": 224961,
+   "sellVolume": 704903
   },
   "25617": {
    "typeId": 25617,
    "buyMax": 238000,
    "sellMin": 242000,
-   "buyVolume": 1069028,
+   "buyVolume": 1068865,
    "sellVolume": 88184
   },
   "25619": {
    "typeId": 25619,
    "buyMax": 1796000,
    "sellMin": 1823000,
-   "buyVolume": 1040022,
+   "buyVolume": 1039871,
    "sellVolume": 36570
   },
   "25625": {
    "typeId": 25625,
    "buyMax": 861000,
    "sellMin": 910000,
-   "buyVolume": 3642,
+   "buyVolume": 3511,
    "sellVolume": 29205
   },
   "25887": {
    "typeId": 25887,
    "buyMax": 85740,
    "sellMin": 92700,
-   "buyVolume": 21514,
+   "buyVolume": 21512,
    "sellVolume": 54744
   },
   "26261": {
@@ -1050,7 +1050,7 @@
    "buyMax": 904300000,
    "sellMin": 967000000,
    "buyVolume": 100032,
-   "sellVolume": 211
+   "sellVolume": 210
   },
   "29992": {
    "typeId": 29992,
@@ -1180,9 +1180,9 @@
   },
   "30269": {
    "typeId": 30269,
-   "buyMax": 102,
+   "buyMax": 102.3,
    "sellMin": 11270,
-   "buyVolume": 10211856,
+   "buyVolume": 10212856,
    "sellVolume": 200480
   },
   "30270": {
@@ -1246,7 +1246,7 @@
    "buyMax": 32410,
    "sellMin": 33900,
    "buyVolume": 100408252,
-   "sellVolume": 943844
+   "sellVolume": 991524
   },
   "30310": {
    "typeId": 30310,
@@ -1265,23 +1265,23 @@
   "30370": {
    "typeId": 30370,
    "buyMax": 5027,
-   "sellMin": 5798,
+   "sellMin": 5796,
    "buyVolume": 1011674158,
-   "sellVolume": 642846
+   "sellVolume": 682846
   },
   "30371": {
    "typeId": 30371,
    "buyMax": 4127,
-   "sellMin": 4700,
+   "sellMin": 4699,
    "buyVolume": 1011380081,
    "sellVolume": 1167963
   },
   "30372": {
    "typeId": 30372,
    "buyMax": 7922,
-   "sellMin": 9700,
+   "sellMin": 9699,
    "buyVolume": 1011518199,
-   "sellVolume": 211002
+   "sellVolume": 251002
   },
   "30373": {
    "typeId": 30373,
@@ -1300,16 +1300,16 @@
   "30375": {
    "typeId": 30375,
    "buyMax": 11000,
-   "sellMin": 12430,
+   "sellMin": 12420,
    "buyVolume": 1020394237,
-   "sellVolume": 779775
+   "sellVolume": 817050
   },
   "30376": {
    "typeId": 30376,
    "buyMax": 19590,
-   "sellMin": 25000,
+   "sellMin": 24490,
    "buyVolume": 1010360111,
-   "sellVolume": 527654
+   "sellVolume": 540654
   },
   "30377": {
    "typeId": 30377,
@@ -1391,9 +1391,9 @@
   "31796": {
    "typeId": 31796,
    "buyMax": 16110000,
-   "sellMin": 17150000,
+   "sellMin": 17190000,
    "buyVolume": 488,
-   "sellVolume": 4156
+   "sellVolume": 4151
   },
   "33362": {
    "typeId": 33362,
@@ -1406,7 +1406,7 @@
    "typeId": 34201,
    "buyMax": 332900,
    "sellMin": 349000,
-   "buyVolume": 6858,
+   "buyVolume": 6827,
    "sellVolume": 20522
   },
   "34202": {
@@ -1419,35 +1419,35 @@
   "34203": {
    "typeId": 34203,
    "buyMax": 673700,
-   "sellMin": 710200,
-   "buyVolume": 5686,
-   "sellVolume": 17029
+   "sellMin": 700000,
+   "buyVolume": 5684,
+   "sellVolume": 17690
   },
   "34204": {
    "typeId": 34204,
    "buyMax": 714300,
-   "sellMin": 748900,
+   "sellMin": 749000,
    "buyVolume": 7393,
-   "sellVolume": 15485
+   "sellVolume": 15462
   },
   "34205": {
    "typeId": 34205,
    "buyMax": 155900,
-   "sellMin": 162900,
+   "sellMin": 166900,
    "buyVolume": 18639,
-   "sellVolume": 43985
+   "sellVolume": 43843
   },
   "34206": {
    "typeId": 34206,
    "buyMax": 166100,
-   "sellMin": 171700,
+   "sellMin": 171800,
    "buyVolume": 23813,
-   "sellVolume": 54106
+   "sellVolume": 53961
   },
   "34207": {
    "typeId": 34207,
    "buyMax": 3049000,
-   "sellMin": 3389000,
+   "sellMin": 3291000,
    "buyVolume": 1546,
    "sellVolume": 3186
   },
@@ -1488,15 +1488,15 @@
   },
   "34416": {
    "typeId": 34416,
-   "buyMax": 785600,
+   "buyMax": 784800,
    "sellMin": 1098000,
-   "buyVolume": 745,
+   "buyVolume": 744,
    "sellVolume": 2323
   },
   "34828": {
    "typeId": 34828,
    "buyMax": 60500000,
-   "sellMin": 64910000,
+   "sellMin": 64900000,
    "buyVolume": 1000149,
    "sellVolume": 865
   },
@@ -1797,9 +1797,9 @@
   "57478": {
    "typeId": 57478,
    "buyMax": 44160,
-   "sellMin": 45670,
+   "sellMin": 45660,
    "buyVolume": 125124,
-   "sellVolume": 761199
+   "sellVolume": 764510
   },
   "57479": {
    "typeId": 57479,
@@ -1813,7 +1813,7 @@
    "buyMax": 80230,
    "sellMin": 87610,
    "buyVolume": 170128,
-   "sellVolume": 94561
+   "sellVolume": 94416
   },
   "57490": {
    "typeId": 57490,
