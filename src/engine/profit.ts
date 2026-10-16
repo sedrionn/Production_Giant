@@ -5,6 +5,8 @@ export interface ProfitSummary {
   output: number;
   materialCost: number;
   jobCost: number;
+  /** Leftover intermediates kept for later, subtracted from the cost (see TreeResult.surplusCredit). */
+  surplusCredit: number;
   /** Blueprint cost (invention) for the runs, 0 for owned BPO. */
   blueprintCost: number;
   totalCost: number;
@@ -35,6 +37,7 @@ export function summarizeProfit(
     output: tree.output,
     materialCost: tree.materialCost,
     jobCost: tree.jobCost,
+    surplusCredit: tree.surplusCredit,
     blueprintCost,
     totalCost,
     costPerUnit: tree.output ? totalCost / tree.output : 0,

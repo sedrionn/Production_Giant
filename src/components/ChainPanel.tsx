@@ -48,6 +48,7 @@ export function ChainPanel({ typeId, name, runs }: { typeId: number; name: strin
   const facts: [string, string, string?][] = [
     ["Материалы", isk(s.materialCost), full(s.materialCost)],
     ["Джобы", isk(s.jobCost), full(s.jobCost)],
+    ...(s.surplusCredit > 0 ? ([["Излишек в запас", `−${isk(s.surplusCredit)}`, full(s.surplusCredit)]] as [string, string, string][]) : []),
     ...(s.blueprintCost ? ([["Чертёж (инвент)", isk(s.blueprintCost), full(s.blueprintCost)]] as [string, string, string][]) : []),
     ["Налог и брокер", isk(s.saleFees), full(s.saleFees)],
     ["Выручка", isk(s.grossRevenue), full(s.grossRevenue)],

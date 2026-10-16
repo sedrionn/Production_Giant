@@ -159,3 +159,20 @@ describe("buildTree — ISK/h threshold for intermediates", () => {
     expect(r.nodes.get(2)!.decision).toBe("build");
   });
 });
+
+describe("buildTree — surplus credit", () => {
+  it("leftover from whole runs is credited at its unit cost, not charged to the batch", () => {
+    // SYNTHETIC: compA needs 150 goo → 1500 + 1000 = 2500 goo → 13 reaction runs → 2600, surplus 100.
+    const recipe = (t: number) => (t === 2 ? mk(102, "manufacturing", [[4, 150]], [2, 1]) : recipes[t]);
+    const r = buildTree(1, 1, ctx({ recipe }));
+    const goo = r.jobs.find((j) => j.typeId === 4)!;
+    expect(goo.surplus).toBe(100);
+    // goo build cost = 100 minerals × 10 / 200 = 5 per unit
+    expect(r.surplusCredit).toBeCloseTo(100 * 5);
+    expect(r.totalCost).toBeCloseTo(r.materialCost + r.jobCost - 500);
+  });
+
+  it("no surplus → no credit", () => {
+    expect(buildTree(1, 1, ctx()).surplusCredit).toBe(0);
+  });
+});

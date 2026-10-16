@@ -67,6 +67,11 @@ export function Ledger({ s }: { s: ProfitSummary }) {
             {p.label} <span className="text-chalk">{isk(p.v)}</span>
           </li>
         ))}
+        {s.surplusCredit > 0 && (
+          <li className="flex items-center gap-1.5" title="Остатки промежуточных от целых ранов (например, 40 топливных блоков, когда нужно 5). Остаются на складе, поэтому вычитаются из расхода по их себестоимости">
+            Излишек в запас <span className="text-gain">−{isk(s.surplusCredit)}</span>
+          </li>
+        )}
         <li className="flex items-center gap-1.5">
           <span className="inline-block size-2.5 rounded-sm bg-fee/40" aria-hidden />
           Налог и брокер <span className="text-chalk">{isk(s.saleFees)}</span>

@@ -98,6 +98,13 @@ export interface TreeResult {
   shopping: ShoppingLine[];
   materialCost: number;
   jobCost: number;
+  /**
+   * Value of intermediate surplus (whole-run leftovers, e.g. 40 fuel blocks when 5 are needed),
+   * at its own unit cost (build cost, else market). It stays in stock for the next batch,
+   * so it is not charged to this one. Same idea as EVE Guru's prorated sub-builds.
+   */
+  surplusCredit: number;
+  /** materialCost + jobCost − surplusCredit. */
   totalCost: number;
   /** Sum of the longest chain is not computed yet; this is the plain sum. */
   totalJobSeconds: number;
@@ -272,6 +279,11 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
   const materialCost = shopping.reduce((s, l) => s + (l.cost ?? 0), 0);
   const jobCost = jobs.reduce((s, j) => s + j.cost.total, 0);
   const root = nodes.get(rootTypeId)!;
+  const surplusCredit = jobs.reduce((s, j) => {
+    if (j.typeId === rootTypeId || j.surplus <= 0) return s;
+    const n = nodes.get(j.typeId)!;
+    return s + j.surplus * (n.buildUnitCost ?? n.buyUnitCost ?? 0);
+  }, 0);
 
   return {
     rootTypeId,
@@ -281,7 +293,8 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
     shopping,
     materialCost,
     jobCost,
-    totalCost: materialCost + jobCost,
+    surplusCredit,
+    totalCost: materialCost + jobCost - surplusCredit,
     totalJobSeconds: jobs.reduce((s, j) => s + j.timeSeconds, 0),
     output: root.job?.output ?? 0,
     warnings: [...new Set(warnings)],
