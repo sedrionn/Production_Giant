@@ -37,8 +37,11 @@ const SOTIYO_RIGS: RigRule[] = [
   { name: "Standup XL-Set Laboratory Optimization I", activity: "copying", scopes: ["all"], material: 0, time: 0.2 },
 ];
 
-// VERIFY: "T2 rigged Tatara" — standard T2 reaction rig numbers until we read the real ones.
-const TATARA_RIGS: RigRule[] = [{ name: "Reactor rig T2 (проверить в игре)", activity: "reaction", scopes: ["all"], material: 0.024, time: 0.24 }];
+// Fitted (Nick, 2026-10-16): Standup L-Set Reactor Efficiency II — covers biochemical, composite and hybrid reactions.
+// VERIFY: 2.4% / 24% and standard zone multipliers are the usual T2 values, not yet read from Show Info.
+const TATARA_RIGS: RigRule[] = [
+  { name: "Standup L-Set Reactor Efficiency II", activity: "reaction", scopes: ["all"], material: 0.024, time: 0.24 },
+];
 
 function main() {
   const sde = getSde();
@@ -66,7 +69,7 @@ function main() {
     structureType: "tatara",
     security: "low",
     solarSystemId: auner.systemId,
-    facilityTax: 0.01, // VERIFY: reactor service tax
+    facilityTax: 0.01, // Biochemical / Composite / Hybrid Reactor: 1% each
     systemJobBonus: 0.5, // FW is system-wide
     rigs: TATARA_RIGS,
     isDefault: false,
@@ -76,7 +79,7 @@ function main() {
 
   console.log(`Auner: system ${auner.systemId}, security ${auner.security?.toFixed(2)}`);
   console.log(`OK: "${forge.name}" (производство, по умолчанию) и "${foundry.name}" (реакции).`);
-  console.log("Проверить в игре: риги Tatara, налог на реакции, атрибуты Lab Optimization.");
+  console.log("Проверить в игре: атрибуты L-Set Reactor Efficiency II и Lab Optimization.");
 }
 
 main();
