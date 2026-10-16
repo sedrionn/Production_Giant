@@ -6,7 +6,7 @@ import { ACTIVITIES } from "@/engine/types";
 
 const STRUCTURES = ["npc_station", "raitaru", "azbel", "sotiyo", "athanor", "tatara"];
 const SECURITY = ["high", "low", "null"];
-const SCOPES: RigScope[] = ["all", "ships", "components", "structures", "equipment", "fuel"];
+const SCOPES: RigScope[] = ["all", "ships", "components", "capital_components", "structures", "equipment", "fuel"];
 
 function withSystemNames() {
   const sde = getSde().source;
@@ -29,6 +29,7 @@ export async function POST(req: Request) {
       if (!ACTIVITIES.includes(r.activity)) throw new Error(`Неизвестная работа рига: ${r.activity}`);
       if (!r.scopes?.length || r.scopes.some((x) => !SCOPES.includes(x))) throw new Error("У рига должны быть группы предметов");
       for (const v of [r.material, r.time]) if (!(v >= 0 && v <= 0.5)) throw new Error("Бонус рига должен быть 0..50%");
+      for (const v of Object.values(r.security ?? {})) if (!(v >= 0 && v <= 5)) throw new Error("Множитель зоны должен быть 0..5");
     }
     const tax = Number(b.facilityTax ?? 0);
     if (!(tax >= 0 && tax <= 0.5)) throw new Error("Налог должен быть 0..50%");

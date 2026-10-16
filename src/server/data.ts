@@ -84,7 +84,13 @@ export function getDb(): AppDb {
 export function getSettings(): AppSettings {
   const rows = getDb().select().from(settings).all();
   const stored = Object.fromEntries(rows.map((r) => [r.key, r.value]));
-  return { ...DEFAULT_SETTINGS, ...stored } as AppSettings;
+  const merged: Record<string, unknown> = { ...DEFAULT_SETTINGS };
+  for (const [k, v] of Object.entries(stored)) {
+    const d = (DEFAULT_SETTINGS as unknown as Record<string, unknown>)[k];
+    // Object settings gain new fields over time (e.g. industrySkills.blueprintSkills): merge with defaults.
+    merged[k] = d && typeof d === "object" && v && typeof v === "object" ? { ...d, ...v } : v;
+  }
+  return merged as unknown as AppSettings;
 }
 
 export function saveSettings(patch: Partial<AppSettings>): AppSettings {

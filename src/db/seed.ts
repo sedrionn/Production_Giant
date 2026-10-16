@@ -16,7 +16,8 @@ export interface AppSettings {
   /** ME/TE assumed for every non-root blueprint (stage 2: real values from owned blueprints). */
   defaultMe: number;
   defaultTe: number;
-  industrySkills: { industry: number; advancedIndustry: number; reactions: number };
+  /** blueprintSkills: level assumed for every other skill a blueprint requires (1% time per level). */
+  industrySkills: { industry: number; advancedIndustry: number; reactions: number; blueprintSkills: number };
   inventionSkills: { encryption: number; science1: number; science2: number };
   manufacturingProfileId: number | null;
   reactionProfileId: number | null;
@@ -31,7 +32,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   brokerFee: 0.015,
   defaultMe: 10,
   defaultTe: 20,
-  industrySkills: { industry: 5, advancedIndustry: 4, reactions: 4 },
+  industrySkills: { industry: 5, advancedIndustry: 5, reactions: 4, blueprintSkills: 5 },
   inventionSkills: { encryption: 4, science1: 4, science2: 4 },
   manufacturingProfileId: null,
   reactionProfileId: null,

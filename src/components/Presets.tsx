@@ -36,6 +36,7 @@ const SECURITY = [
 const SCOPES: [RigScope, string][] = [
   ["ships", "корабли"],
   ["components", "компоненты"],
+  ["capital_components", "капитальные компоненты"],
   ["structures", "структуры"],
   ["equipment", "модули, дроны, патроны"],
   ["fuel", "топливо"],
@@ -48,7 +49,14 @@ const RIG_ACTIVITIES: [Activity, string][] = [
   ["copying", "копирование"],
 ];
 /** Starting points; base values must be checked against Show Info → Attributes on the rig. */
-const RIG_TEMPLATES: { label: string; rule: RigRule }[] = [
+const STD_SECURITY = { high: 1, low: 1.9, null: 2.1 };
+const THUKKER = { high: 0.1, low: 1.9, null: 0.1 };
+const RIG_TEMPLATES: { label: string; rule: RigRule; extra?: RigRule[] }[] = [
+  {
+    label: "XL Thukker Structure & Component",
+    rule: { name: "Standup XL-Set Thukker Structure and Component Manufacturing Efficiency I", activity: "manufacturing", scopes: ["components", "structures"], material: 0.02, time: 0.2, security: THUKKER },
+    extra: [{ name: "Thukker: капитальные компоненты", activity: "manufacturing", scopes: ["capital_components"], material: 0.037, time: 0.2, security: THUKKER }],
+  },
   { label: "XL Ship Manufacturing", rule: { name: "Standup XL-Set Ship Manufacturing Efficiency I", activity: "manufacturing", scopes: ["ships"], material: 0.02, time: 0.2 } },
   { label: "XL Structure & Component", rule: { name: "Standup XL-Set Structure and Component Manufacturing Efficiency I", activity: "manufacturing", scopes: ["components", "structures"], material: 0.02, time: 0.2 } },
   { label: "XL Equipment & Consumable", rule: { name: "Standup XL-Set Equipment and Consumable Manufacturing Efficiency I", activity: "manufacturing", scopes: ["equipment", "fuel"], material: 0.02, time: 0.2 } },
@@ -218,8 +226,8 @@ function ProfileForm({ initial, onSave, onCancel, error }: { initial: Profile; o
       <fieldset className="space-y-3">
         <legend className="text-sm text-graphite">Риги</legend>
         <p className="max-w-[75ch] text-sm text-graphite">
-          Бонусы вводи базовые, как в игре в Show Info → Attributes у самого рига. Множитель зоны (лоусек ×1.9, нули ×2.1)
-          приложение применит само. Группы смотри в описании рига.
+          Бонусы и множители зон вводи как в игре: Show Info → Attributes у самого рига. Приложение берёт множитель зоны
+          структуры. Группы предметов смотри в описании рига.
         </p>
         {p.rigs.map((r, i) => (
           <div key={i} className="space-y-2 rounded border border-line bg-ink/40 px-3 py-3">
@@ -259,6 +267,23 @@ function ProfileForm({ initial, onSave, onCancel, error }: { initial: Profile; o
                 </label>
               ))}
             </div>
+            <div className="flex flex-wrap items-center gap-3 text-sm text-graphite">
+              Множители зон
+              {(["high", "low", "null"] as const).map((z) => (
+                <label key={z} className="flex items-center gap-1.5 whitespace-nowrap">
+                  {z === "high" ? "хай" : z === "low" ? "лоу" : "нули/ВХ"}
+                  <input
+                    type="number"
+                    step="0.1"
+                    min={0}
+                    max={5}
+                    value={r.security?.[z] ?? STD_SECURITY[z]}
+                    onChange={(e) => setRig(i, { security: { ...STD_SECURITY, ...r.security, [z]: Number(e.target.value) } })}
+                    className={`${input} w-20`}
+                  />
+                </label>
+              ))}
+            </div>
           </div>
         ))}
         <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -267,7 +292,9 @@ function ProfileForm({ initial, onSave, onCancel, error }: { initial: Profile; o
             <button
               key={t.label}
               type="button"
-              onClick={() => set({ rigs: [...p.rigs, { ...t.rule, scopes: [...t.rule.scopes] }] })}
+              onClick={() =>
+                set({ rigs: [...p.rigs, ...[t.rule, ...(t.extra ?? [])].map((r) => ({ ...r, scopes: [...r.scopes], security: r.security && { ...r.security } }))] })
+              }
               className="rounded px-2 py-1 text-chalk ring-1 ring-line hover:ring-marker"
             >
               {t.label}
@@ -329,7 +356,7 @@ export function SettingsForm() {
         {lvl("Industry", s.industrySkills.industry, (n) => set({ industrySkills: { ...s.industrySkills, industry: n } }))}
         {lvl("Advanced Industry", s.industrySkills.advancedIndustry, (n) => set({ industrySkills: { ...s.industrySkills, advancedIndustry: n } }))}
         {lvl("Reactions", s.industrySkills.reactions, (n) => set({ industrySkills: { ...s.industrySkills, reactions: n } }))}
-        <span />
+        {lvl("Скиллы из требований чертежа", s.industrySkills.blueprintSkills, (n) => set({ industrySkills: { ...s.industrySkills, blueprintSkills: n } }))}
         {lvl("Encryption Methods", s.inventionSkills.encryption, (n) => set({ inventionSkills: { ...s.inventionSkills, encryption: n } }))}
         {lvl("Наука 1 (инвент)", s.inventionSkills.science1, (n) => set({ inventionSkills: { ...s.inventionSkills, science1: n } }))}
         {lvl("Наука 2 (инвент)", s.inventionSkills.science2, (n) => set({ inventionSkills: { ...s.inventionSkills, science2: n } }))}

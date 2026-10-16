@@ -23,12 +23,13 @@ export type RigTier = "none" | "t1" | "t2";
  * Item groups a rig can cover. Mapped from SDE categories/groups.
  * Check the rig's description in game (Show Info) to pick the right scopes.
  */
-export type RigScope = "all" | "ships" | "components" | "structures" | "equipment" | "fuel";
+export type RigScope = "all" | "ships" | "components" | "capital_components" | "structures" | "equipment" | "fuel";
 
 export const RIG_SCOPE_CATEGORIES: Record<RigScope, number[]> = {
   all: [],
   ships: [6], // Ship
   components: [17], // Commodity: advanced, capital, T3 (hybrid tech) components, R.A.M.
+  capital_components: [],
   structures: [22, 23, 65, 66], // Deployable, Starbase, Structure, Structure Module
   equipment: [7, 8, 18, 32, 87], // Module, Charge, Drone, Subsystem, Fighter
   fuel: [],
@@ -38,6 +39,7 @@ export const RIG_SCOPE_GROUPS: Record<RigScope, number[]> = {
   all: [],
   ships: [],
   components: [],
+  capital_components: [873], // Capital Construction Components (Thukker rigs give these an extra bonus)
   structures: [],
   equipment: [],
   fuel: [1136], // Fuel Block
@@ -89,8 +91,8 @@ export const STRUCTURES: Record<StructureType, StructureSpec> = {
     label: "Sotiyo",
     activities: ENGINEERING,
     materialBonus: 0.01, // verify
-    timeBonus: { manufacturing: 0.3, invention: 0.3, copying: 0.3, research_material: 0.3, research_time: 0.3 }, // verify
-    jobCostBonus: 0.05, // verify
+    timeBonus: { manufacturing: 0.3, invention: 0.3, copying: 0.3, research_material: 0.3, research_time: 0.3 }, // ✓ in game
+    jobCostBonus: 0.05, // ✓ in game ("Structure Role Bonus −5%")
   },
   athanor: {
     label: "Athanor",
@@ -111,21 +113,21 @@ export const STRUCTURES: Record<StructureType, StructureSpec> = {
 /** Rig bonus multiplier by security band (applied to rig bonuses only). */
 export const SECURITY_RIG_MULTIPLIER: Record<Security, number> = {
   high: 1.0, // verify
-  low: 1.9, // verify
+  low: 1.9, // ✓ in game (standard rigs; Thukker rigs differ — per-rig override)
   null: 2.1, // verify
 };
 
 /** Material-efficiency rig bonus per tier (before security multiplier). */
 export const RIG_MATERIAL_BONUS: Record<RigTier, number> = {
   none: 0,
-  t1: 0.02, // verify
+  t1: 0.02, // ✓ in game (XL T1 rig attributes)
   t2: 0.024, // verify
 };
 
 /** Time-efficiency rig bonus per tier (before security multiplier). */
 export const RIG_TIME_BONUS: Record<RigTier, number> = {
   none: 0,
-  t1: 0.2, // verify
+  t1: 0.2, // ✓ in game
   t2: 0.24, // verify
 };
 
@@ -140,12 +142,17 @@ export const ACTIVITY_EIV_FACTOR: Record<Activity, number> = {
 };
 
 /** SCC surcharge, fraction of EIV, added to every job. */
-export const SCC_SURCHARGE = 0.04; // verify
+export const SCC_SURCHARGE = 0.04; // ✓ in game
 
 /** Skill time reductions per level. */
+/** Skill type ids that have their own time bonus and are excluded from the 1%/level rule. */
+export const SKILL_IDS = { industry: 3380, advancedIndustry: 3388, reactions: 45746 } as const;
+
 export const SKILL_TIME = {
-  industryPerLevel: 0.04, // verify — Industry
-  advancedIndustryPerLevel: 0.03, // verify — Advanced Industry
+  industryPerLevel: 0.04, // ✓ in game — Industry
+  advancedIndustryPerLevel: 0.03, // ✓ in game — Advanced Industry
+  /** Every skill the blueprint requires (except Industry / Advanced Industry): 1% per level, multiplicative. ✓ in game */
+  requiredSkillPerLevel: 0.01,
   reactionsPerLevel: 0.04, // verify — Reactions
 } as const;
 

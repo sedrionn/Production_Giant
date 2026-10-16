@@ -5,7 +5,8 @@
 import { describe, expect, it } from "vitest";
 import { loadFixtures } from "./loadFixtures";
 import { materialsForJob, runsNeeded } from "@/engine/materials";
-import { materialMultiplier, NPC_STATION } from "@/engine/facility";
+import { materialMultiplier, NPC_STATION, timeMultiplier } from "@/engine/facility";
+import { estimatedItemValue, jobInstallCost, jobTime, skillTimeMultiplier } from "@/engine/jobCost";
 import { buildTree, type TreeContext } from "@/engine/tree";
 import { recipeLookup } from "@/sde/recipes";
 
@@ -80,5 +81,63 @@ describe("build tree on REAL data", () => {
     const fullero = t.jobs.filter((j) => fx.sde.getType(j.typeId)?.name === "Fulleroferrocene");
     expect(fullero).toHaveLength(1);
     expect(fullero[0].activity).toBe("reaction");
+  });
+});
+
+/**
+ * GOLDEN from the game (Nick's screenshots, 2026-10-16): Jackdaw × 20, BPC ME 4 / TE 14,
+ * EVEGuru Industrial Park Sotiyo in Auner (lowsec, FW −50%, tax 1%, XL Ship Manufacturing rig),
+ * Industry V, Advanced Industry V, all required skills V.
+ */
+describe("in-game check: Jackdaw × 20 in Auner Sotiyo", () => {
+  const act = producer(JACKDAW);
+  const auner = {
+    structure: "sotiyo" as const,
+    security: "low" as const,
+    facilityTax: 0.01,
+    systemJobBonus: 0.5,
+    rigs: [
+      { name: "Standup XL-Set Ship Manufacturing Efficiency I", activity: "manufacturing" as const, scopes: ["ships" as const], material: 0.02, time: 0.2 },
+    ],
+  };
+  const ship = { categoryId: 6, groupId: 1305 };
+
+  it("EIV = 1 298 218 183 ISK (to the ISK)", () => {
+    expect(Math.round(estimatedItemValue(act.materials, 20, fx.adjustedPrice).eiv)).toBe(1_298_218_183);
+  });
+
+  it("job cost lines match the in-game tooltip", () => {
+    // Game shows 12.23% (rounded); the exact index is index-part / EIV.
+    const index = 158_764_056 / 1_298_218_183;
+    const c = jobInstallCost(1_298_218_183, "manufacturing", index, auner);
+    expect(c.grossCost).toBeCloseTo(75_412_927, -1);
+    expect(c.facilityTax).toBeCloseTo(12_982_182, -1);
+    expect(c.sccSurcharge).toBeCloseTo(51_928_727, -1);
+    expect(c.total).toBeCloseTo(140_323_836, -1);
+  });
+
+  it("job duration = 9d 01:36:16 (±1 min)", () => {
+    const t = jobTime(act.time, 20, 14, "manufacturing", auner, { industry: 5, advancedIndustry: 5, blueprintSkills: 5 }, ship, act.skills);
+    expect(Math.abs(t - (9 * 86400 + 1 * 3600 + 36 * 60 + 16))).toBeLessThan(60);
+  });
+
+  it("skills −41.7%, rig −38%, structure −30% as listed in game", () => {
+    expect(1 - skillTimeMultiplier("manufacturing", { industry: 5, advancedIndustry: 5, blueprintSkills: 5 }, act.skills)).toBeCloseTo(0.417, 3);
+    expect(1 - timeMultiplier(auner, "manufacturing", ship)).toBeCloseTo(1 - 0.7 * 0.62, 6);
+  });
+
+  it("Thukker rig: nullsec ×0.1, capital components 3.7%", () => {
+    const thukker = { high: 0.1, low: 1.9, null: 0.1 };
+    const rigs = [
+      { activity: "manufacturing" as const, scopes: ["components" as const, "structures" as const], material: 0.02, time: 0.2, security: thukker },
+      { activity: "manufacturing" as const, scopes: ["capital_components" as const], material: 0.037, time: 0.2, security: thukker },
+    ];
+    const low = { ...auner, rigs };
+    const nul = { ...low, security: "null" as const };
+    const capital = { categoryId: 17, groupId: 873 };
+    const t3comp = { categoryId: 17, groupId: 964 };
+    expect(materialMultiplier(low, "manufacturing", capital)).toBeCloseTo(0.99 * (1 - 0.037 * 1.9), 10);
+    expect(materialMultiplier(low, "manufacturing", t3comp)).toBeCloseTo(0.99 * (1 - 0.02 * 1.9), 10);
+    expect(materialMultiplier(nul, "manufacturing", t3comp)).toBeCloseTo(0.99 * (1 - 0.02 * 0.1), 10);
   });
 });

@@ -97,7 +97,7 @@ export function calculateJob(input: CalcInput): CalcResult {
   const saleFees = grossRevenue === null ? null : grossRevenue * saleFeeRate(input.productPriceMode, input.fees);
   const netRevenue = grossRevenue === null || saleFees === null ? null : grossRevenue - saleFees;
   const profit = netRevenue === null ? null : netRevenue - totalCost;
-  const timeSeconds = jobTime(act.time, runs, input.te, act.activity, facility, input.skills, input.productClass);
+  const timeSeconds = jobTime(act.time, runs, input.te, act.activity, facility, input.skills, input.productClass, act.skills);
 
   return {
     productTypeId: product.typeId,

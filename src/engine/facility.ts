@@ -27,6 +27,11 @@ export interface RigRule {
   material: number;
   /** Fraction, 0.2 = 20% faster (before security multiplier). */
   time: number;
+  /**
+   * The rig's own security multipliers (Show Info → "High/Low/Nullsec Bonus Multiplier").
+   * Standard rigs: 1 / 1.9 / 2.1. Thukker rigs: 0.1 / 1.9 / 0.1. Omitted = standard.
+   */
+  security?: Partial<Record<Security, number>>;
 }
 
 /** What the product of a job is — rigs only affect some item groups. */
@@ -76,14 +81,21 @@ export function applicableRigs(f: FacilityProfile, activity: Activity, item?: It
   return f.rigs.filter((r) => r.activity === activity && r.scopes.some((s) => scopes.has(s)));
 }
 
-const best = (rules: RigRule[], key: "material" | "time") => Math.max(0, ...rules.map((r) => r[key]));
+/** Effective bonus of one rig in this security band. */
+export function rigBonus(r: RigRule, key: "material" | "time", security: Security): number {
+  return r[key] * (r.security?.[security] ?? SECURITY_RIG_MULTIPLIER[security]);
+}
+
+// Rigs covering the same group can't be fitted twice in game; overlapping rules
+// (e.g. Thukker's general + capital-component bonus) → the best one wins.
+const best = (rules: RigRule[], key: "material" | "time", security: Security) =>
+  Math.max(0, ...rules.map((r) => rigBonus(r, key, security)));
 
 /** Multiplier applied to base material quantity by the structure + rigs. */
 export function materialMultiplier(f: FacilityProfile, activity: Activity, item?: ItemClass): number {
   const spec = STRUCTURES[f.structure];
   const role = activity === "manufacturing" ? 1 - spec.materialBonus : 1;
-  // Rigs covering the same group can't be fitted twice in game; if presets overlap, take the best.
-  const rig = 1 - best(applicableRigs(f, activity, item), "material") * SECURITY_RIG_MULTIPLIER[f.security];
+  const rig = 1 - best(applicableRigs(f, activity, item), "material", f.security);
   return role * rig;
 }
 
@@ -91,7 +103,7 @@ export function materialMultiplier(f: FacilityProfile, activity: Activity, item?
 export function timeMultiplier(f: FacilityProfile, activity: Activity, item?: ItemClass): number {
   const spec = STRUCTURES[f.structure];
   const role = 1 - (spec.timeBonus[activity] ?? 0);
-  const rig = 1 - best(applicableRigs(f, activity, item), "time") * SECURITY_RIG_MULTIPLIER[f.security];
+  const rig = 1 - best(applicableRigs(f, activity, item), "time", f.security);
   return role * rig;
 }
 

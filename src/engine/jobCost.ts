@@ -1,7 +1,7 @@
-import { ACTIVITY_EIV_FACTOR, SCC_SURCHARGE, SKILL_TIME, STRUCTURES } from "./bonuses";
+import { ACTIVITY_EIV_FACTOR, SCC_SURCHARGE, SKILL_IDS, SKILL_TIME, STRUCTURES } from "./bonuses";
 import type { FacilityProfile } from "./facility";
 import { timeMultiplier, type ItemClass } from "./facility";
-import type { Activity, MaterialRequirement } from "./types";
+import type { Activity, MaterialRequirement, SkillRequirement } from "./types";
 
 export type PriceLookup = (typeId: number) => number | undefined;
 
@@ -58,17 +58,26 @@ export interface IndustrySkills {
   industry?: number;
   advancedIndustry?: number;
   reactions?: number;
+  /** Level assumed for every other skill the blueprint requires (until characters are synced). */
+  blueprintSkills?: number;
 }
 
-export function skillTimeMultiplier(activity: Activity, s: IndustrySkills): number {
+/**
+ * Skills time multiplier. Manufacturing: Industry 4%/lvl × Advanced Industry 3%/lvl ×
+ * 1%/lvl for every other required skill of the blueprint (confirmed in game: Jackdaw
+ * with all V = −41.7%).
+ */
+export function skillTimeMultiplier(activity: Activity, s: IndustrySkills, required: SkillRequirement[] = []): number {
   if (activity === "reaction") return 1 - SKILL_TIME.reactionsPerLevel * (s.reactions ?? 0);
-  if (activity === "manufacturing") {
-    return (
-      (1 - SKILL_TIME.industryPerLevel * (s.industry ?? 0)) *
-      (1 - SKILL_TIME.advancedIndustryPerLevel * (s.advancedIndustry ?? 0))
-    );
+  if (activity !== "manufacturing") return 1;
+  let m =
+    (1 - SKILL_TIME.industryPerLevel * (s.industry ?? 0)) *
+    (1 - SKILL_TIME.advancedIndustryPerLevel * (s.advancedIndustry ?? 0));
+  const own = new Set<number>(Object.values(SKILL_IDS));
+  for (const r of required) {
+    if (!own.has(r.typeId)) m *= 1 - SKILL_TIME.requiredSkillPerLevel * (s.blueprintSkills ?? 0);
   }
-  return 1;
+  return m;
 }
 
 /** Job duration in seconds for `runs` runs. */
@@ -80,8 +89,9 @@ export function jobTime(
   facility: FacilityProfile,
   skills: IndustrySkills = {},
   item?: ItemClass,
+  requiredSkills: SkillRequirement[] = [],
 ): number {
   if (te < 0 || te > 20) throw new RangeError(`TE must be within 0..20, got ${te}`);
   const teMult = activity === "manufacturing" ? 1 - te / 100 : 1;
-  return baseTimePerRun * runs * teMult * timeMultiplier(facility, activity, item) * skillTimeMultiplier(activity, skills);
+  return baseTimePerRun * runs * teMult * timeMultiplier(facility, activity, item) * skillTimeMultiplier(activity, skills, requiredSkills);
 }

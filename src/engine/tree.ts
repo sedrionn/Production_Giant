@@ -234,7 +234,7 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
         output,
         surplus: output - node.demand,
         cost: jobInstallCost(eiv, r.activity, ctx.costIndex(r.activity), facility),
-        timeSeconds: jobTime(r.time, runs, te, r.activity, facility, ctx.skills, cls),
+        timeSeconds: jobTime(r.time, runs, te, r.activity, facility, ctx.skills, cls, r.skills),
       };
       jobs.push(node.job);
     } else {
