@@ -8,6 +8,7 @@ export class FixtureSdeSource implements SdeSource {
   private systems = new Map<number, SdeSystem>();
   private groups = new Map<number, SdeGroup>();
   private decryptors = new Map<number, Decryptor>();
+  private timeBonuses: Record<number, number> | null = null;
 
   constructor(...subsets: SdeSubset[]) {
     for (const s of subsets) {
@@ -16,6 +17,7 @@ export class FixtureSdeSource implements SdeSource {
       for (const sys of s.systems ?? []) this.systems.set(sys.systemId, sys);
       for (const g of s.groups ?? []) this.groups.set(g.groupId, g);
       for (const d of s.decryptors ?? []) this.decryptors.set(d.typeId, d);
+      if (s.skillTimeBonuses) this.timeBonuses = { ...this.timeBonuses, ...s.skillTimeBonuses };
     }
     for (const bp of this.blueprints.values()) {
       for (const act of Object.values(bp.activities)) {
@@ -84,5 +86,9 @@ export class FixtureSdeSource implements SdeSource {
 
   listDecryptors(): Decryptor[] {
     return [...this.decryptors.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  skillTimeBonuses(): Record<number, number> | null {
+    return this.timeBonuses;
   }
 }

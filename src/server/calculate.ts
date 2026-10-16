@@ -138,14 +138,16 @@ export function calculate(req: CalcRequest): CalcResponse {
   // Characters: real skills and owned blueprints when synced, settings otherwise.
   const withChars = hasCharacters();
   const levels = withChars ? skillLevels(s.industryCharacterId) : null;
+  const timeBonusPerLevel = sde.skillTimeBonuses() ?? undefined;
   const skills: IndustrySkills = levels
     ? {
         industry: levels.get(SKILL_IDS.industry) ?? 0,
         advancedIndustry: levels.get(SKILL_IDS.advancedIndustry) ?? 0,
         reactions: levels.get(SKILL_IDS.reactions) ?? 0,
         levels: Object.fromEntries(levels),
+        timeBonusPerLevel,
       }
-    : s.industrySkills;
+    : { ...s.industrySkills, timeBonusPerLevel };
   const owned = withChars ? ownedBlueprintIndex() : new Map<number, OwnedBlueprint>();
   const ownedRoot = owned.get(rootRecipe.blueprintTypeId) ?? null;
 

@@ -80,6 +80,7 @@ async function main() {
     systems: [SYSTEM_JITA, ...EXTRA_SYSTEMS].map((id) => sde.getSystem(id)).filter((x): x is SdeSystem => !!x),
     groups: [...new Set(types.map((t) => t.groupId))].map((id) => sde.getGroup(id)).filter((g): g is SdeGroup => !!g),
     decryptors: sde.listDecryptors(),
+    skillTimeBonuses: sde.skillTimeBonuses() ?? undefined,
   };
   write(path.join(OUT_SDE, "subset.json"), subset);
   console.log(`  ${types.length} types, ${blueprints.length} blueprints, ${tree.leafTypeIds.size} raw leaves`);

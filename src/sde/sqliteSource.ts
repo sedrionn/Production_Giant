@@ -170,6 +170,15 @@ export class SqliteSdeSource implements SdeSource {
     return rows.map((r) => ({ typeId: r.type_id, name: r.name, probabilityMultiplier: r.probability_multiplier, me: r.me, te: r.te, runs: r.runs }));
   }
 
+  private timeBonuses?: Record<number, number> | null;
+  skillTimeBonuses(): Record<number, number> | null {
+    if (this.timeBonuses !== undefined) return this.timeBonuses;
+    const has = this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='sde_skill_time_bonus'").get();
+    const rows = has ? (this.db.prepare("SELECT type_id, per_level FROM sde_skill_time_bonus").all() as { type_id: number; per_level: number }[]) : [];
+    this.timeBonuses = rows.length ? Object.fromEntries(rows.map((r) => [r.type_id, r.per_level])) : null;
+    return this.timeBonuses;
+  }
+
   /** True when the SDE was imported with race ids (needed for "Caldari ships"). */
   hasRaces(): boolean {
     const cols = this.db.prepare("PRAGMA table_info(sde_types)").all() as { name: string }[];

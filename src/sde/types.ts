@@ -54,6 +54,8 @@ export interface SdeSource {
   searchSystems(query: string, limit?: number): SdeSystem[];
   /** Invention decryptors (empty for SDE imports made before 2026-10-17). */
   listDecryptors(): Decryptor[];
+  /** Manufacturing time bonus per level by skill id (fraction); null for SDE imports before 2026-10-17. */
+  skillTimeBonuses(): Record<number, number> | null;
 }
 
 /** Shape of fixtures/sde/*.json */
@@ -64,4 +66,5 @@ export interface SdeSubset {
   systems?: SdeSystem[];
   groups?: SdeGroup[];
   decryptors?: Decryptor[];
+  skillTimeBonuses?: Record<number, number>;
 }

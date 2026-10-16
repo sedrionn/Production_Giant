@@ -43,6 +43,9 @@ CREATE TABLE IF NOT EXISTS sde_decryptors (
   type_id INTEGER PRIMARY KEY, name TEXT NOT NULL, probability_multiplier REAL NOT NULL,
   me INTEGER NOT NULL, te INTEGER NOT NULL, runs INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS sde_skill_time_bonus (
+  type_id INTEGER PRIMARY KEY, per_level REAL NOT NULL
+);
 CREATE TABLE IF NOT EXISTS sde_bp_skills (
   blueprint_type_id INTEGER NOT NULL, activity TEXT NOT NULL,
   type_id INTEGER NOT NULL, level INTEGER NOT NULL
@@ -127,6 +130,18 @@ export function insertDecryptors(db: Database.Database, list: Iterable<Decryptor
   return n;
 }
 
+export function insertSkillTimeBonuses(db: Database.Database, list: Iterable<[number, number]>): number {
+  const stmt = db.prepare("INSERT OR REPLACE INTO sde_skill_time_bonus VALUES (?, ?)");
+  let n = 0;
+  db.transaction(() => {
+    for (const [id, v] of list) {
+      stmt.run(id, v);
+      n++;
+    }
+  })();
+  return n;
+}
+
 export function setMeta(db: Database.Database, meta: Record<string, string>): void {
   const stmt = db.prepare("INSERT OR REPLACE INTO sde_meta VALUES (?, ?)");
   for (const [k, v] of Object.entries(meta)) stmt.run(k, v);
@@ -152,6 +167,7 @@ export function sanityCheck(db: Database.Database): SdeSanityReport {
     typesWithoutCategory: count("SELECT COUNT(*) n FROM sde_types WHERE category_id IS NULL"),
     systems: count("SELECT COUNT(*) n FROM sde_systems"),
     decryptors: count("SELECT COUNT(*) n FROM sde_decryptors"),
+    skillTimeBonuses: count("SELECT COUNT(*) n FROM sde_skill_time_bonus"),
     packagedVolumes: count("SELECT COUNT(*) n FROM sde_types WHERE packaged_volume IS NOT NULL"),
   };
   const problems: string[] = [];
@@ -161,6 +177,7 @@ export function sanityCheck(db: Database.Database): SdeSanityReport {
   if (counts.invention < 500) problems.push(`too few invention activities (${counts.invention})`);
   if (counts.typesWithoutCategory > counts.types * 0.05) problems.push("many types without category — groups not linked");
   if (counts.decryptors < 8 || counts.decryptors > 20) problems.push(`unexpected decryptor count (${counts.decryptors}) — typeDogma or category 35 changed?`);
+  if (counts.skillTimeBonuses < 20) problems.push(`too few skills with a job time bonus (${counts.skillTimeBonuses}) — dogma attribute 1982 changed?`);
   if (counts.packagedVolumes < 100) problems.push(`too few packaged volumes (${counts.packagedVolumes}) — types.packagedVolume renamed?`);
   const tritanium = db.prepare("SELECT name FROM sde_types WHERE type_id = 34").get() as { name: string } | undefined;
   if (tritanium?.name !== "Tritanium") problems.push(`type 34 should be Tritanium, got ${tritanium?.name}`);

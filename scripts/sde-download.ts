@@ -11,8 +11,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { once } from "node:events";
 import Database from "better-sqlite3";
-import { createSdeSchema, insertBlueprints, insertDecryptors, insertGroups, insertSystems, insertTypes, sanityCheck, setMeta } from "../src/sde/build";
-import { isUsableDecryptor, parseBlueprintRecord, parseDecryptorDogma, parseGroupRecord, parseSystemRecord, parseTypeRecord } from "../src/sde/parse";
+import { createSdeSchema, insertBlueprints, insertDecryptors, insertGroups, insertSkillTimeBonuses, insertSystems, insertTypes, sanityCheck, setMeta } from "../src/sde/build";
+import { isUsableDecryptor, parseBlueprintRecord, parseDecryptorDogma, parseGroupRecord, parseSkillTimeBonus, parseSystemRecord, parseTypeRecord } from "../src/sde/parse";
 import type { SdeGroup, SdeSystem, SdeType } from "../src/sde/types";
 import type { Blueprint, Decryptor } from "../src/engine/types";
 import { findEntry, listZipEntries, readJsonlEntry } from "../src/sde/zipJsonl";
@@ -187,14 +187,18 @@ async function main() {
   // Decryptors: types whose dogma has inventionPropabilityMultiplier. Checked by sanityCheck.
   const dogmaEntry = findEntry(entries, "typeDogma.jsonl");
   if (dogmaEntry) {
-    stepTo("parsing decryptors (typeDogma)");
+    stepTo("parsing decryptors and skill time bonuses (typeDogma)");
     const names = new Map(types.filter(isUsableDecryptor).map((t) => [t.typeId, t.name]));
     const decryptors: Decryptor[] = [];
+    const timeBonuses: [number, number][] = [];
     await readJsonlEntry(zipPath, dogmaEntry, (r) => {
       const d = parseDecryptorDogma(r, (id) => names.get(id));
       if (d) decryptors.push(d);
+      const tb = parseSkillTimeBonus(r);
+      if (tb) timeBonuses.push(tb);
     });
     insertDecryptors(db, decryptors);
+    insertSkillTimeBonuses(db, timeBonuses);
     console.log(`  decryptors: ${decryptors.map((d) => d.name).join(", ")}`);
   } else {
     console.warn("! typeDogma.jsonl not found — decryptors unavailable");

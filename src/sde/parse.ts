@@ -139,6 +139,23 @@ export const DECRYPTOR_ATTRS = { probability: 1112, me: 1113, te: 1114, runs: 11
  * only market-listed types of this category are real, usable decryptors.
  */
 export const CATEGORY_DECRYPTORS = 35;
+
+/** Dogma attribute on science skills: manufacturing time bonus, % per level (value −1 = 1% faster). */
+export const ATTR_SKILL_JOB_TIME_BONUS = 1982;
+
+/** A typeDogma record → [skill type id, time bonus fraction per level], or null. */
+export function parseSkillTimeBonus(r: Rec): [number, number] | null {
+  const typeId = keyOf(r, "typeID", "typeId");
+  const attrs = pick(r, "dogmaAttributes");
+  if (typeId === null || !Array.isArray(attrs)) return null;
+  for (const a of attrs) {
+    if (!a || typeof a !== "object") continue;
+    if (num(pick(a as Rec, "attributeID", "attributeId")) !== ATTR_SKILL_JOB_TIME_BONUS) continue;
+    const v = num((a as Rec).value);
+    return v === null ? null : [typeId, -v / 100];
+  }
+  return null;
+}
 export const isUsableDecryptor = (t: SdeType) => t.published && t.categoryId === CATEGORY_DECRYPTORS && t.marketGroupId !== null;
 
 /**
