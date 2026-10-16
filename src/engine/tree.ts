@@ -40,6 +40,11 @@ export interface TreeContext {
    * job time vs buying it. 0/undefined = build whenever cheaper. Root is always built.
    */
   minBuildIskPerHour?: number;
+  /**
+   * Freight for bought materials (market → factory): ISK per m³ × the item's (packaged) volume,
+   * added to the buy price of every purchased unit. Omitted = no freight.
+   */
+  freight?: { perM3: number; volume(typeId: number): number };
 }
 
 export interface TreeEdge {
@@ -87,6 +92,8 @@ export interface ShoppingLine {
   unitPrice: number | null;
   /** quantity × unit price × (1 + acquisition fee); null when unpriced. */
   cost: number | null;
+  /** quantity × volume × freight rate (0 without freight). */
+  freight: number;
 }
 
 export interface TreeResult {
@@ -104,7 +111,9 @@ export interface TreeResult {
    * so it is not charged to this one. Same idea as EVE Guru's prorated sub-builds.
    */
   surplusCredit: number;
-  /** materialCost + jobCost − surplusCredit. */
+  /** Freight of all bought materials to the factory. */
+  freightCost: number;
+  /** materialCost + jobCost + freightCost − surplusCredit. */
   totalCost: number;
   /** Sum of the longest chain is not computed yet; this is the plain sum. */
   totalJobSeconds: number;
@@ -122,6 +131,7 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
   if (!Number.isInteger(rootRuns) || rootRuns < 1) throw new RangeError(`runs must be a positive integer, got ${rootRuns}`);
   const warnings: string[] = [];
   const acqFee = acquisitionFeeRate(ctx.materialPriceMode, ctx.fees);
+  const freightPerUnit = (t: number) => (ctx.freight ? ctx.freight.volume(t) * ctx.freight.perM3 : 0);
 
   // ---- 1. discover --------------------------------------------------------
   const info = new Map<number, Discovered>();
@@ -155,7 +165,7 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
     if (unitCost.has(typeId) && !forcedBuy) return unitCost.get(typeId)!;
     const d = info.get(typeId)!;
     const price = quotePrice(ctx.quote(typeId), ctx.materialPriceMode);
-    const buyUnitCost = price === null ? null : price * (1 + acqFee);
+    const buyUnitCost = price === null ? null : price * (1 + acqFee) + freightPerUnit(typeId);
 
     let buildUnitCost: number | null = null;
     let hoursPerUnit: number | null = null;
@@ -272,11 +282,18 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
     .map(([typeId, quantity]) => {
       const unitPrice = quotePrice(ctx.quote(typeId), ctx.materialPriceMode);
       if (unitPrice === null) warnings.push(`no market price for ${typeId} — total cost understated`);
-      return { typeId, quantity, unitPrice, cost: unitPrice === null ? null : quantity * unitPrice * (1 + acqFee) };
+      return {
+        typeId,
+        quantity,
+        unitPrice,
+        cost: unitPrice === null ? null : quantity * unitPrice * (1 + acqFee),
+        freight: quantity * freightPerUnit(typeId),
+      };
     })
     .sort((a, b) => (b.cost ?? 0) - (a.cost ?? 0));
 
   const materialCost = shopping.reduce((s, l) => s + (l.cost ?? 0), 0);
+  const freightCost = shopping.reduce((s, l) => s + l.freight, 0);
   const jobCost = jobs.reduce((s, j) => s + j.cost.total, 0);
   const root = nodes.get(rootTypeId)!;
   const surplusCredit = jobs.reduce((s, j) => {
@@ -294,7 +311,8 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
     materialCost,
     jobCost,
     surplusCredit,
-    totalCost: materialCost + jobCost - surplusCredit,
+    freightCost,
+    totalCost: materialCost + jobCost + freightCost - surplusCredit,
     totalJobSeconds: jobs.reduce((s, j) => s + j.timeSeconds, 0),
     output: root.job?.output ?? 0,
     warnings: [...new Set(warnings)],

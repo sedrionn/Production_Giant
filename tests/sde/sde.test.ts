@@ -2,7 +2,7 @@ import { describe, expect, it, beforeAll } from "vitest";
 import path from "node:path";
 import Database from "better-sqlite3";
 import { createSdeSchema, insertBlueprints, insertGroups, insertSystems, insertTypes, sanityCheck } from "@/sde/build";
-import { parseBlueprintRecord, parseGroupRecord, parseSystemRecord, parseTypeRecord } from "@/sde/parse";
+import { parseBlueprintRecord, parseDecryptorDogma, parseGroupRecord, parseSystemRecord, parseTypeRecord } from "@/sde/parse";
 import { SqliteSdeSource } from "@/sde/sqliteSource";
 import { FixtureSdeSource } from "@/sde/fixtureSource";
 import { findEntry, listZipEntries, readJsonlEntry, type JsonRecord } from "@/sde/zipJsonl";
@@ -152,5 +152,19 @@ describe("consumeJsonl", () => {
     const { consumeJsonl } = await import("@/sde/zipJsonl");
     const s = new Readable({ read() { this.destroy(new Error("invalid stored block lengths")); } });
     await expect(consumeJsonl(s, () => {})).rejects.toThrow(/invalid stored/);
+  });
+});
+
+describe("parseDecryptorDogma", () => {
+  // Real typeDogma.jsonl line for Process Decryptor (SDE build 3607705).
+  const rec = { _key: 34205, dogmaAttributes: [{ attributeID: 1112, value: 1.1 }, { attributeID: 1113, value: 3 }, { attributeID: 1114, value: 6 }, { attributeID: 1124, value: 0 }] };
+  it("reads chance multiplier and ME/TE/runs modifiers", () => {
+    expect(parseDecryptorDogma(rec, () => "Process Decryptor")).toEqual({
+      typeId: 34205, name: "Process Decryptor", probabilityMultiplier: 1.1, me: 3, te: 6, runs: 0,
+    });
+  });
+  it("ignores non-decryptors and unpublished types", () => {
+    expect(parseDecryptorDogma({ _key: 34, dogmaAttributes: [{ attributeID: 161, value: 0.01 }] }, () => "Tritanium")).toBeNull();
+    expect(parseDecryptorDogma(rec, () => undefined)).toBeNull();
   });
 });

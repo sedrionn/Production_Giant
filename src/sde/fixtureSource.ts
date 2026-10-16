@@ -1,4 +1,4 @@
-import type { Activity, Blueprint } from "@/engine/types";
+import type { Activity, Blueprint, Decryptor } from "@/engine/types";
 import type { ProducerRef, SdeGroup, SdeSource, SdeSubset, SdeSystem, SdeType } from "./types";
 
 export class FixtureSdeSource implements SdeSource {
@@ -7,6 +7,7 @@ export class FixtureSdeSource implements SdeSource {
   private producers = new Map<number, ProducerRef[]>();
   private systems = new Map<number, SdeSystem>();
   private groups = new Map<number, SdeGroup>();
+  private decryptors = new Map<number, Decryptor>();
 
   constructor(...subsets: SdeSubset[]) {
     for (const s of subsets) {
@@ -14,6 +15,7 @@ export class FixtureSdeSource implements SdeSource {
       for (const b of s.blueprints) this.blueprints.set(b.blueprintTypeId, b);
       for (const sys of s.systems ?? []) this.systems.set(sys.systemId, sys);
       for (const g of s.groups ?? []) this.groups.set(g.groupId, g);
+      for (const d of s.decryptors ?? []) this.decryptors.set(d.typeId, d);
     }
     for (const bp of this.blueprints.values()) {
       for (const act of Object.values(bp.activities)) {
@@ -78,5 +80,9 @@ export class FixtureSdeSource implements SdeSource {
 
   getGroup(groupId: number) {
     return this.groups.get(groupId);
+  }
+
+  listDecryptors(): Decryptor[] {
+    return [...this.decryptors.values()].sort((a, b) => a.name.localeCompare(b.name));
   }
 }

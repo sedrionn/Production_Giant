@@ -15,6 +15,7 @@ export function Ledger({ s }: { s: ProfitSummary }) {
     { label: "Материалы", v: s.materialCost, c: "bg-mat" },
     { label: "Джобы", v: s.jobCost, c: "bg-job" },
     { label: "Чертёж (инвент)", v: s.blueprintCost, c: "bg-bpc" },
+    { label: "Доставка", v: s.shippingCost, c: "bg-graphite/60" },
   ].filter((p) => p.v > 0);
   const profitable = (s.profit ?? 0) >= 0;
 

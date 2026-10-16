@@ -7,7 +7,7 @@
  * 2025 SDE rework changed several names and CCP keeps iterating. Anything we
  * cannot parse is returned as `null` so the importer can count and report it.
  */
-import type { Activity, BlueprintActivity, Blueprint } from "@/engine/types";
+import type { Activity, BlueprintActivity, Blueprint, Decryptor } from "@/engine/types";
 import type { SdeGroup, SdeSystem, SdeType } from "./types";
 
 type Rec = Record<string, unknown>;
@@ -43,6 +43,7 @@ export function parseTypeRecord(r: Rec, groupCategory: Map<number, number>): Sde
     categoryId: groupCategory.get(groupId) ?? null,
     portionSize: num(pick(r, "portionSize")) ?? 1,
     volume: num(pick(r, "volume")) ?? 0,
+    packagedVolume: num(pick(r, "packagedVolume", "repackagedVolume")),
     published: pick(r, "published") === true,
     marketGroupId: num(pick(r, "marketGroupID", "marketGroupId")),
     metaGroupId: num(pick(r, "metaGroupID", "metaGroupId")),
@@ -129,3 +130,34 @@ export function parseBlueprintRecord(r: Rec): Blueprint | null {
   };
 }
 
+
+/** Dogma attribute ids of invention decryptors (dogmaAttributes.jsonl: inventionPropabilityMultiplier, …). */
+export const DECRYPTOR_ATTRS = { probability: 1112, me: 1113, te: 1114, runs: 1124 } as const;
+
+/**
+ * A typeDogma record → decryptor values, or null when the type is not a decryptor
+ * (no inventionPropabilityMultiplier attribute). Name comes from types.jsonl.
+ */
+export function parseDecryptorDogma(r: Rec, nameOf: (typeId: number) => string | undefined): Decryptor | null {
+  const typeId = keyOf(r, "typeID", "typeId");
+  const attrs = pick(r, "dogmaAttributes");
+  if (typeId === null || !Array.isArray(attrs)) return null;
+  const val = new Map<number, number>();
+  for (const a of attrs) {
+    if (!a || typeof a !== "object") continue;
+    const id = num(pick(a as Rec, "attributeID", "attributeId"));
+    const v = num((a as Rec).value);
+    if (id !== null && v !== null) val.set(id, v);
+  }
+  const probabilityMultiplier = val.get(DECRYPTOR_ATTRS.probability);
+  const name = nameOf(typeId);
+  if (probabilityMultiplier === undefined || !name) return null;
+  return {
+    typeId,
+    name,
+    probabilityMultiplier,
+    me: val.get(DECRYPTOR_ATTRS.me) ?? 0,
+    te: val.get(DECRYPTOR_ATTRS.te) ?? 0,
+    runs: val.get(DECRYPTOR_ATTRS.runs) ?? 0,
+  };
+}

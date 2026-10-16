@@ -17,7 +17,7 @@ describe("inventionCost on REAL data (Hammerhead II)", () => {
   const fx = loadFixtures();
   const t1 = fx.sde.getBlueprint(2184)!; // Hammerhead I Blueprint
   const t2 = fx.sde.getBlueprint(2186)!; // Hammerhead II Blueprint
-  const r = inventionCost({
+  const base: Parameters<typeof inventionCost>[0] = {
     invention: t1.activities.invention!,
     targetBlueprintTypeId: 2186,
     targetManufacturing: t2.activities.manufacturing!,
@@ -29,7 +29,8 @@ describe("inventionCost on REAL data (Hammerhead II)", () => {
     fees: { salesTax: 0, brokerFee: 0 },
     facility: NPC_STATION,
     costIndex: 0.05,
-  });
+  };
+  const r = inventionCost(base);
 
   it("10 runs per success at 34% base", () => {
     expect(r.runsPerSuccess).toBe(10);
@@ -40,6 +41,18 @@ describe("inventionCost on REAL data (Hammerhead II)", () => {
     expect(r.missingPrices).toEqual([]);
     expect(r.costPerRun).toBeCloseTo(r.costPerAttempt / r.chance / 10);
     expect(r.materialsPerAttempt).toBeGreaterThan(0);
+  });
+
+  it("decryptor: chance ×mult, ME/TE/runs added, price per attempt", () => {
+    // Process Decryptor, values from SDE typeDogma 34205 (attrs 1112/1113/1114/1124). Price is SYNTHETIC.
+    const process = { typeId: 34205, name: "Process Decryptor", probabilityMultiplier: 1.1, me: 3, te: 6, runs: 0 };
+    const quote = (id: number) => (id === 34205 ? { typeId: id, buyMax: null, sellMin: 1_000_000 } : fx.quote(id));
+    const d = inventionCost({ ...base, quote, decryptor: process });
+    expect(d.chance).toBeCloseTo(r.chance * 1.1);
+    expect([d.me, d.te, d.runsPerSuccess]).toEqual([5, 10, 10]);
+    expect(d.decryptorCost).toBe(1_000_000);
+    expect(d.costPerAttempt).toBeCloseTo(r.costPerAttempt + 1_000_000);
+    expect(d.costPerRun).toBeCloseTo(d.costPerAttempt / d.chance / 10);
   });
 
   it("rejects a wrong target", () => {

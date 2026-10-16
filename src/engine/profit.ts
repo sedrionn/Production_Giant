@@ -7,6 +7,8 @@ export interface ProfitSummary {
   jobCost: number;
   /** Leftover intermediates kept for later, subtracted from the cost (see TreeResult.surplusCredit). */
   surplusCredit: number;
+  /** Freight: bought materials to the factory + the product to the market. */
+  shippingCost: number;
   /** Blueprint cost (invention) for the runs, 0 for owned BPO. */
   blueprintCost: number;
   totalCost: number;
@@ -26,9 +28,12 @@ export function summarizeProfit(
   productPriceMode: PriceMode,
   fees: FeeRates,
   blueprintCostPerRun = 0,
+  /** Freight of one unit of product to the market (volume × ISK/m³). */
+  productFreightPerUnit = 0,
 ): ProfitSummary {
   const blueprintCost = blueprintCostPerRun * tree.rootRuns;
-  const totalCost = tree.totalCost + blueprintCost;
+  const productFreight = productFreightPerUnit * tree.output;
+  const totalCost = tree.totalCost + blueprintCost + productFreight;
   const unitPrice = quotePrice(productQuote, productPriceMode);
   const grossRevenue = unitPrice === null ? null : unitPrice * tree.output;
   const saleFees = grossRevenue === null ? null : grossRevenue * saleFeeRate(productPriceMode, fees);
@@ -38,6 +43,7 @@ export function summarizeProfit(
     materialCost: tree.materialCost,
     jobCost: tree.jobCost,
     surplusCredit: tree.surplusCredit,
+    shippingCost: tree.freightCost + productFreight,
     blueprintCost,
     totalCost,
     costPerUnit: tree.output ? totalCost / tree.output : 0,

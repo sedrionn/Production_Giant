@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import type { Activity, Blueprint, BlueprintActivity } from "@/engine/types";
+import type { Activity, Blueprint, BlueprintActivity, Decryptor } from "@/engine/types";
 import type { ProducerRef, SdeGroup, SdeSource, SdeSystem, SdeType } from "./types";
 
 interface TypeRow {
@@ -13,6 +13,7 @@ interface TypeRow {
   market_group_id: number | null;
   meta_group_id: number | null;
   race_id?: number | null;
+  packaged_volume?: number | null;
 }
 
 function toType(r: TypeRow): SdeType {
@@ -27,6 +28,7 @@ function toType(r: TypeRow): SdeType {
     marketGroupId: r.market_group_id,
     metaGroupId: r.meta_group_id,
     raceId: r.race_id ?? null,
+    packagedVolume: r.packaged_volume ?? null,
   };
 }
 
@@ -157,6 +159,15 @@ export class SqliteSdeSource implements SdeSource {
       | { group_id: number; category_id: number; name: string }
       | undefined;
     return r && { groupId: r.group_id, categoryId: r.category_id, name: r.name };
+  }
+
+  listDecryptors(): Decryptor[] {
+    const has = this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='sde_decryptors'").get();
+    if (!has) return [];
+    const rows = this.db.prepare("SELECT * FROM sde_decryptors ORDER BY name").all() as {
+      type_id: number; name: string; probability_multiplier: number; me: number; te: number; runs: number;
+    }[];
+    return rows.map((r) => ({ typeId: r.type_id, name: r.name, probabilityMultiplier: r.probability_multiplier, me: r.me, te: r.te, runs: r.runs }));
   }
 
   /** True when the SDE was imported with race ids (needed for "Caldari ships"). */

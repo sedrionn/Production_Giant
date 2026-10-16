@@ -11,10 +11,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { once } from "node:events";
 import Database from "better-sqlite3";
-import { createSdeSchema, insertBlueprints, insertGroups, insertSystems, insertTypes, sanityCheck, setMeta } from "../src/sde/build";
-import { parseBlueprintRecord, parseGroupRecord, parseSystemRecord, parseTypeRecord } from "../src/sde/parse";
+import { createSdeSchema, insertBlueprints, insertDecryptors, insertGroups, insertSystems, insertTypes, sanityCheck, setMeta } from "../src/sde/build";
+import { parseBlueprintRecord, parseDecryptorDogma, parseGroupRecord, parseSystemRecord, parseTypeRecord } from "../src/sde/parse";
 import type { SdeGroup, SdeSystem, SdeType } from "../src/sde/types";
-import type { Blueprint } from "../src/engine/types";
+import type { Blueprint, Decryptor } from "../src/engine/types";
 import { findEntry, listZipEntries, readJsonlEntry } from "../src/sde/zipJsonl";
 
 const SDE_BASE = process.env.SDE_BASE_URL ?? "https://developers.eveonline.com/static-data";
@@ -182,6 +182,21 @@ async function main() {
     insertSystems(db, systems);
   } else {
     console.warn("! mapSolarSystems.jsonl not found — system search will be unavailable");
+  }
+
+  // Decryptors: types whose dogma has inventionPropabilityMultiplier. Checked by sanityCheck.
+  const dogmaEntry = findEntry(entries, "typeDogma.jsonl");
+  if (dogmaEntry) {
+    stepTo("parsing decryptors (typeDogma)");
+    const names = new Map(types.filter((t) => t.published).map((t) => [t.typeId, t.name]));
+    const decryptors: Decryptor[] = [];
+    await readJsonlEntry(zipPath, dogmaEntry, (r) => {
+      const d = parseDecryptorDogma(r, (id) => names.get(id));
+      if (d) decryptors.push(d);
+    });
+    insertDecryptors(db, decryptors);
+  } else {
+    console.warn("! typeDogma.jsonl not found — decryptors unavailable");
   }
 
   stepTo("sanity check");
