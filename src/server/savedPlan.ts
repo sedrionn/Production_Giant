@@ -31,9 +31,9 @@ export interface SavedPlanView {
   progress: {
     /** Same shape as data.stages.stages, one progress entry per line. */
     stages: { depth: number; lines: (StageLine & { progress: LineProgress })[] }[];
-    runsPlanned: number;
-    runsStarted: number;
-    runsDone: number;
+    /** Share of job time started / finished (components have many short runs, so runs mislead). */
+    startedShare: number;
+    doneShare: number;
     jobsSyncedAt: string | null;
   };
   /** Older saved plans (id, title, date) for switching. */
@@ -85,6 +85,7 @@ export function savedPlanView(id?: number): SavedPlanView | null {
   let i = 0;
   const stages = data.stages.stages.map((s) => ({ depth: s.depth, lines: s.lines.map((l) => ({ ...l, progress: prog[i++] })) }));
   const sum = (f: (p: LineProgress, l: StageLine) => number) => flat.reduce((a, l, k) => a + f(prog[k], l), 0);
+  const total = sum((_, l) => l.seconds);
 
   const synced = db.select({ at: characters.lastSyncAt }).from(characters).all().map((r) => r.at).filter((x): x is string => !!x).sort()[0] ?? null;
 
@@ -93,7 +94,12 @@ export function savedPlanView(id?: number): SavedPlanView | null {
     title: row.title,
     createdAt: row.createdAt,
     data,
-    progress: { stages, runsPlanned: sum((_, l) => l.runs), runsStarted: sum((p) => p.started), runsDone: sum((p) => p.done), jobsSyncedAt: synced },
+    progress: {
+      stages,
+      startedShare: total ? sum((p, l) => (l.runs ? (l.seconds * p.started) / l.runs : 0)) / total : 0,
+      doneShare: total ? sum((p, l) => (l.runs ? (l.seconds * p.done) / l.runs : 0)) / total : 0,
+      jobsSyncedAt: synced,
+    },
     others: all.filter((p) => p.id !== row.id),
   };
 }

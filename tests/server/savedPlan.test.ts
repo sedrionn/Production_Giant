@@ -40,8 +40,7 @@ describe("saved plan (SYNTHETIC)", () => {
     const id = sp.savePlan(plan, "Неделя теста");
     const v = sp.savedPlanView()!;
     expect(v).toMatchObject({ id, title: "Неделя теста" });
-    expect(v.progress.runsPlanned).toBe(15);
-    expect(v.progress.runsStarted).toBe(0);
+    expect(v.progress.startedShare).toBe(0);
   });
 
   it("jobs started after saving show up as progress", async () => {
@@ -55,6 +54,9 @@ describe("saved plan (SYNTHETIC)", () => {
     const comp = v.progress.stages[0].lines[0].progress;
     expect(comp).toMatchObject({ started: 10, done: 0, left: 0, state: "running", runningUntil: soon });
     expect(v.progress.stages[1].lines[0].progress.state).toBe("todo");
+    // Components 100 s of 110 s job time started, none finished.
+    expect(v.progress.startedShare).toBeCloseTo(100 / 110);
+    expect(v.progress.doneShare).toBe(0);
   });
 
   it("older plans are listed; delete removes", () => {

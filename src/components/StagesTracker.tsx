@@ -124,13 +124,13 @@ export function StagesTracker() {
       </div>
 
       <section className="space-y-1">
-        <div className="h-2 overflow-hidden rounded bg-sheet-2" title={`${qty(p.runsDone)} из ${qty(p.runsPlanned)} ранов готово`}>
-          <div className="h-full bg-job" style={{ width: pct(p.runsPlanned ? p.runsStarted / p.runsPlanned : 0, 2) }}>
-            <div className="h-full bg-gain" style={{ width: pct(p.runsStarted ? p.runsDone / p.runsStarted : 0, 2) }} />
+        <div className="h-2 overflow-hidden rounded bg-sheet-2" title={`Запущено ${pct(p.startedShare, 0)}, готово ${pct(p.doneShare, 0)} по времени джоб`}>
+          <div className="h-full bg-job" style={{ width: pct(p.startedShare, 2) }}>
+            <div className="h-full bg-gain" style={{ width: pct(p.startedShare ? p.doneShare / p.startedShare : 0, 2) }} />
           </div>
         </div>
         <p className="text-sm text-graphite">
-          Запущено {qty(p.runsStarted)} из {qty(p.runsPlanned)} ранов, готово {qty(p.runsDone)}. Джобы из игры {ago(p.jobsSyncedAt)}; считаются те, что поставлены после сохранения плана.
+          По времени джоб запущено {pct(p.startedShare, 0)}, готово {pct(p.doneShare, 0)}. Джобы из игры {ago(p.jobsSyncedAt)}; считаются те, что поставлены после сохранения плана.
         </p>
       </section>
 
