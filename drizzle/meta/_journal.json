@@ -36,6 +36,13 @@
       "when": 1792145289553,
       "tag": "0004_characters",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1792231778227,
+      "tag": "0005_money",
+      "breakpoints": true
     }
   ]
 }

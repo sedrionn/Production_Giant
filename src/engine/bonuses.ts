@@ -174,3 +174,6 @@ export const INVENTION = {
   baseMe: 2, // verify
   baseTe: 4, // verify
 } as const;
+
+/** Industry activity ids as ESI reports them on jobs (SDE ramActivities). 9 is the old reactions id. // verify */
+export const JOB_ACTIVITY_IDS = { manufacturing: 1, researchTime: 3, researchMaterial: 4, copying: 5, invention: 8, reactions: [9, 11] } as const;
