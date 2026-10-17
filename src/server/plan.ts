@@ -78,11 +78,13 @@ function characterSlots(now: number): { slots: SlotState[]; summary: SlotSummary
       const ends = busyEnds[kind].sort((a, b) => a - b);
       for (let i = 0; i < total[kind]; i++) slots.push({ kind, owner: c.name, freeAt: ends[i] ?? 0 });
     }
+    // Finished but not delivered jobs still show as active in ESI: they free up at the next login.
+    const busy = (k: string) => busyEnds[k].filter((d) => d > 0).length;
     summary.push({
       owner: c.name,
-      manufacturing: { total: total.manufacturing, busy: busyEnds.manufacturing.length },
-      reaction: { total: total.reaction, busy: busyEnds.reaction.length },
-      science: { total: total.science, busy: busyEnds.science.length },
+      manufacturing: { total: total.manufacturing, busy: busy("manufacturing") },
+      reaction: { total: total.reaction, busy: busy("reaction") },
+      science: { total: total.science, busy: busy("science") },
     });
   }
   return { slots, summary };
