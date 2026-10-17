@@ -31,6 +31,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <Link href="/overview" className="text-graphite hover:text-chalk">
               Что выгодно
             </Link>
+            <Link href="/plan" className="text-graphite hover:text-chalk">
+              План недели
+            </Link>
             <Link href="/ledger" className="text-graphite hover:text-chalk">
               Учёт
             </Link>
