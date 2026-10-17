@@ -103,16 +103,26 @@ export function batchRunsForCadence(p: {
   maxRuns: number;
   cadenceDays: number;
   horizonDays: number;
+  /** Batches earning less are only taken when nothing bigger fits. */
+  minProfit?: number;
 }): number {
   const { secondsPerRun, profitPerRun, maxRuns, cadenceDays, horizonDays } = p;
   if (secondsPerRun <= 0) return Math.max(1, maxRuns || 1);
   let best = 1;
   let bestScore = -Infinity;
+  let bestBig = false;
   for (let k = 1; k * cadenceDays <= horizonDays + 1e-9; k++) {
     let runs = Math.max(1, Math.floor((k * cadenceDays * DAY) / secondsPerRun));
     if (maxRuns > 0) runs = Math.min(runs, maxRuns);
     const occupied = nextLogin((runs * secondsPerRun) / DAY, cadenceDays) || cadenceDays;
     const score = (profitPerRun * runs) / occupied;
+    // A batch above the minimum always beats one below it: fewer, bigger jobs.
+    const big = profitPerRun * runs >= (p.minProfit ?? 0);
+    if (bestBig && !big) continue;
+    if (big && !bestBig) {
+      [best, bestScore, bestBig] = [runs, score, true];
+      continue;
+    }
     // ≥: a longer batch with the same daily profit means fewer logins.
     if (score >= bestScore - 1e-6 * Math.abs(bestScore)) {
       best = runs;

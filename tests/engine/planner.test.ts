@@ -87,3 +87,11 @@ describe("planWeek (steady state: hulls from ready components, next components p
     expect(p.skipped[0].reason).toMatch(/слотов/);
   });
 });
+
+describe("batchRunsForCadence with a minimum batch profit", () => {
+  it("a batch below the minimum loses to a bigger one even at a better daily rate", () => {
+    // 12.5 h runs, 6.4/run: 3 runs (2 d) = 19.2/2 d is below 30; 7 runs (4 d) = 44.8 clears it.
+    const runs = batchRunsForCadence({ secondsPerRun: 12.5 * H, profitPerRun: 6.4, maxRuns: 10, cadenceDays: 2, horizonDays: 7, minProfit: 30 });
+    expect(runs).toBe(7);
+  });
+});

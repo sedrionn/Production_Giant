@@ -145,15 +145,21 @@ interface Sized {
  * Own BPO/BPC: its runs. Invention (also when you still have a few BPCs left): every decryptor is
  * tried — +runs decryptors turn 1-run BPCs into multi-day jobs (Flycatcher with Augmentation).
  */
-export function sizeRoutes(r: Row, cad: number, horizon: number): Sized[] {
+export function sizeRoutes(r: Row, cad: number, horizon: number, minProfit = 0): Sized[] {
   const pick = (secondsPerRun: number, profitPerRun: number, maxRuns: number) => {
-    const runs = batchRunsForCadence({ secondsPerRun, profitPerRun, maxRuns, cadenceDays: cad, horizonDays: horizon });
+    const runs = batchRunsForCadence({ secondsPerRun, profitPerRun, maxRuns, cadenceDays: cad, horizonDays: horizon, minProfit });
     const occupied = Math.max(cad, Math.ceil((runs * secondsPerRun) / 86_400 / cad) * cad);
     return { runs, profit: profitPerRun * runs, score: (profitPerRun * runs) / occupied };
   };
   const out: Sized[] = [];
   if (r.blueprintSource === "bpo" || r.blueprintSource === "bpc") {
-    if ((r.profit ?? 0) > 0) out.push({ route: "owned", ...pick(r.jobSeconds / r.runs, (r.profit ?? 0) / r.runs, r.maxRuns) });
+    const perRun = (r.profit ?? 0) / r.runs;
+    // An own BPC is used up whole; a BPO is sized for the login rhythm.
+    if (perRun > 0 && r.blueprintSource === "bpc" && r.maxRuns > 0) {
+      const secs = (r.jobSeconds / r.runs) * r.maxRuns;
+      const occupied = Math.max(cad, Math.ceil(secs / 86_400 / cad) * cad);
+      out.push({ route: "owned", runs: r.maxRuns, profit: perRun * r.maxRuns, score: (perRun * r.maxRuns) / occupied });
+    } else if (perRun > 0) out.push({ route: "owned", ...pick(r.jobSeconds / r.runs, perRun, r.maxRuns) });
     if (r.blueprintSource === "bpo") return out;
   }
   const c = calculate({ typeId: r.typeId, runs: r.runs, blueprintSource: "invention", compareDecryptors: true });
@@ -164,9 +170,18 @@ export function sizeRoutes(r: Row, cad: number, horizon: number): Sized[] {
   for (const d of c.invention.comparison) {
     if (d.profit === null) continue;
     const secondsPerRun = (base * (1 - d.te / 100)) / (1 - te0 / 100);
-    const s = pick(secondsPerRun, d.profit / r.runs, d.runsPerSuccess);
-    // Ties → the longer batch (fewer logins).
-    if (s.profit > 0 && (!best || s.score > best.score * 1.0001 || (s.score >= best.score * 0.9999 && s.runs > best.runs))) {
+    // An invented BPC is used up whole: its cost per run assumes every run gets built.
+    const perRun = d.profit / r.runs;
+    const occupied = Math.max(cad, Math.ceil((d.runsPerSuccess * secondsPerRun) / 86_400 / cad) * cad);
+    const s = { runs: d.runsPerSuccess, profit: perRun * d.runsPerSuccess, score: (perRun * d.runsPerSuccess) / occupied };
+    // Batches above the minimum first; then score; ties → the longer batch (fewer logins).
+    const big = (x: { profit: number }) => x.profit >= minProfit;
+    if (
+      s.profit > 0 &&
+      (!best ||
+        (big(s) && !big(best)) ||
+        (big(s) === big(best) && (s.score > best.score * 1.0001 || (s.score >= best.score * 0.9999 && s.runs > best.runs))))
+    ) {
       best = { route: "invention", ...s, decryptorId: d.decryptorId };
     }
   }
@@ -203,7 +218,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
       const t = sde.getType(r.typeId);
       const weight = r.categoryKey === "reactions" && caldariInputs.has(r.typeId) ? PREFER_CALDARI_REACTIONS : 1;
       const tier = req.caldariShipsFirst && t?.categoryId === CATEGORY_SHIP && t.raceId === RACE_CALDARI ? 0 : 1;
-      return sizeRoutes(r, cad, horizon).map((s) => ({ r, ...s, weight, tier }));
+      return sizeRoutes(r, cad, horizon, req.minBatchProfit).map((s) => ({ r, ...s, weight, tier }));
     } catch {
       return [];
     }
