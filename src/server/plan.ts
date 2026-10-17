@@ -173,7 +173,8 @@ export function buildPlan(req: PlanRequest): PlanResponse {
       const batch = toBatch(c);
       if (batch.profit < req.minBatchProfit) continue;
       candidates.push({ ...batch, maxBatches: owned && !owned.isBpo ? owned.copies : undefined });
-      unitCap.set(r.typeId, r.avgDailyVolume30d ? Math.max(c.summary.output, r.avgDailyVolume30d * horizon * req.marketShare) : c.summary.output);
+      // Market cap: a share of what sells over the horizon. No history = one batch at most.
+      unitCap.set(r.typeId, r.avgDailyVolume30d ? r.avgDailyVolume30d * horizon * req.marketShare : c.summary.output);
     } catch {
       /* not calculable at this size — skip */
     }
