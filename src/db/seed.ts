@@ -25,6 +25,8 @@ export interface AppSettings {
   targetJobDays: number;
   /** Decryptor used for invention (type id), null = none. */
   inventionDecryptorId: number | null;
+  /** Own BPCs: "free" (already paid) or valued at what inventing the same runs would cost. */
+  ownBpcValue: "free" | "invention";
   /** Freight ISK per m³: bought materials market → factory, and product factory → market. 0 = off. */
   freightInPerM3: number;
   freightOutPerM3: number;
@@ -52,6 +54,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   minBuildIskPerHour: 100_000,
   targetJobDays: 5,
   inventionDecryptorId: null,
+  ownBpcValue: "free",
   freightInPerM3: 0,
   freightOutPerM3: 0,
   autoRefreshHours: 24,

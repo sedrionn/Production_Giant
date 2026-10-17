@@ -144,6 +144,17 @@ describe("calculations use synced characters", () => {
     expect(r.skillsSource).toBe("characters");
   });
 
+  it("setting: own BPC valued at the invention cost", async () => {
+    const { calculate } = await import("@/server/calculate");
+    const { saveSettings } = await import("@/server/data");
+    saveSettings({ ownBpcValue: "invention" });
+    const r = calculate({ typeId: 34828, runs: 20 });
+    saveSettings({ ownBpcValue: "free" });
+    const cheapest = Math.min(...r.invention.options.map((o) => o.costPerRun));
+    expect(r.request.blueprintSource).toBe("owned");
+    expect(r.summary.blueprintCost).toBeCloseTo(cheapest * 20);
+  });
+
   it("owned BPO ME10 used for an intermediate (R.A.M. Starship Tech)", async () => {
     const { calculate } = await import("@/server/calculate");
     const r = calculate({ typeId: 34828, runs: 20, decisions: { 11478: "build" } });

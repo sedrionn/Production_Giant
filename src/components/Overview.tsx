@@ -39,6 +39,7 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
+  const [rigSize, setRigSize] = useState<RigSize>("all");
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "iskPerHour", dir: -1 });
   const [task, setTask] = useState<TaskState | null>(null);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
@@ -110,7 +111,10 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
 
   const rows = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    const list = (data?.rows ?? []).filter((r) => !q || r.name.toLowerCase().includes(q) || r.group.toLowerCase().includes(q));
+    const isRigs = cat.startsWith("rigs");
+    const list = (data?.rows ?? [])
+      .filter((r) => !q || r.name.toLowerCase().includes(q) || r.group.toLowerCase().includes(q))
+      .filter((r) => !isRigs || rigSize === "all" || RIG_SIZES[rigSize].some((p) => r.name.startsWith(p)));
     const val = (r: OverviewRow) => (sort.key === "name" ? r.name : r[sort.key]);
     return [...list].sort((a, b) => {
       const x = val(a);
@@ -119,7 +123,7 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
       if (y === null || y === undefined) return -1;
       return (x < y ? -1 : x > y ? 1 : 0) * sort.dir;
     });
-  }, [data, filter, sort]);
+  }, [data, filter, sort, cat, rigSize]);
 
   const running = task && !task.finishedAt;
 
@@ -170,6 +174,20 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
             </button>
           ))}
         </div>
+        {cat.startsWith("rigs") && (
+          <div role="group" aria-label="Размер ригов" className="flex gap-1 rounded border border-line p-0.5 text-sm">
+            {(Object.keys(RIG_SIZE_LABEL) as RigSize[]).map((k) => (
+              <button
+                key={k}
+                onClick={() => setRigSize(k)}
+                aria-pressed={rigSize === k}
+                className={`rounded px-2.5 py-1 ${rigSize === k ? "bg-sheet-2 text-chalk" : "text-graphite hover:text-chalk"}`}
+              >
+                {RIG_SIZE_LABEL[k]}
+              </button>
+            ))}
+          </div>
+        )}
         <input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -294,3 +312,8 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
 const SOURCE_LABEL: Record<string, string> = { invention: "инвент", bpo: "свой BPO", bpc: "свой BPC", none: "нет чертежа" };
 const tone = (v: number | null) => (v === null ? "text-graphite" : v >= 0 ? "text-gain" : "text-loss");
 const vol = (v: number) => (v >= 100 ? qty(Math.round(v)) : v >= 10 ? v.toFixed(0) : v.toFixed(1));
+
+type RigSize = "all" | "capital" | "large" | "ms";
+const RIG_SIZE_LABEL: Record<RigSize, string> = { all: "Все", capital: "Капитальные", large: "Large", ms: "Medium + Small" };
+/** Rig names start with their size. */
+const RIG_SIZES: Record<Exclude<RigSize, "all">, string[]> = { capital: ["Capital "], large: ["Large "], ms: ["Medium ", "Small "] };

@@ -381,6 +381,12 @@ export function SettingsForm() {
         <L label="Доставка продукта на рынок, ISK/м³">
           <input type="number" min={0} step={10} value={s.freightOutPerM3} onChange={(e) => set({ freightOutPerM3: Math.max(0, Number(e.target.value)) })} className={input} />
         </L>
+        <L label="Свои BPC в расчёте">
+          <select value={s.ownBpcValue} onChange={(e) => set({ ownBpcValue: e.target.value as AppSettings["ownBpcValue"] })} className={input}>
+            <option value="free">бесплатные (уже оплачены)</option>
+            <option value="invention">по стоимости инвента</option>
+          </select>
+        </L>
         <L label="Декриптор для инвента">
           <select
             value={s.inventionDecryptorId ?? ""}
