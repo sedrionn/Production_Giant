@@ -28,6 +28,29 @@ export const CATEGORIES: { key: CategoryKey; label: string }[] = [
   { key: "rigs_t2", label: "Риги T2" },
 ];
 
+/**
+ * Not Caldari, but Nick builds them too: shown in the Caldari tabs and planned with the Caldari
+ * hulls so they are not forgotten.
+ */
+export const CALDARI_BRANCH_EXTRA: ReadonlySet<string> = new Set(["Obelisk", "Anshar"]);
+
+/** Caldari hull, or one of the extras Nick keeps in the Caldari branch. */
+export const isCaldariBranchShip = (t: SdeType) => t.categoryId === CATEGORY.ship && (t.raceId === RACE_CALDARI || CALDARI_BRANCH_EXTRA.has(t.name));
+
+/** Capital ship groups: too big for courier contracts, so no freight to market. */
+const CAPITAL_GROUPS: ReadonlySet<string> = new Set([
+  "Freighter",
+  "Jump Freighter",
+  "Carrier",
+  "Supercarrier",
+  "Dreadnought",
+  "Lancer Dreadnought",
+  "Force Auxiliary",
+  "Titan",
+  "Capital Industrial Ship",
+]);
+export const isCapital = (sde: SdeSource, t: SdeType | undefined) => !!t && t.categoryId === CATEGORY.ship && CAPITAL_GROUPS.has(sde.getGroup(t.groupId)?.name ?? "");
+
 /** T1 items usually carry no meta group in the SDE. */
 const isMeta = (t: SdeType, meta: number) => (meta === META.t1 ? t.metaGroupId == null || t.metaGroupId === META.t1 : t.metaGroupId === meta);
 
@@ -57,9 +80,9 @@ export function listCategory(sde: SdeSource, key: CategoryKey, ownedBlueprintIds
       return made.filter((t) => t.categoryId === CATEGORY.commodity && !forShips.has(t.typeId));
     }
     case "caldari_t1":
-      return made.filter((t) => t.categoryId === CATEGORY.ship && t.raceId === RACE_CALDARI && isMeta(t, META.t1));
+      return made.filter((t) => isCaldariBranchShip(t) && isMeta(t, META.t1));
     case "caldari_t2":
-      return made.filter((t) => t.categoryId === CATEGORY.ship && t.raceId === RACE_CALDARI && isMeta(t, META.t2));
+      return made.filter((t) => isCaldariBranchShip(t) && isMeta(t, META.t2));
     case "t3":
       return made.filter((t) => (t.categoryId === CATEGORY.ship && isMeta(t, META.t3)) || t.categoryId === CATEGORY.subsystem);
     case "rigs_t1":

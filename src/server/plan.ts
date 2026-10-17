@@ -7,7 +7,7 @@ import { JOB_ACTIVITY_IDS, SLOT_SKILLS } from "@/engine/bonuses";
 import { characters, industryJobs } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { calculate, type CalcResponse } from "./calculate";
-import { CATEGORIES, RACE_CALDARI, shipInputs, type CategoryKey } from "./catalog";
+import { CATEGORIES, isCaldariBranchShip, RACE_CALDARI, shipInputs, type CategoryKey } from "./catalog";
 import { skillLevels } from "./characters";
 import { getDb, getSde, getSettings, priceBook } from "./data";
 import { stockIndex } from "./assets";
@@ -198,8 +198,6 @@ export function sizeRoutes(r: Row, cad: number, horizon: number, minProfit = 0):
   return out;
 }
 
-/** SDE category of ships. Caldari ships go first when asked (tier 0); everything else after. */
-const CATEGORY_SHIP = 6;
 
 export function buildPlan(req: PlanRequest): PlanResponse {
   const t0 = Date.now();
@@ -227,7 +225,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
       const t = sde.getType(r.typeId);
       const weight = r.categoryKey === "reactions" && caldariInputs.has(r.typeId) ? PREFER_CALDARI_REACTIONS : 1;
       // 0 = Caldari hulls; 1 = what dilutes them (rigs, reactions, other Caldari items); 2 = the rest.
-      const caldariShip = t?.categoryId === CATEGORY_SHIP && t.raceId === RACE_CALDARI;
+      const caldariShip = !!t && isCaldariBranchShip(t);
       const filler = r.categoryKey.startsWith("rigs") || r.categoryKey === "reactions" || t?.raceId === RACE_CALDARI;
       const tier = !req.caldariShipsFirst ? 0 : caldariShip ? 0 : filler ? 1 : 2;
       return sizeRoutes(r, cad, horizon, req.minBatchProfit).map((s) => ({ r, ...s, weight, tier }));

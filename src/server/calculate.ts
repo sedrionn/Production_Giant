@@ -11,6 +11,7 @@ import { SKILL_IDS } from "@/engine/bonuses";
 import type { IndustrySkills } from "@/engine/jobCost";
 import type { InventionSkills } from "@/engine/invention";
 import type { BlueprintActivity } from "@/engine/types";
+import { isCapital } from "./catalog";
 import { hasCharacters, ownedBlueprintIndex, skillLevels, type OwnedBlueprint } from "./characters";
 import { costIndicesFor, getProfile, getSde, getSettings, listProfiles, priceBook, type Profile } from "./data";
 
@@ -207,7 +208,8 @@ export function calculate(req: CalcRequest): CalcResponse {
     const t = sde.getType(id);
     return t ? t.packagedVolume ?? t.volume : 0;
   };
-  const productFreight = volumeOf(req.typeId) * s.freightOutPerM3;
+  // Capitals do not go by courier: you fly or sell them where they are built.
+  const productFreight = isCapital(sde, sde.getType(req.typeId)) ? 0 : volumeOf(req.typeId) * s.freightOutPerM3;
   const treeFor = (rootMe: number, rootTe: number) => buildTree(req.typeId, req.runs, {
     recipe,
     freight: s.freightInPerM3 > 0 ? { perM3: s.freightInPerM3, volume: volumeOf } : undefined,

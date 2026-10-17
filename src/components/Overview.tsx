@@ -261,6 +261,11 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
                       сложно продать
                     </span>
                   )}
+                  {r.capital && (
+                    <span className="ml-2 rounded border border-job/60 px-1.5 text-xs text-job" title="Капитал: курьером не возится, доставка в цене не учитывается">
+                      капитал
+                    </span>
+                  )}
                 </td>
                 <td className={`py-1.5 pr-4 text-right ${tone(r.profit)}`} title={full(r.profit)}>
                   {isk(r.profit, true)}

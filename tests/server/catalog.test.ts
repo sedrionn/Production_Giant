@@ -93,3 +93,18 @@ describe("blacklist", () => {
     expect(reason(20, { ...all, boosters: false })).toBeNull();
   });
 });
+
+describe("capitals and the Caldari branch extras (SYNTHETIC types)", () => {
+  it("freighters and jump freighters are capitals; a battleship is not", async () => {
+    const { isCapital, isCaldariBranchShip } = await import("@/server/catalog");
+    const groups: Record<number, string> = { 513: "Freighter", 902: "Jump Freighter", 27: "Battleship" };
+    const sde = { getGroup: (id: number) => ({ groupId: id, name: groups[id], categoryId: 6 }) } as unknown as import("@/sde/types").SdeSource;
+    const ship = (name: string, groupId: number, raceId: number) => ({ typeId: 1, name, groupId, categoryId: 6, raceId }) as unknown as import("@/sde/types").SdeType;
+    expect(isCapital(sde, ship("Obelisk", 513, 8))).toBe(true);
+    expect(isCapital(sde, ship("Anshar", 902, 8))).toBe(true);
+    expect(isCapital(sde, ship("Raven", 27, 1))).toBe(false);
+    expect(isCaldariBranchShip(ship("Obelisk", 513, 8))).toBe(true);
+    expect(isCaldariBranchShip(ship("Megathron", 27, 8))).toBe(false);
+    expect(isCaldariBranchShip(ship("Raven", 27, 1))).toBe(true);
+  });
+});
