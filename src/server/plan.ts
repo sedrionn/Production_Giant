@@ -126,7 +126,7 @@ export function toBatch(r: CalcResponse): PlanBatch {
   };
 }
 
-type Row = OverviewRow & { category: string; categoryKey: CategoryKey };
+export type Row = OverviewRow & { category: string; categoryKey: CategoryKey };
 
 /** Reactions that feed Caldari ships rank this much higher (Nick's preference, soft). */
 const PREFER_CALDARI_REACTIONS = 1.15;
@@ -145,7 +145,7 @@ interface Sized {
  * Own BPO/BPC: its runs. Invention (also when you still have a few BPCs left): every decryptor is
  * tried — +runs decryptors turn 1-run BPCs into multi-day jobs (Flycatcher with Augmentation).
  */
-function sizeRoutes(r: Row, cad: number, horizon: number): Sized[] {
+export function sizeRoutes(r: Row, cad: number, horizon: number): Sized[] {
   const pick = (secondsPerRun: number, profitPerRun: number, maxRuns: number) => {
     const runs = batchRunsForCadence({ secondsPerRun, profitPerRun, maxRuns, cadenceDays: cad, horizonDays: horizon });
     const occupied = Math.max(cad, Math.ceil((runs * secondsPerRun) / 86_400 / cad) * cad);
