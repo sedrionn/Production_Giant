@@ -130,6 +130,8 @@ export function planStages(input: StageInput): Stages {
       continue;
     }
     const need = demand.get(id) ?? 0;
+    // Reached only through inputs that come entirely from stock: nothing to do.
+    if (need <= 0) continue;
     const fromStock = take(id, need);
     const runs = Math.ceil((need - fromStock) / r.outputPerRun - 1e-9);
     for (const i of r.inputs) add(demand, i.typeId, Math.ceil(runs * i.perRun - 1e-9));

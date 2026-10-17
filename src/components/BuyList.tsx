@@ -88,6 +88,7 @@ export function BuyList({ stages, stockNote }: { stages: Stages; stockNote?: Rea
 export function StockPicker({ onChange, syncedAt }: { onChange?: () => void; syncedAt?: string | null }) {
   const [locs, setLocs] = useState<StockLocation[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [all, setAll] = useState(false);
   useEffect(() => {
     fetch("/api/stock")
       .then((r) => r.json())
@@ -115,7 +116,7 @@ export function StockPicker({ onChange, syncedAt }: { onChange?: () => void; syn
         {syncedAt ? ` · ассеты ${ago(syncedAt)}` : ""}
       </summary>
       <ul className="mt-2 space-y-1">
-        {locs.map((l) => (
+        {(all ? locs : locs.filter((l, i) => l.selected || l.jobsHere || i < 8)).map((l) => (
           <li key={l.locationId}>
             <label className="flex items-center gap-2">
               <input type="checkbox" className="accent-[var(--marker)]" checked={l.selected} onChange={() => toggle(l.locationId)} />
@@ -127,6 +128,11 @@ export function StockPicker({ onChange, syncedAt }: { onChange?: () => void; syn
           </li>
         ))}
       </ul>
+      {!all && locs.length > 8 && (
+        <button onClick={() => setAll(true)} className="mt-1 text-graphite underline hover:text-chalk">
+          Ещё {locs.length - locs.filter((l, i) => l.selected || l.jobsHere || i < 8).length} локаций
+        </button>
+      )}{" "}
       <button onClick={() => save(null)} className="mt-2 text-graphite underline hover:text-chalk">
         По умолчанию: где идут джобы
       </button>

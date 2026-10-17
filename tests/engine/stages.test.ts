@@ -81,3 +81,10 @@ describe("stageProgress", () => {
     expect(b.state).toBe("done");
   });
 });
+
+describe("planStages: nothing left to build", () => {
+  it("a type reached only through stock-covered inputs gets no line", () => {
+    const s = planStages({ products: [{ typeId: 1, runs: 1 }], recipes, buy, stock: new Map([[2, 5]]) });
+    expect(s.stages.flatMap((x) => x.lines).map((l) => l.typeId)).toEqual([2, 1]);
+  });
+});
