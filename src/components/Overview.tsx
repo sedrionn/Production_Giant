@@ -98,6 +98,11 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
     return () => clearInterval(t);
   }, [task, cat, load]);
 
+  const hide = async (typeId: number) => {
+    const r = await fetch("/api/blacklist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ typeId, add: true }) });
+    if (r.ok) setData((d) => (d ? { ...d, rows: d.rows.filter((x) => x.typeId !== typeId), hidden: d.hidden + 1 } : d));
+  };
+
   const refresh = async () => {
     const r = await fetch("/api/overview/refresh", {
       method: "POST",
@@ -219,7 +224,7 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
           <tbody>
             {rows.map((r) => (
               <Fragment key={r.typeId}>
-              <tr className={`border-b border-line/40 hover:bg-sheet/70 ${expanded.has(r.typeId) ? "bg-sheet/70" : ""}`}>
+              <tr className={`group border-b border-line/40 hover:bg-sheet/70 ${expanded.has(r.typeId) ? "bg-sheet/70" : ""}`}>
                 <td className="py-1.5 pr-4">
                   <button
                     onClick={() => toggle(r.typeId)}
@@ -243,6 +248,14 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
                       .join(", ")}
                   </span>
                   {r.error && <span className="ml-2 text-xs text-loss">{r.error}</span>}
+                  <button
+                    onClick={() => hide(r.typeId)}
+                    title="В блэклист: больше не показывать в обзоре и плане (вернуть — в настройках)"
+                    aria-label={`Скрыть ${r.name}`}
+                    className="ml-2 text-xs text-graphite opacity-0 transition-opacity group-hover:opacity-100 hover:text-loss focus:opacity-100"
+                  >
+                    скрыть
+                  </button>
                   {r.marketRisks.length > 0 && (
                     <span className="ml-2 rounded border border-marker/60 px-1.5 text-xs text-marker" title={r.marketRisks.join("\n")}>
                       сложно продать
@@ -303,6 +316,7 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
       {data && (
         <p className="text-sm text-graphite">
           {data.rows.length} предметов, посчитано за {(data.computedMs / 1000).toFixed(1)} с.
+          {data.hidden > 0 && ` Скрыто блэклистом: ${data.hidden} (бустеры, триглавское, EDENCOM и вручную скрытые — меняется в «Структуры и настройки»).`}
         </p>
       )}
     </div>

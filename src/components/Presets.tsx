@@ -331,7 +331,12 @@ export function SettingsForm() {
   const [s, setS] = useState<AppSettings | null>(null);
   const [saved, setSaved] = useState(false);
   const [decryptors, setDecryptors] = useState<Decryptor[]>([]);
+  const [hiddenNames, setHiddenNames] = useState<Record<number, string>>({});
   useEffect(() => {
+    fetch("/api/blacklist")
+      .then((r) => (r.ok ? r.json() : { items: [] }))
+      .then((b: { items: { typeId: number; name: string }[] }) => setHiddenNames(Object.fromEntries(b.items.map((i) => [i.typeId, i.name]))))
+      .catch(() => {});
     fetch("/api/settings").then((r) => r.json()).then(setS).catch(() => {});
     fetch("/api/decryptors").then((r) => (r.ok ? r.json() : [])).then(setDecryptors).catch(() => {});
   }, []);
@@ -410,6 +415,41 @@ export function SettingsForm() {
         {lvl("Encryption Methods", s.inventionSkills.encryption, (n) => set({ inventionSkills: { ...s.inventionSkills, encryption: n } }))}
         {lvl("Наука 1 (инвент)", s.inventionSkills.science1, (n) => set({ inventionSkills: { ...s.inventionSkills, science1: n } }))}
         {lvl("Наука 2 (инвент)", s.inventionSkills.science2, (n) => set({ inventionSkills: { ...s.inventionSkills, science2: n } }))}
+      </div>
+      <div className="space-y-2 rounded border border-line bg-sheet/60 px-4 py-4">
+        <h3 className="font-display text-xl font-semibold">Блэклист</h3>
+        <p className="text-sm text-graphite">Скрыто из обзора и плана недели. Отдельные предметы скрываются кнопкой «скрыть» в строке обзора.</p>
+        <div className="flex flex-wrap gap-x-6 gap-y-2">
+          {(
+            [
+              ["boosters", "Бустеры (делаются только в нулях)"],
+              ["triglavian", "Триглавское"],
+              ["edencom", "EDENCOM"],
+            ] as const
+          ).map(([k, label]) => (
+            <label key={k} className="flex items-center gap-2">
+              <input type="checkbox" className="accent-[var(--marker)]" checked={s.blacklist[k]} onChange={(e) => set({ blacklist: { ...s.blacklist, [k]: e.target.checked } })} />
+              {label}
+            </label>
+          ))}
+        </div>
+        {s.blacklist.typeIds.length > 0 && (
+          <ul className="flex flex-wrap gap-2 text-sm">
+            {s.blacklist.typeIds.map((id) => (
+              <li key={id} className="flex items-center gap-1.5 rounded border border-line px-2 py-0.5">
+                {hiddenNames[id] ?? `#${id}`}
+                <button
+                  onClick={() => set({ blacklist: { ...s.blacklist, typeIds: s.blacklist.typeIds.filter((x) => x !== id) } })}
+                  className="text-graphite hover:text-marker"
+                  aria-label={`Вернуть ${hiddenNames[id] ?? id}`}
+                  title="Вернуть (сохранится кнопкой ниже)"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       <button onClick={save} className="rounded bg-marker px-4 py-1.5 font-medium text-ink hover:bg-marker/90">
         {saved ? "Сохранено" : "Сохранить настройки"}
