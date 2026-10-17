@@ -138,6 +138,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
 
   const calcs = new Map<number, CalcResponse>();
   const unpriced: string[] = [];
+  const noBlueprint: string[] = [];
   const candidates: PlanBatch[] = [];
   const unitCap = new Map<number, number>();
   for (const r of top) {
@@ -155,8 +156,13 @@ export function buildPlan(req: PlanRequest): PlanResponse {
         unpriced.push(r.name);
         continue;
       }
-      calcs.set(r.typeId, c);
       const owned = c.request.blueprintSource === "owned" ? c.ownedBlueprint : null;
+      // Only what you can actually start: your own blueprint, or one you can invent.
+      if (!owned && c.request.blueprintSource !== "invention") {
+        noBlueprint.push(r.name);
+        continue;
+      }
+      calcs.set(r.typeId, c);
       // Own BPCs: one batch per copy. BPO, invention or no blueprint: limited by market and slots only.
       candidates.push({ ...toBatch(c), maxBatches: owned && !owned.isBpo ? owned.copies : undefined });
       unitCap.set(r.typeId, r.avgDailyVolume30d ? Math.max(c.summary.output, r.avgDailyVolume30d * horizon * req.marketShare) : c.summary.output);
@@ -216,6 +222,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     .sort((a, b) => b.profitPerSlotDay - a.profitPerSlotDay);
 
   for (const name of unpriced) plan.skipped.push({ name, reason: "нет цены на часть материалов" });
+  for (const name of noBlueprint) plan.skipped.push({ name, reason: "нет чертежа и нельзя заинвентить" });
 
   return {
     ...plan,
