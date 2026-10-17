@@ -3,7 +3,7 @@
  * with the batch sized so the product's job runs ~targetJobDays.
  */
 import { calculate, priceTypesFor, type CalcRequest } from "./calculate";
-import { categoryHint, listCategory, type CategoryKey } from "./catalog";
+import { blacklistReason, categoryHint, listCategory, type CategoryKey } from "./catalog";
 import { hasCharacters, ownedBlueprintIndex } from "./characters";
 import { depthFor, getSde, getSettings, volumesFor } from "./data";
 
@@ -65,14 +65,27 @@ export interface Overview {
   category: CategoryKey;
   hint: string | null;
   rows: OverviewRow[];
+  /** Items hidden by the blacklist. */
+  hidden: number;
   targetJobDays: number;
   pricesOldest: string | null;
   computedMs: number;
 }
 
+/** Items of a category without the blacklisted ones (settings). */
 export function itemsOf(category: CategoryKey) {
+  const { source: sde } = getSde();
+  const bl = getSettings().blacklist;
   const owned = category === "mine" ? [...ownedBlueprintIndex().keys()] : [];
-  return listCategory(getSde().source, category, owned);
+  return listCategory(sde, category, owned).filter((t) => !blacklistReason(sde, t, bl));
+}
+
+/** How many items of the category the blacklist hides. */
+export function hiddenCount(category: CategoryKey): number {
+  const { source: sde } = getSde();
+  const bl = getSettings().blacklist;
+  const owned = category === "mine" ? [...ownedBlueprintIndex().keys()] : [];
+  return listCategory(sde, category, owned).filter((t) => blacklistReason(sde, t, bl)).length;
 }
 
 /** Runs needed for the product job to last ~days, capped by the blueprint's max runs. */
@@ -147,6 +160,7 @@ export function computeOverview(category: CategoryKey, extra: Partial<CalcReques
     category,
     hint: categoryHint(sde, category, hasCharacters()) ?? (items.length ? null : "В этой категории ничего не нашлось в SDE"),
     rows,
+    hidden: hiddenCount(category),
     targetJobDays: s.targetJobDays,
     pricesOldest: oldest,
     computedMs: Date.now() - t0,

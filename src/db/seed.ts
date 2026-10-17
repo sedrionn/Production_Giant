@@ -30,6 +30,8 @@ export interface AppSettings {
   /** Freight ISK per m³: bought materials market → factory, and product factory → market. 0 = off. */
   freightInPerM3: number;
   freightOutPerM3: number;
+  /** Hidden from the overview and the plan: whole groups by rule, plus single items. */
+  blacklist: { boosters: boolean; triglavian: boolean; edencom: boolean; typeIds: number[] };
   /** Full refresh (characters, prices, volumes) while the app runs; 0 = off. */
   autoRefreshHours: number;
   /** When the last full refresh finished (ISO), null = never. */
@@ -57,6 +59,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   ownBpcValue: "free",
   freightInPerM3: 0,
   freightOutPerM3: 0,
+  blacklist: { boosters: true, triglavian: true, edencom: true, typeIds: [] },
   autoRefreshHours: 24,
   lastAutoRefreshAt: null,
   industryCharacterId: null,

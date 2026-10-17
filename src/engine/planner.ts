@@ -33,6 +33,8 @@ export interface PlanBatch {
   jobs: PlanJob[];
   /** How many batches of this item are possible at all (e.g. owned BPC copies); undefined = no limit. */
   maxBatches?: number;
+  /** Preference multiplier on the ranking score (1 = neutral). */
+  weight?: number;
 }
 
 export interface SlotState {
@@ -118,7 +120,7 @@ export function planWeek(input: {
   const slots = input.slots.map((s) => ({ ...s, freeAt: nextLogin(s.freeAt, cad) }));
   const ranked = input.candidates
     .filter((c) => c.profit > 0)
-    .map((c) => ({ c, score: c.profit / Math.max(cad, slotDays(c, cad)) }))
+    .map((c) => ({ c, score: (c.profit / Math.max(cad, slotDays(c, cad))) * (c.weight ?? 1) }))
     .sort((a, b) => b.score - a.score);
 
   let budget = input.budget;

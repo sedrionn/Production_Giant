@@ -7,9 +7,9 @@ import { JOB_ACTIVITY_IDS, SLOT_SKILLS } from "@/engine/bonuses";
 import { characters, industryJobs } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { calculate, type CalcResponse } from "./calculate";
-import { CATEGORIES, type CategoryKey } from "./catalog";
+import { CATEGORIES, RACE_CALDARI, shipInputs, type CategoryKey } from "./catalog";
 import { skillLevels } from "./characters";
-import { getDb } from "./data";
+import { getDb, getSde } from "./data";
 import { computeOverview, type OverviewRow } from "./overview";
 
 export interface PlanRequest {
@@ -37,12 +37,13 @@ export interface PlanResponse extends Plan {
   slots: SlotSummary[];
   shopping: { typeId: number; name: string; quantity: number; cost: number | null; volume: number }[];
   /** Invention needed for invented batches (lab slots are not scheduled yet). */
-  invention: { name: string; batches: number; attemptsPerBatch: number; source: string }[];
+  invention: { name: string; batches: number; attemptsPerBatch: number; source: string; decryptor: string | null; runsPerBpc: number }[];
   /** All evaluated candidates, best first — the "sheet" for planning by hand or with Claude. */
   sheet: {
     name: string;
     category: string;
     runs: number;
+    decryptor: string | null;
     profit: number;
     capital: number;
     slotDays: number;
@@ -123,6 +124,46 @@ function toBatch(r: CalcResponse): PlanBatch {
   };
 }
 
+type Row = OverviewRow & { category: string; categoryKey: CategoryKey };
+
+/** Reactions that feed Caldari ships rank this much higher (Nick's preference, soft). */
+const PREFER_CALDARI_REACTIONS = 1.15;
+
+interface Sized {
+  runs: number;
+  /** undefined = settings default; null = no decryptor. */
+  decryptorId?: number | null;
+  profit: number;
+  score: number;
+}
+
+/** Batch size (and decryptor for invented items) with the best profit per occupied slot-day. */
+function sizeRow(r: Row, cad: number, horizon: number): Sized | null {
+  const pick = (secondsPerRun: number, profitPerRun: number, maxRuns: number) => {
+    const runs = batchRunsForCadence({ secondsPerRun, profitPerRun, maxRuns, cadenceDays: cad, horizonDays: horizon });
+    const occupied = Math.max(cad, Math.ceil((runs * secondsPerRun) / 86_400 / cad) * cad);
+    return { runs, profit: profitPerRun * runs, score: (profitPerRun * runs) / occupied };
+  };
+  if (r.blueprintSource !== "invention") {
+    if ((r.profit ?? 0) <= 0) return null;
+    return pick(r.jobSeconds / r.runs, (r.profit ?? 0) / r.runs, r.maxRuns);
+  }
+  const c = calculate({ typeId: r.typeId, runs: r.runs, compareDecryptors: true });
+  const base = (c.jobs.at(-1)?.timeSeconds ?? r.jobSeconds) / r.runs;
+  const te0 = c.request.te;
+  let best: Sized | null = null;
+  for (const d of c.invention.comparison) {
+    if (d.profit === null) continue;
+    const secondsPerRun = (base * (1 - d.te / 100)) / (1 - te0 / 100);
+    const s = pick(secondsPerRun, d.profit / r.runs, d.runsPerSuccess);
+    // Ties → the longer batch (fewer logins).
+    if (s.profit > 0 && (!best || s.score > best.score * 1.0001 || (s.score >= best.score * 0.9999 && s.runs > best.runs))) {
+      best = { ...s, decryptorId: d.decryptorId };
+    }
+  }
+  return best;
+}
+
 export function buildPlan(req: PlanRequest): PlanResponse {
   const t0 = Date.now();
   const now = Date.now();
@@ -130,25 +171,33 @@ export function buildPlan(req: PlanRequest): PlanResponse {
   const horizon = Math.max(cad, req.horizonDays);
 
   // Candidates: best overview rows across the chosen categories (one row per item).
-  const rows = new Map<number, OverviewRow & { category: string }>();
+  const rows = new Map<number, Row>();
   for (const key of req.categories) {
     const label = CATEGORIES.find((c) => c.key === key)?.label ?? key;
     for (const r of computeOverview(key).rows) {
-      if (r.error || r.profit === null || r.profit <= 0 || !r.jobSeconds || !r.runs) continue;
-      if (!rows.has(r.typeId)) rows.set(r.typeId, { ...r, category: label });
+      // Invented rows stay even if unprofitable at the default decryptor: another one may fix that.
+      if (r.error || r.profit === null || !r.jobSeconds || !r.runs) continue;
+      if (r.profit <= 0 && r.blueprintSource !== "invention") continue;
+      if (!rows.has(r.typeId)) rows.set(r.typeId, { ...r, category: label, categoryKey: key });
     }
   }
-  // Rough score per row at its login-rhythm batch size (product job only), to pick what to evaluate in full.
-  const sized = [...rows.values()].map((r) => {
-    const secondsPerRun = r.jobSeconds / r.runs;
-    const profitPerRun = (r.profit ?? 0) / r.runs;
-    const runs = batchRunsForCadence({ secondsPerRun, profitPerRun, maxRuns: r.maxRuns, cadenceDays: cad, horizonDays: horizon });
-    const occupied = Math.max(cad, Math.ceil((runs * secondsPerRun) / 86_400 / cad) * cad);
-    return { r, runs, profit: profitPerRun * runs, score: (profitPerRun * runs) / occupied };
+  // Size each row for the login rhythm. Invented items also pick the decryptor that gives the best
+  // profit per occupied slot-day: +runs decryptors turn 1-run BPCs into multi-day jobs (Flycatcher).
+  const { source: sde } = getSde();
+  const caldariInputs = shipInputs(sde, new Set([RACE_CALDARI]));
+  const sized = [...rows.values()].flatMap((r) => {
+    try {
+      const s = sizeRow(r, cad, horizon);
+      if (!s) return [];
+      const weight = r.categoryKey === "reactions" && caldariInputs.has(r.typeId) ? PREFER_CALDARI_REACTIONS : 1;
+      return [{ r, ...s, weight }];
+    } catch {
+      return [];
+    }
   });
   const top = sized
     .filter((x) => x.profit >= req.minBatchProfit)
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => b.score * b.weight - a.score * a.weight)
     .slice(0, req.candidates ?? 150);
 
   const calcs = new Map<number, CalcResponse>();
@@ -156,9 +205,9 @@ export function buildPlan(req: PlanRequest): PlanResponse {
   const noBlueprint: string[] = [];
   const candidates: PlanBatch[] = [];
   const unitCap = new Map<number, number>();
-  for (const { r, runs } of top) {
+  for (const { r, runs, decryptorId, weight } of top) {
     try {
-      const c = calculate({ typeId: r.typeId, runs });
+      const c = calculate({ typeId: r.typeId, runs, ...(decryptorId !== undefined ? { decryptorId } : {}) });
       // A missing price understates the cost: such a "profit" is not real.
       if (c.warnings.some((w) => w.includes("нет рыночной цены"))) {
         unpriced.push(r.name);
@@ -171,10 +220,10 @@ export function buildPlan(req: PlanRequest): PlanResponse {
         continue;
       }
       calcs.set(r.typeId, c);
-      // Own BPCs: one batch per copy. BPO, invention or no blueprint: limited by market and slots only.
+      // Own BPCs: one batch per copy. BPO or invention: limited by market and slots only.
       const batch = toBatch(c);
       if (batch.profit < req.minBatchProfit) continue;
-      candidates.push({ ...batch, maxBatches: owned && !owned.isBpo ? owned.copies : undefined });
+      candidates.push({ ...batch, weight, maxBatches: owned && !owned.isBpo ? owned.copies : undefined });
       // Market cap: a share of what sells over the horizon. No history = one batch at most.
       unitCap.set(r.typeId, r.avgDailyVolume30d ? r.avgDailyVolume30d * horizon * req.marketShare : c.summary.output);
     } catch {
@@ -207,7 +256,14 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     }
     const ch = c.request.blueprintSource === "invention" ? c.invention.chosen : null;
     if (ch) {
-      const cur = inv.get(b.typeId) ?? { name: b.name, batches: 0, attemptsPerBatch: Math.ceil(1 / Math.max(ch.chance, 0.01)), source: ch.sourceName };
+      const cur = inv.get(b.typeId) ?? {
+        name: b.name,
+        batches: 0,
+        attemptsPerBatch: Math.ceil(1 / Math.max(ch.chance, 0.01)),
+        source: ch.sourceName,
+        decryptor: c.invention.decryptor?.name ?? null,
+        runsPerBpc: ch.runsPerSuccess,
+      };
       cur.batches++;
       inv.set(b.typeId, cur);
     }
@@ -221,6 +277,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
         name: b.name,
         category: r.category,
         runs: b.runs,
+        decryptor: calcs.get(b.typeId)?.invention.decryptor?.name ?? null,
         profit: b.profit,
         capital: b.capital,
         slotDays: days,
@@ -253,9 +310,9 @@ export function sheetText(p: PlanResponse): string {
     `Бюджет ${r.budget.toLocaleString("ru-RU")} ISK, заход раз в ${r.cadenceDays} дн., горизонт ${r.horizonDays} дн., рынок до ${Math.round(r.marketShare * 100)}% недельного объёма, партии от ${r.minBatchProfit.toLocaleString("ru-RU")} ISK прибыли.`,
     `Слоты: ${p.slots.map((s) => `${s.owner} — производство ${s.manufacturing.total} (занято ${s.manufacturing.busy}), реакции ${s.reaction.total} (занято ${s.reaction.busy})`).join("; ")}.`,
     "",
-    "Предмет | категория | раны | прибыль | капитал | слото-дней | прибыль/слото-день | джоб | дней рынка | риски",
+    "Предмет | категория | раны | декриптор | прибыль | капитал | слото-дней | прибыль/слото-день | джоб | дней рынка | риски",
     ...p.sheet.map((s) =>
-      [s.name, s.category, s.runs, Math.round(s.profit), Math.round(s.capital), s.slotDays, Math.round(s.profitPerSlotDay), s.jobs, s.marketDays?.toFixed(1) ?? "—", s.risks.join("; ") || "—"].join(" | "),
+      [s.name, s.category, s.runs, s.decryptor ?? "—", Math.round(s.profit), Math.round(s.capital), s.slotDays, Math.round(s.profitPerSlotDay), s.jobs, s.marketDays?.toFixed(1) ?? "—", s.risks.join("; ") || "—"].join(" | "),
     ),
   ];
   return lines.join("\n");

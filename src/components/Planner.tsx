@@ -14,8 +14,8 @@ interface Form {
   categories: string[];
 }
 
-const DEFAULT: Form = { budget: 10e9, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, categories: ["mine", "caldari_t1", "caldari_t2", "t3"] };
-const STORAGE = "pg.plan.v1";
+const DEFAULT: Form = { budget: 10e9, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions"] };
+const STORAGE = "pg.plan.v2";
 
 export function Planner({ categories }: { categories: { key: string; label: string }[] }) {
   const [form, setForm] = useState<Form>(DEFAULT);
@@ -168,7 +168,9 @@ export function Planner({ categories }: { categories: { key: string; label: stri
             {plan.invention.length > 0 && (
               <p className="max-w-[90ch] text-sm text-graphite">
                 Инвент заранее (лабораторные слоты пока не планируются):{" "}
-                {plan.invention.map((i) => `${i.name} — ${i.batches} BPC, ~${i.attemptsPerBatch} попыток на каждый (${i.source})`).join("; ")}.
+                {plan.invention
+                  .map((i) => `${i.name} — ${i.batches} BPC по ${i.runsPerBpc} ран.${i.decryptor ? `, ${i.decryptor.replace(" Decryptor", "")}` : ""}, ~${i.attemptsPerBatch} попыток на каждый (${i.source})`)
+                  .join("; ")}.
               </p>
             )}
           </section>

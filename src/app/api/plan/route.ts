@@ -9,7 +9,7 @@ export async function POST(req: Request) {
       budget: Math.max(0, Number(b.budget) || 10e9),
       cadenceDays: Math.min(7, Math.max(1, Number(b.cadenceDays) || 2)),
       horizonDays: Math.min(28, Math.max(1, Number(b.horizonDays) || 7)),
-      categories: b.categories?.length ? b.categories : ["mine", "caldari_t1", "caldari_t2", "t3"],
+      categories: b.categories?.length ? b.categories : ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions"],
       marketShare: Math.min(1, Math.max(0.05, Number(b.marketShare) || 0.3)),
       minBatchProfit: Math.max(0, Number(b.minBatchProfit ?? 30e6)),
     });
