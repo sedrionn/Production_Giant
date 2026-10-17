@@ -5,7 +5,27 @@
 import { calculate, priceTypesFor, type CalcRequest } from "./calculate";
 import { categoryHint, listCategory, type CategoryKey } from "./catalog";
 import { hasCharacters, ownedBlueprintIndex } from "./characters";
-import { getSde, getSettings, volumesFor } from "./data";
+import { depthFor, getSde, getSettings, volumesFor } from "./data";
+
+/** When a batch looks hard to sell. UX thresholds, not game constants. */
+export const MARKET_RISK = {
+  /** Batch bigger than this many days of average sales. */
+  maxMarketDays: 7,
+  /** More than this share of sell orders repriced in the last 24 h = a price war. */
+  maxFreshShare: 0.5,
+  /** 7-day average price this much below the 30-day one = falling. */
+  minPriceTrend: -0.1,
+} as const;
+
+export function marketRisks(r: { marketDays: number | null; sellOrders: number | null; sellOrdersFresh: number | null; priceTrend: number | null }): string[] {
+  const out: string[] = [];
+  if (r.marketDays !== null && r.marketDays > MARKET_RISK.maxMarketDays) out.push(`партия = ${r.marketDays.toFixed(0)} дней продаж`);
+  if (r.sellOrders && r.sellOrdersFresh !== null && r.sellOrdersFresh / r.sellOrders > MARKET_RISK.maxFreshShare && r.sellOrders >= 4) {
+    out.push(`цену перебивают: ${r.sellOrdersFresh} из ${r.sellOrders} ордеров обновлены за сутки`);
+  }
+  if (r.priceTrend !== null && r.priceTrend < MARKET_RISK.minPriceTrend) out.push(`цена падает: ${(r.priceTrend * 100).toFixed(0)}% за неделю`);
+  return out;
+}
 
 export interface OverviewRow {
   typeId: number;
@@ -28,6 +48,13 @@ export interface OverviewRow {
   avgDailyVolume30d: number | null;
   /** How many days of average market volume the batch represents. */
   marketDays: number | null;
+  /** Sell orders at the hub and how many were repriced in the last 24 h. */
+  sellOrders: number | null;
+  sellOrdersFresh: number | null;
+  /** 7-day average price vs 30-day, as a fraction (−0.12 = 12% lower). */
+  priceTrend: number | null;
+  /** Human-readable reasons the batch may be hard to sell; empty = fine. */
+  marketRisks: string[];
   warnings: number;
   error: string | null;
 }
@@ -59,6 +86,7 @@ export function computeOverview(category: CategoryKey, extra: Partial<CalcReques
   const s = getSettings();
   const items = itemsOf(category);
   const volumes = volumesFor(items.map((i) => i.typeId), s.priceRegionId);
+  const depth = depthFor(items.map((i) => i.typeId), s.priceLocationId);
   let oldest: string | null = null;
 
   const rows: OverviewRow[] = items.map((item) => {
@@ -75,6 +103,10 @@ export function computeOverview(category: CategoryKey, extra: Partial<CalcReques
       const r = runs === 1 ? probe : calculate({ ...extra, typeId: item.typeId, runs });
       const job = r.jobs.at(-1)!;
       const v = volumes.get(item.typeId);
+      const d = depth.get(item.typeId);
+      const marketDays = v && v.avgDailyVolume30d > 0 ? r.summary.output / v.avgDailyVolume30d : null;
+      const priceTrend = v?.avgPrice7d && v.avgPrice30d ? v.avgPrice7d / v.avgPrice30d - 1 : null;
+      const market = { marketDays, sellOrders: d?.sellOrders ?? null, sellOrdersFresh: d?.sellOrdersFresh ?? null, priceTrend };
       if (r.prices.oldest && (!oldest || r.prices.oldest < oldest)) oldest = r.prices.oldest;
       return {
         typeId: item.typeId,
@@ -93,7 +125,8 @@ export function computeOverview(category: CategoryKey, extra: Partial<CalcReques
         unitPrice: r.summary.unitPrice,
         avgDailyVolume7d: v?.avgDailyVolume7d ?? null,
         avgDailyVolume30d: v?.avgDailyVolume30d ?? null,
-        marketDays: v && v.avgDailyVolume30d > 0 ? r.summary.output / v.avgDailyVolume30d : null,
+        ...market,
+        marketRisks: marketRisks(market),
         warnings: r.warnings.length,
         error: null,
       };
@@ -101,7 +134,8 @@ export function computeOverview(category: CategoryKey, extra: Partial<CalcReques
       return {
         typeId: item.typeId, name: item.name, group, blueprintSource: null, runs: 0, output: 0, profit: null, profitPerRun: null,
         margin: null, totalCost: 0, iskPerHour: null, jobSeconds: 0, unitPrice: null, avgDailyVolume7d: null,
-        avgDailyVolume30d: null, marketDays: null, warnings: 0, error: (e as Error).message,
+        avgDailyVolume30d: null, marketDays: null, sellOrders: null, sellOrdersFresh: null, priceTrend: null, marketRisks: [],
+        warnings: 0, error: (e as Error).message,
       };
     }
   });

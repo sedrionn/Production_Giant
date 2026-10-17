@@ -69,7 +69,15 @@ export async function refreshQuotes(
   db.transaction((tx) => {
     for (const q of results) {
       if (!q) continue;
-      const values = { buyMax: q.buyMax, sellMin: q.sellMin, buyVolume: q.buyVolume ?? 0, sellVolume: q.sellVolume ?? 0, updatedAt: at };
+      const values = {
+        buyMax: q.buyMax,
+        sellMin: q.sellMin,
+        buyVolume: q.buyVolume ?? 0,
+        sellVolume: q.sellVolume ?? 0,
+        sellOrders: q.sellOrders,
+        sellOrdersFresh: q.sellOrdersFresh,
+        updatedAt: at,
+      };
       tx.insert(priceCache)
         .values({ typeId: q.typeId, locationId, ...values })
         .onConflictDoUpdate({ target: [priceCache.typeId, priceCache.locationId], set: values })
@@ -105,7 +113,13 @@ export async function refreshVolumes(typeIds: number[], regionId: number, onProg
   db.transaction((tx) => {
     for (const s of stats) {
       if (!s) continue;
-      const values = { avgDailyVolume7d: s.avgDailyVolume7d, avgDailyVolume30d: s.avgDailyVolume30d, avgPrice30d: s.avgPrice30d, updatedAt: at };
+      const values = {
+        avgDailyVolume7d: s.avgDailyVolume7d,
+        avgDailyVolume30d: s.avgDailyVolume30d,
+        avgPrice30d: s.avgPrice30d,
+        avgPrice7d: s.avgPrice7d,
+        updatedAt: at,
+      };
       tx.insert(marketStats)
         .values({ typeId: s.typeId, regionId, ...values })
         .onConflictDoUpdate({ target: [marketStats.typeId, marketStats.regionId], set: values })

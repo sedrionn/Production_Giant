@@ -5,13 +5,14 @@ import type { Overview as OverviewData, OverviewRow } from "@/server/overview";
 import type { TaskState } from "@/server/tasks";
 import { ago, duration, full, isk, pct, qty } from "@/lib/format";
 import { ChainPanel } from "./ChainPanel";
+import { FullRefresh } from "./FullRefresh";
 
 export interface CategoryTab {
   key: string;
   label: string;
 }
 
-type SortKey = "name" | "profit" | "profitPerRun" | "margin" | "iskPerHour" | "avgDailyVolume30d" | "marketDays" | "jobSeconds";
+type SortKey = "name" | "profit" | "profitPerRun" | "margin" | "iskPerHour" | "avgDailyVolume30d" | "marketDays" | "priceTrend" | "jobSeconds";
 
 const STORAGE = "pg.overview.v1";
 
@@ -23,6 +24,12 @@ const COLUMNS: { key: SortKey; label: string; title?: string; align?: "right" }[
   { key: "iskPerHour", label: "ISK/ч", align: "right", title: "Прибыль за час джобы самого продукта (занятость слота)" },
   { key: "avgDailyVolume30d", label: "Продают в день", align: "right", title: "Средний объём сделок в регионе за 30 дней (в скобках — за 7)" },
   { key: "marketDays", label: "Партия = дней рынка", align: "right", title: "Сколько дней среднего объёма продаж занимает твоя партия" },
+  {
+    key: "priceTrend",
+    label: "Рынок",
+    align: "right",
+    title: "Ордеров на продажу в Jita (сколько из них перевыставлены за сутки) и изменение цены: неделя против месяца",
+  },
   { key: "jobSeconds", label: "Джоба", align: "right" },
 ];
 
@@ -125,6 +132,7 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
             Полное дерево по каждому предмету с твоими структурами, порогом выгоды и режимами цен. Партия подобрана так, чтобы
             джоба продукта шла около {data?.targetJobDays ?? 5} дней (меняется в настройках).
           </p>
+          <FullRefresh onDone={() => load(cat)} />
         </div>
         <div className="space-y-1 text-right">
           <button
@@ -174,7 +182,7 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
       {data?.hint && <p className="rounded border border-marker/40 bg-marker/5 px-4 py-3">{data.hint}</p>}
 
       <div className={`overflow-x-auto transition-opacity ${loading ? "opacity-60" : ""}`}>
-        <table className="w-full min-w-[1100px] whitespace-nowrap text-left">
+        <table className="w-full min-w-[1250px] whitespace-nowrap text-left">
           <thead className="border-b border-line text-sm text-graphite">
             <tr>
               {COLUMNS.map((c) => (
@@ -217,6 +225,11 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
                       .join(", ")}
                   </span>
                   {r.error && <span className="ml-2 text-xs text-loss">{r.error}</span>}
+                  {r.marketRisks.length > 0 && (
+                    <span className="ml-2 rounded border border-marker/60 px-1.5 text-xs text-marker" title={r.marketRisks.join("\n")}>
+                      сложно продать
+                    </span>
+                  )}
                 </td>
                 <td className={`py-1.5 pr-4 text-right ${tone(r.profit)}`} title={full(r.profit)}>
                   {isk(r.profit, true)}
@@ -238,6 +251,21 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
                 </td>
                 <td className={`py-1.5 pr-4 text-right ${r.marketDays !== null && r.marketDays > 7 ? "text-marker" : "text-graphite"}`}>
                   {r.marketDays === null ? "—" : r.marketDays < 0.1 ? "<0.1" : r.marketDays.toFixed(1)}
+                </td>
+                <td className="py-1.5 pr-4 text-right text-graphite" title={r.marketRisks.join("\n") || undefined}>
+                  {r.sellOrders === null ? (
+                    "—"
+                  ) : (
+                    <>
+                      {r.sellOrders} орд.{r.sellOrdersFresh ? <span className="text-xs"> ({r.sellOrdersFresh} за сутки)</span> : null}
+                      {r.priceTrend !== null && (
+                        <span className={`ml-1.5 ${r.priceTrend < -0.05 ? "text-loss" : r.priceTrend > 0.05 ? "text-gain" : ""}`}>
+                          {r.priceTrend > 0 ? "+" : r.priceTrend < 0 ? "−" : ""}
+                          {Math.abs(r.priceTrend * 100).toFixed(0)}%
+                        </span>
+                      )}
+                    </>
+                  )}
                 </td>
                 <td className="py-1.5 text-right text-graphite">{r.jobSeconds ? duration(r.jobSeconds) : "—"}</td>
               </tr>

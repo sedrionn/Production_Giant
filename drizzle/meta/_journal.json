@@ -43,6 +43,13 @@
       "when": 1792231778227,
       "tag": "0005_money",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1792232188136,
+      "tag": "0006_market_depth",
+      "breakpoints": true
     }
   ]
 }
