@@ -25,6 +25,8 @@ export interface PlanRequest {
   minBatchProfit: number;
   /** Plan Caldari ships before anything else (then by profit per slot-day). */
   caldariShipsFirst: boolean;
+  /** Max share of the budget one item may take (0..1). */
+  maxItemShare: number;
 }
 
 export interface SlotSummary {
@@ -217,7 +219,10 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     try {
       const t = sde.getType(r.typeId);
       const weight = r.categoryKey === "reactions" && caldariInputs.has(r.typeId) ? PREFER_CALDARI_REACTIONS : 1;
-      const tier = req.caldariShipsFirst && t?.categoryId === CATEGORY_SHIP && t.raceId === RACE_CALDARI ? 0 : 1;
+      // 0 = Caldari hulls; 1 = what dilutes them (rigs, reactions, other Caldari items); 2 = the rest.
+      const caldariShip = t?.categoryId === CATEGORY_SHIP && t.raceId === RACE_CALDARI;
+      const filler = r.categoryKey.startsWith("rigs") || r.categoryKey === "reactions" || t?.raceId === RACE_CALDARI;
+      const tier = !req.caldariShipsFirst ? 0 : caldariShip ? 0 : filler ? 1 : 2;
       return sizeRoutes(r, cad, horizon, req.minBatchProfit).map((s) => ({ r, ...s, weight, tier }));
     } catch {
       return [];
@@ -273,6 +278,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     cadenceDays: cad,
     horizonDays: horizon,
     maxBatchesPerItem: 10,
+    maxItemShare: req.maxItemShare,
     unitCap: (id) => unitCap.get(id) ?? 0,
   });
 

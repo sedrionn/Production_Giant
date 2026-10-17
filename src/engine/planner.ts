@@ -9,8 +9,8 @@
  *    slot-day, ties → longer jobs (fewer logins);
  *  - product jobs start only at logins, on the earliest free manufacturing slot;
  *  - intermediates are pooled per type and must fit in the slots left over in the period;
- *  - greedy by tier (e.g. Caldari ships first), then profit per slot-day, within budget and a
- *    market cap per item.
+ *  - greedy by tier (e.g. Caldari ships first), then profit per slot-day, within budget, a
+ *    market cap per item and a per-item share of the budget (variety over one big hull).
  */
 import type { Activity } from "./types";
 
@@ -152,6 +152,8 @@ export function planWeek(input: {
   maxBatchesPerItem: number;
   /** Max units of one item over the plan. */
   unitCap: (typeId: number) => number;
+  /** Max share of the budget one item may take (all its batches together); default 1 = no cap. */
+  maxItemShare?: number;
 }): Plan {
   const { cadenceDays: cad, horizonDays: horizon } = input;
   const slots = input.slots.map((s) => ({ ...s, freeAt: nextLogin(s.freeAt, cad) }));
@@ -170,6 +172,8 @@ export function planWeek(input: {
   const jobs: ScheduledJob[] = [];
   const skipped: Plan["skipped"] = [];
   const unitsPlanned = new Map<number, number>();
+  const spentPerItem = new Map<number, number>();
+  const itemCap = input.budget * Math.min(1, Math.max(0, input.maxItemShare ?? 1));
   const prep = new Map<string, PrepJob>();
 
   for (const { c } of ranked) {
@@ -185,6 +189,11 @@ export function planWeek(input: {
       };
       if (c.capital > budget) {
         why("не хватает бюджета");
+        break;
+      }
+      // Spread the budget: one expensive hull must not crowd out the rest of the week.
+      if ((spentPerItem.get(c.typeId) ?? 0) + c.capital > itemCap + 1e-6) {
+        why(`одна позиция не больше ${Math.round((itemCap / input.budget) * 100)}% бюджета`);
         break;
       }
       if ((unitsPlanned.get(c.typeId) ?? 0) + c.units > input.unitCap(c.typeId)) {
@@ -225,6 +234,7 @@ export function planWeek(input: {
       batches.push({ ...c, start, end });
       budget -= c.capital;
       unitsPlanned.set(c.typeId, (unitsPlanned.get(c.typeId) ?? 0) + c.units);
+      spentPerItem.set(c.typeId, (spentPerItem.get(c.typeId) ?? 0) + c.capital);
       made++;
     }
   }

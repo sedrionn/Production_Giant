@@ -12,11 +12,12 @@ interface Form {
   marketShare: number;
   minBatchProfit: number;
   caldariShipsFirst: boolean;
+  maxItemShare: number;
   categories: string[];
 }
 
-const DEFAULT: Form = { budget: 10e9, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, caldariShipsFirst: true, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions"] };
-const STORAGE = "pg.plan.v2";
+const DEFAULT: Form = { budget: 10e9, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, caldariShipsFirst: true, maxItemShare: 0.2, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions"] };
+const STORAGE = "pg.plan.v3";
 
 export function Planner({ categories }: { categories: { key: string; label: string }[] }) {
   const [form, setForm] = useState<Form>(DEFAULT);
@@ -88,17 +89,18 @@ export function Planner({ categories }: { categories: { key: string; label: stri
         </p>
       </div>
 
-      <section className="grid gap-4 rounded border border-line bg-sheet/60 px-4 py-4 sm:grid-cols-2 lg:grid-cols-5">
+      <section className="grid gap-4 rounded border border-line bg-sheet/60 px-4 py-4 sm:grid-cols-2 lg:grid-cols-6">
         <Num label="Бюджет, млрд ISK" value={form.budget / 1e9} step={0.5} onChange={(v) => set({ budget: v * 1e9 })} />
         <Num label="Захожу раз в, дней" value={form.cadenceDays} step={1} min={1} max={7} onChange={(v) => set({ cadenceDays: v })} />
         <Num label="План на, дней" value={form.horizonDays} step={1} min={1} max={28} onChange={(v) => set({ horizonDays: v })} />
         <Num label="Не больше, % рынка за период" value={Math.round(form.marketShare * 100)} step={5} min={5} max={100} onChange={(v) => set({ marketShare: v / 100 })} />
         <Num label="Партия от, млн ISK прибыли" value={form.minBatchProfit / 1e6} step={5} min={0} onChange={(v) => set({ minBatchProfit: v * 1e6 })} />
-        <label className="flex items-center gap-2 sm:col-span-2 lg:col-span-5">
+        <Num label="Одна позиция, не больше % бюджета" value={Math.round(form.maxItemShare * 100)} step={5} min={5} max={100} onChange={(v) => set({ maxItemShare: v / 100 })} />
+        <label className="flex items-center gap-2 sm:col-span-2 lg:col-span-6">
           <input type="checkbox" className="accent-[var(--marker)]" checked={form.caldariShipsFirst} onChange={(e) => set({ caldariShipsFirst: e.target.checked })} />
           Сначала калдарские корабли, остальное — заполнить свободные слоты и бюджет
         </label>
-        <fieldset className="flex flex-wrap gap-x-4 gap-y-1 sm:col-span-2 lg:col-span-5">
+        <fieldset className="flex flex-wrap gap-x-4 gap-y-1 sm:col-span-2 lg:col-span-6">
           <legend className="mb-1 text-sm text-graphite">Что рассматривать</legend>
           {categories.map((c) => (
             <label key={c.key} className="flex items-center gap-1.5">
@@ -112,7 +114,7 @@ export function Planner({ categories }: { categories: { key: string; label: stri
             </label>
           ))}
         </fieldset>
-        <div className="flex flex-wrap items-center gap-3 sm:col-span-2 lg:col-span-5">
+        <div className="flex flex-wrap items-center gap-3 sm:col-span-2 lg:col-span-6">
           <button onClick={run} disabled={busy || !form.categories.length} className="rounded bg-marker px-4 py-1.5 font-medium text-ink hover:bg-marker/90 disabled:opacity-50">
             {busy ? "Считаю…" : "Составить план"}
           </button>

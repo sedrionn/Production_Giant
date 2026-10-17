@@ -76,6 +76,21 @@ describe("planWeek (steady state: hulls from ready components, next components p
     expect(p.batches.map((b) => b.typeId)).toEqual([2]);
   });
 
+  it("one item may take only its share of the budget: the rest goes to other items", () => {
+    const p = planWeek({
+      candidates: [ship(1, 300, 30), ship(2, 100, 30)],
+      slots: slots(6),
+      budget: 100,
+      cadenceDays: 2,
+      horizonDays: 7,
+      maxBatchesPerItem: 5,
+      unitCap: () => 99,
+      maxItemShare: 0.6,
+    });
+    expect(p.batches.map((b) => b.typeId)).toEqual([1, 1, 2]);
+    expect(p.skipped).toEqual([]);
+  });
+
   it("busy slots push the start to the login after they free up", () => {
     const p = planWeek({ candidates: [ship(1, 100, 10)], slots: slots(1, 3.2), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 99 });
     expect(p.jobs[0].start).toBe(4);
