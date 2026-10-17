@@ -3,7 +3,7 @@
  * with the batch sized so the product's job runs ~targetJobDays.
  */
 import { calculate, priceTypesFor, type CalcRequest } from "./calculate";
-import { blacklistReason, categoryHint, listCategory, type CategoryKey } from "./catalog";
+import { blacklistReason, categoryHint, isCapital, listCategory, type CategoryKey } from "./catalog";
 import { hasCharacters, ownedBlueprintIndex } from "./characters";
 import { depthFor, getSde, getSettings, volumesFor } from "./data";
 
@@ -57,6 +57,8 @@ export interface OverviewRow {
   priceTrend: number | null;
   /** Human-readable reasons the batch may be hard to sell; empty = fine. */
   marketRisks: string[];
+  /** Capital ship: no courier freight, sold or flown from where it is built. */
+  capital: boolean;
   warnings: number;
   error: string | null;
 }
@@ -143,6 +145,7 @@ export function computeOverview(category: CategoryKey, extra: Partial<CalcReques
         avgDailyVolume30d: v?.avgDailyVolume30d ?? null,
         ...market,
         marketRisks: marketRisks(market),
+        capital: isCapital(sde, item),
         warnings: r.warnings.length,
         error: null,
       };
@@ -150,7 +153,7 @@ export function computeOverview(category: CategoryKey, extra: Partial<CalcReques
       return {
         typeId: item.typeId, name: item.name, group, blueprintSource: null, runs: 0, maxRuns: 0, output: 0, profit: null, profitPerRun: null,
         margin: null, totalCost: 0, iskPerHour: null, jobSeconds: 0, unitPrice: null, avgDailyVolume7d: null,
-        avgDailyVolume30d: null, marketDays: null, sellOrders: null, sellOrdersFresh: null, priceTrend: null, marketRisks: [],
+        avgDailyVolume30d: null, marketDays: null, sellOrders: null, sellOrdersFresh: null, priceTrend: null, marketRisks: [], capital: isCapital(sde, item),
         warnings: 0, error: (e as Error).message,
       };
     }
