@@ -34,6 +34,8 @@ export interface OverviewRow {
   /** bpo / bpc (owned), invention, none (no blueprint, ME/TE from settings), null on error. */
   blueprintSource: "bpo" | "bpc" | "invention" | "none" | null;
   runs: number;
+  /** Most runs one batch can have (BPC runs, invented runs or blueprint limit); 0 = no limit. */
+  maxRuns: number;
   output: number;
   profit: number | null;
   profitPerRun: number | null;
@@ -115,6 +117,7 @@ export function computeOverview(category: CategoryKey, extra: Partial<CalcReques
         blueprintSource:
           r.request.blueprintSource === "invention" ? "invention" : r.ownedBlueprint ? (r.ownedBlueprint.isBpo ? "bpo" : "bpc") : "none",
         runs,
+        maxRuns,
         output: r.summary.output,
         profit: r.summary.profit,
         profitPerRun: r.summary.profit === null ? null : r.summary.profit / runs,
@@ -132,7 +135,7 @@ export function computeOverview(category: CategoryKey, extra: Partial<CalcReques
       };
     } catch (e) {
       return {
-        typeId: item.typeId, name: item.name, group, blueprintSource: null, runs: 0, output: 0, profit: null, profitPerRun: null,
+        typeId: item.typeId, name: item.name, group, blueprintSource: null, runs: 0, maxRuns: 0, output: 0, profit: null, profitPerRun: null,
         margin: null, totalCost: 0, iskPerHour: null, jobSeconds: 0, unitPrice: null, avgDailyVolume7d: null,
         avgDailyVolume30d: null, marketDays: null, sellOrders: null, sellOrdersFresh: null, priceTrend: null, marketRisks: [],
         warnings: 0, error: (e as Error).message,
