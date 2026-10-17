@@ -119,7 +119,8 @@ export type Blacklist = { boosters: boolean; triglavian: boolean; edencom: boole
 export function blacklistReason(sde: SdeSource, t: SdeType, bl: Blacklist): string | null {
   if (bl.typeIds.includes(t.typeId)) return "в блэклисте";
   const group = sde.getGroup(t.groupId)?.name ?? "";
-  if (bl.boosters && group === "Booster") return "бустеры";
+  // Boosters and their reaction intermediates (gas from null/WH only).
+  if (bl.boosters && (group === "Booster" || group === "Biochemical Material")) return "бустеры";
   if (bl.triglavian && t.raceId === RACE_TRIGLAVIAN) return "триглавское";
   if (bl.edencom && (t.raceId === RACE_EDENCOM || group.startsWith("Vorton Projector"))) return "EDENCOM";
   return null;

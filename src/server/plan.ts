@@ -2,7 +2,7 @@
  * Weekly plan: candidates from the overview, batches sized to Nick's login rhythm, scheduled on
  * the real free slots of the characters (skills − running jobs), within a budget.
  */
-import { batchRunsForCadence, planWeek, type Plan, type PlanBatch, type PlanJob, type SlotKind, type SlotState } from "@/engine/planner";
+import { batchRunsForCadence, planWeek, slotDays, type Plan, type PlanBatch, type PlanJob, type SlotKind, type SlotState } from "@/engine/planner";
 import { JOB_ACTIVITY_IDS, SLOT_SKILLS } from "@/engine/bonuses";
 import { characters, industryJobs } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -23,6 +23,8 @@ export interface PlanRequest {
   candidates?: number;
   /** Skip batches that earn less than this: not worth a separate job to babysit. */
   minBatchProfit: number;
+  /** Plan Caldari ships before anything else (then by profit per slot-day). */
+  caldariShipsFirst: boolean;
 }
 
 export interface SlotSummary {
@@ -130,6 +132,7 @@ type Row = OverviewRow & { category: string; categoryKey: CategoryKey };
 const PREFER_CALDARI_REACTIONS = 1.15;
 
 interface Sized {
+  route: "owned" | "invention";
   runs: number;
   /** undefined = settings default; null = no decryptor. */
   decryptorId?: number | null;
@@ -137,18 +140,24 @@ interface Sized {
   score: number;
 }
 
-/** Batch size (and decryptor for invented items) with the best profit per occupied slot-day. */
-function sizeRow(r: Row, cad: number, horizon: number): Sized | null {
+/**
+ * Batch size per way of getting the blueprint, with the best profit per occupied product slot-day.
+ * Own BPO/BPC: its runs. Invention (also when you still have a few BPCs left): every decryptor is
+ * tried — +runs decryptors turn 1-run BPCs into multi-day jobs (Flycatcher with Augmentation).
+ */
+function sizeRoutes(r: Row, cad: number, horizon: number): Sized[] {
   const pick = (secondsPerRun: number, profitPerRun: number, maxRuns: number) => {
     const runs = batchRunsForCadence({ secondsPerRun, profitPerRun, maxRuns, cadenceDays: cad, horizonDays: horizon });
     const occupied = Math.max(cad, Math.ceil((runs * secondsPerRun) / 86_400 / cad) * cad);
     return { runs, profit: profitPerRun * runs, score: (profitPerRun * runs) / occupied };
   };
-  if (r.blueprintSource !== "invention") {
-    if ((r.profit ?? 0) <= 0) return null;
-    return pick(r.jobSeconds / r.runs, (r.profit ?? 0) / r.runs, r.maxRuns);
+  const out: Sized[] = [];
+  if (r.blueprintSource === "bpo" || r.blueprintSource === "bpc") {
+    if ((r.profit ?? 0) > 0) out.push({ route: "owned", ...pick(r.jobSeconds / r.runs, (r.profit ?? 0) / r.runs, r.maxRuns) });
+    if (r.blueprintSource === "bpo") return out;
   }
-  const c = calculate({ typeId: r.typeId, runs: r.runs, compareDecryptors: true });
+  const c = calculate({ typeId: r.typeId, runs: r.runs, blueprintSource: "invention", compareDecryptors: true });
+  if (c.request.blueprintSource !== "invention") return out;
   const base = (c.jobs.at(-1)?.timeSeconds ?? r.jobSeconds) / r.runs;
   const te0 = c.request.te;
   let best: Sized | null = null;
@@ -158,11 +167,15 @@ function sizeRow(r: Row, cad: number, horizon: number): Sized | null {
     const s = pick(secondsPerRun, d.profit / r.runs, d.runsPerSuccess);
     // Ties → the longer batch (fewer logins).
     if (s.profit > 0 && (!best || s.score > best.score * 1.0001 || (s.score >= best.score * 0.9999 && s.runs > best.runs))) {
-      best = { ...s, decryptorId: d.decryptorId };
+      best = { route: "invention", ...s, decryptorId: d.decryptorId };
     }
   }
-  return best;
+  if (best) out.push(best);
+  return out;
 }
+
+/** SDE category of ships. Caldari ships go first when asked (tier 0); everything else after. */
+const CATEGORY_SHIP = 6;
 
 export function buildPlan(req: PlanRequest): PlanResponse {
   const t0 = Date.now();
@@ -187,27 +200,33 @@ export function buildPlan(req: PlanRequest): PlanResponse {
   const caldariInputs = shipInputs(sde, new Set([RACE_CALDARI]));
   const sized = [...rows.values()].flatMap((r) => {
     try {
-      const s = sizeRow(r, cad, horizon);
-      if (!s) return [];
+      const t = sde.getType(r.typeId);
       const weight = r.categoryKey === "reactions" && caldariInputs.has(r.typeId) ? PREFER_CALDARI_REACTIONS : 1;
-      return [{ r, ...s, weight }];
+      const tier = req.caldariShipsFirst && t?.categoryId === CATEGORY_SHIP && t.raceId === RACE_CALDARI ? 0 : 1;
+      return sizeRoutes(r, cad, horizon).map((s) => ({ r, ...s, weight, tier }));
     } catch {
       return [];
     }
   });
   const top = sized
     .filter((x) => x.profit >= req.minBatchProfit)
-    .sort((a, b) => b.score * b.weight - a.score * a.weight)
+    .sort((a, b) => a.tier - b.tier || b.score * b.weight - a.score * a.weight)
     .slice(0, req.candidates ?? 150);
 
-  const calcs = new Map<number, CalcResponse>();
+  const calcs = new Map<string, CalcResponse>();
   const unpriced: string[] = [];
   const noBlueprint: string[] = [];
   const candidates: PlanBatch[] = [];
   const unitCap = new Map<number, number>();
-  for (const { r, runs, decryptorId, weight } of top) {
+  for (const { r, route, runs, decryptorId, weight, tier } of top) {
+    const key = `${r.typeId}:${route}`;
     try {
-      const c = calculate({ typeId: r.typeId, runs, ...(decryptorId !== undefined ? { decryptorId } : {}) });
+      const c = calculate({
+        typeId: r.typeId,
+        runs,
+        blueprintSource: route,
+        ...(route === "invention" && decryptorId !== undefined ? { decryptorId } : {}),
+      });
       // A missing price understates the cost: such a "profit" is not real.
       if (c.warnings.some((w) => w.includes("нет рыночной цены"))) {
         unpriced.push(r.name);
@@ -219,11 +238,11 @@ export function buildPlan(req: PlanRequest): PlanResponse {
         noBlueprint.push(r.name);
         continue;
       }
-      calcs.set(r.typeId, c);
+      calcs.set(key, c);
       // Own BPCs: one batch per copy. BPO or invention: limited by market and slots only.
       const batch = toBatch(c);
       if (batch.profit < req.minBatchProfit) continue;
-      candidates.push({ ...batch, weight, maxBatches: owned && !owned.isBpo ? owned.copies : undefined });
+      candidates.push({ ...batch, key, weight, tier, maxBatches: owned && !owned.isBpo ? owned.copies : undefined });
       // Market cap: a share of what sells over the horizon. No history = one batch at most.
       unitCap.set(r.typeId, r.avgDailyVolume30d ? r.avgDailyVolume30d * horizon * req.marketShare : c.summary.output);
     } catch {
@@ -244,9 +263,9 @@ export function buildPlan(req: PlanRequest): PlanResponse {
 
   // One shopping list for everything in the plan.
   const shop = new Map<number, PlanResponse["shopping"][number]>();
-  const inv = new Map<number, PlanResponse["invention"][number]>();
+  const inv = new Map<string, PlanResponse["invention"][number]>();
   for (const b of plan.batches) {
-    const c = calcs.get(b.typeId)!;
+    const c = calcs.get(b.key ?? String(b.typeId))!;
     for (const l of c.shopping) {
       const cur = shop.get(l.typeId) ?? { typeId: l.typeId, name: l.name, quantity: 0, cost: 0, volume: 0 };
       cur.quantity += l.quantity;
@@ -256,7 +275,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     }
     const ch = c.request.blueprintSource === "invention" ? c.invention.chosen : null;
     if (ch) {
-      const cur = inv.get(b.typeId) ?? {
+      const cur = inv.get(b.key ?? String(b.typeId)) ?? {
         name: b.name,
         batches: 0,
         attemptsPerBatch: Math.ceil(1 / Math.max(ch.chance, 0.01)),
@@ -265,19 +284,20 @@ export function buildPlan(req: PlanRequest): PlanResponse {
         runsPerBpc: ch.runsPerSuccess,
       };
       cur.batches++;
-      inv.set(b.typeId, cur);
+      inv.set(b.key ?? String(b.typeId), cur);
     }
   }
 
   const sheet = candidates
     .map((b) => {
       const r = rows.get(b.typeId)!;
-      const days = b.jobs.reduce((s, j) => s + Math.max(cad, Math.ceil(j.seconds / DAY / cad) * cad), 0);
+      const days = Math.round(slotDays(b, cad) * 10) / 10;
+      const c = calcs.get(b.key ?? String(b.typeId));
       return {
-        name: b.name,
+        name: b.name + (c?.request.blueprintSource === "invention" ? " (инвент)" : " (свой чертёж)"),
         category: r.category,
         runs: b.runs,
-        decryptor: calcs.get(b.typeId)?.invention.decryptor?.name ?? null,
+        decryptor: c?.request.blueprintSource === "invention" ? c.invention.decryptor?.name ?? null : null,
         profit: b.profit,
         capital: b.capital,
         slotDays: days,

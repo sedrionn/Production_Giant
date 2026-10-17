@@ -11,10 +11,11 @@ interface Form {
   horizonDays: number;
   marketShare: number;
   minBatchProfit: number;
+  caldariShipsFirst: boolean;
   categories: string[];
 }
 
-const DEFAULT: Form = { budget: 10e9, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions"] };
+const DEFAULT: Form = { budget: 10e9, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, caldariShipsFirst: true, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions"] };
 const STORAGE = "pg.plan.v2";
 
 export function Planner({ categories }: { categories: { key: string; label: string }[] }) {
@@ -92,6 +93,10 @@ export function Planner({ categories }: { categories: { key: string; label: stri
         <Num label="План на, дней" value={form.horizonDays} step={1} min={1} max={28} onChange={(v) => set({ horizonDays: v })} />
         <Num label="Не больше, % рынка за период" value={Math.round(form.marketShare * 100)} step={5} min={5} max={100} onChange={(v) => set({ marketShare: v / 100 })} />
         <Num label="Партия от, млн ISK прибыли" value={form.minBatchProfit / 1e6} step={5} min={0} onChange={(v) => set({ minBatchProfit: v * 1e6 })} />
+        <label className="flex items-center gap-2 sm:col-span-2 lg:col-span-5">
+          <input type="checkbox" className="accent-[var(--marker)]" checked={form.caldariShipsFirst} onChange={(e) => set({ caldariShipsFirst: e.target.checked })} />
+          Сначала калдарские корабли, остальное — заполнить свободные слоты и бюджет
+        </label>
         <fieldset className="flex flex-wrap gap-x-4 gap-y-1 sm:col-span-2 lg:col-span-5">
           <legend className="mb-1 text-sm text-graphite">Что рассматривать</legend>
           {categories.map((c) => (

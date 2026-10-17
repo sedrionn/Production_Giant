@@ -35,6 +35,10 @@ export interface PlanBatch {
   maxBatches?: number;
   /** Preference multiplier on the ranking score (1 = neutral). */
   weight?: number;
+  /** Lower tiers are planned first (e.g. 0 = Caldari ships); same tier → by score. */
+  tier?: number;
+  /** Distinguishes routes of the same item (own BPC vs invention); defaults to typeId. */
+  key?: string;
 }
 
 export interface SlotState {
@@ -100,9 +104,12 @@ export function batchRunsForCadence(p: {
 
 const slotKind = (a: Activity): SlotKind | null => (a === "manufacturing" ? "manufacturing" : a === "reaction" ? "reaction" : null);
 
-/** Days of slot time a batch occupies when every job snaps to logins. */
+/**
+ * Slot-days a batch costs: the product job snaps to logins (its slot waits for you), the
+ * intermediates count at their real length (they fill otherwise idle slots in parallel).
+ */
 export function slotDays(b: PlanBatch, cadence: number): number {
-  return b.jobs.reduce((s, j) => s + (nextLogin(j.seconds / DAY, cadence) || cadence), 0);
+  return b.jobs.reduce((s, j) => s + (j.depth === 0 ? nextLogin(j.seconds / DAY, cadence) || cadence : j.seconds / DAY), 0);
 }
 
 export function planWeek(input: {
@@ -121,7 +128,7 @@ export function planWeek(input: {
   const ranked = input.candidates
     .filter((c) => c.profit > 0)
     .map((c) => ({ c, score: (c.profit / Math.max(cad, slotDays(c, cad))) * (c.weight ?? 1) }))
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => (a.c.tier ?? 0) - (b.c.tier ?? 0) || b.score - a.score);
 
   let budget = input.budget;
   const batches: Plan["batches"] = [];
@@ -204,7 +211,8 @@ function place(b: PlanBatch, slots: SlotState[], cad: number, horizon: number): 
       }
       if (best === -1) return null;
       const start = nextLogin(Math.max(free[best], ready), cad);
-      if (start >= horizon) return null;
+      // The chain must start this week; later steps may run into the next one (steady state).
+      if (d === maxDepth && start >= horizon) return null;
       const end = start + j.seconds / DAY;
       free[best] = nextLogin(end, cad);
       out.push({ ...j, batchTypeId: b.typeId, slot: best, owner: slots[best].owner, start, end });
