@@ -26,7 +26,7 @@ describe("aggregateOrders (old sheet bug #4: region-wide min)", () => {
 
   it("best bid / ask at Jita 4-4 only", () => {
     const q = aggregateOrders(34, orders, STATION_JITA_4_4);
-    expect(q).toEqual({ typeId: 34, buyMax: 3.7, sellMin: 3.9, buyVolume: 1010, sellVolume: 150 });
+    expect(q).toMatchObject({ typeId: 34, buyMax: 3.7, sellMin: 3.9, buyVolume: 1010, sellVolume: 150 });
   });
 
   it("empty book → nulls", () => {
@@ -69,5 +69,22 @@ describe("volumeStats", () => {
   it("volume-weighted price, null when nothing traded", () => {
     expect(volumeStats(1, [h("2026-10-15", 1, 100), h("2026-10-14", 3, 200)], "2026-10-16").avgPrice30d).toBeCloseTo(175);
     expect(volumeStats(1, [], "2026-10-16").avgPrice30d).toBeNull();
+  });
+});
+
+describe("market depth (SYNTHETIC orders)", () => {
+  it("counts hub sell orders and those repriced in the last 24 h", async () => {
+    const { aggregateOrders } = await import("@/esi/transform");
+    const now = Date.parse("2026-10-17T12:00:00Z");
+    const o = (id: number, issued: string, buy = false, loc = 60003760) => ({ order_id: id, type_id: 1, location_id: loc, price: 100 + id, volume_remain: 1, is_buy_order: buy, issued });
+    const q = aggregateOrders(1, [o(1, "2026-10-17T08:00:00Z"), o(2, "2026-10-10T08:00:00Z"), o(3, "2026-10-17T09:00:00Z", true), o(4, "2026-10-17T09:00:00Z", false, 1)], 60003760, now);
+    expect(q).toMatchObject({ sellOrders: 2, sellOrdersFresh: 1, sellMin: 101, buyMax: 103 });
+  });
+  it("7-day average price next to the 30-day one", async () => {
+    const { volumeStats } = await import("@/esi/transform");
+    const h = (date: string, average: number, volume: number) => ({ date, average, volume, highest: average, lowest: average, order_count: 1 });
+    const v = volumeStats(1, [h("2026-10-16", 90, 10), h("2026-10-01", 110, 10)], "2026-10-17");
+    expect(v.avgPrice7d).toBe(90);
+    expect(v.avgPrice30d).toBe(100);
   });
 });

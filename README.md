@@ -45,7 +45,7 @@ git add fixtures && git commit -m "Update fixtures" && git push
 Один раз:
 1. На [developers.eveonline.com/applications](https://developers.eveonline.com/applications) создай приложение типа «Authentication & API Access».
 2. Callback URL: `http://localhost:3000/api/auth/callback`.
-3. Скоупы: `esi-skills.read_skills.v1`, `esi-characters.read_blueprints.v1`, `esi-industry.read_character_jobs.v1`, `esi-assets.read_assets.v1`, `esi-corporations.read_blueprints.v1`, `esi-industry.read_corporation_jobs.v1`, `esi-assets.read_corporation_assets.v1`.
+3. Скоупы: `esi-skills.read_skills.v1`, `esi-characters.read_blueprints.v1`, `esi-industry.read_character_jobs.v1`, `esi-assets.read_assets.v1`, `esi-corporations.read_blueprints.v1`, `esi-industry.read_corporation_jobs.v1`, `esi-assets.read_corporation_assets.v1`, `esi-wallet.read_character_wallet.v1`, `esi-markets.read_character_orders.v1`, `esi-contracts.read_character_contracts.v1`.
 4. Создай в корне проекта `.env.local`:
    ```
    EVE_CLIENT_ID=...
@@ -58,6 +58,12 @@ Refresh-токены хранятся зашифрованными в `data/app.
 ## Обзор «Что выгодно»
 
 Категории: мои чертежи, Калдари T1/T2, T3, реакции, риги T1/T2. По каждому предмету считается полное дерево, а партия подбирается так, чтобы джоба продукта шла около N дней (настройка). Кнопка «Обновить цены и объёмы категории» тянет цены Jita и историю продаж для всей категории, это может занять пару минут.
+
+## План недели и учёт
+
+- **План недели** (`/plan`): бюджет, как часто заходишь в игру, на сколько дней планировать. Получаешь расписание по заходам (кто что ставит), один список закупки, лист кандидатов для Claude и файл `.ics` для календаря.
+- **Учёт** (`/ledger`): сколько потрачено и заработано, что построено и продано, перебитые ордера. Нужны скоупы кошелька, ордеров и контрактов: добавь их в приложение на developers.eveonline.com и перезайди персонажами.
+- Пока приложение запущено, персонажи и цены обновляются сами раз в сутки. Кнопка «Обновить всё сейчас» есть на странице «Что выгодно».
 
 ## Разработка
 

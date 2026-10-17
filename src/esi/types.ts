@@ -19,6 +19,8 @@ export interface EsiMarketOrder {
   volume_remain: number;
   is_buy_order: boolean;
   range?: string;
+  /** Reset when the owner changes the price: a recent `issued` means an active seller. */
+  issued?: string;
 }
 
 export interface EsiMarketHistoryDay {

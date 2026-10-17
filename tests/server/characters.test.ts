@@ -94,7 +94,9 @@ describe("character sync (SYNTHETIC ESI)", () => {
 
   it("stores skills (active level), blueprints, jobs and corp blueprints", async () => {
     const r = await ch.syncCharacter(NICK, api(), async () => "tok");
-    expect(r).toMatchObject({ skills: 2, blueprints: 2, corpBlueprints: 1, jobs: 1, notes: [] });
+    expect(r).toMatchObject({ skills: 2, blueprints: 2, corpBlueprints: 1, jobs: 1 });
+    // Saved without the stage-3 scopes: only the "log in again for the wallet" note.
+    expect(r.notes).toEqual([expect.stringMatching(/перезайди/)]);
     expect(ch.skillLevels(null).get(3388)).toBe(4);
     const c = ch.listCharacters()[0];
     expect(c).toMatchObject({ name: "Nick Industrialist", corporationId: CORP, blueprints: 2, jobs: 1 });
@@ -140,6 +142,17 @@ describe("calculations use synced characters", () => {
     expect(r.summary.blueprintCost).toBe(0);
     expect(r.ownedBlueprint).toMatchObject({ me: 4, runs: 20, isBpo: false });
     expect(r.skillsSource).toBe("characters");
+  });
+
+  it("setting: own BPC valued at the invention cost", async () => {
+    const { calculate } = await import("@/server/calculate");
+    const { saveSettings } = await import("@/server/data");
+    saveSettings({ ownBpcValue: "invention" });
+    const r = calculate({ typeId: 34828, runs: 20 });
+    saveSettings({ ownBpcValue: "free" });
+    const cheapest = Math.min(...r.invention.options.map((o) => o.costPerRun));
+    expect(r.request.blueprintSource).toBe("owned");
+    expect(r.summary.blueprintCost).toBeCloseTo(cheapest * 20);
   });
 
   it("owned BPO ME10 used for an intermediate (R.A.M. Starship Tech)", async () => {

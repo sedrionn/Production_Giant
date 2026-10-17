@@ -233,7 +233,15 @@ export function calculate(req: CalcRequest): CalcResponse {
   const tree = treeFor(me, te);
   warnings.push(...tree.warnings.map((w) => localizeWarning(w, name)));
 
-  const summary = summarizeProfit(tree, prices.quote(req.typeId), productPriceMode, fees, chosen?.costPerRun ?? 0, productFreight);
+  // Own BPC valued at the cost of inventing it (setting), so they compete fairly with invented ones.
+  let bpcValue = 0;
+  if (!chosen && ownedRoot && !ownedRoot.isBpo && s.ownBpcValue === "invention") {
+    const cheapest = [...options].sort((a, b) => a.costPerRun - b.costPerRun)[0];
+    if (cheapest) bpcValue = cheapest.costPerRun;
+    else warnings.push("Свой BPC: инвента нет, стоимость чертежа не учтена");
+  }
+  const blueprintPerRun = chosen?.costPerRun ?? bpcValue;
+  const summary = summarizeProfit(tree, prices.quote(req.typeId), productPriceMode, fees, blueprintPerRun, productFreight);
 
   // Same batch with every decryptor (and none), each with its own ME/TE → full tree.
   const comparison: DecryptorComparison[] = [];

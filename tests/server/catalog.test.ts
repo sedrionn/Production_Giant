@@ -19,6 +19,7 @@ const types: SdeType[] = [
   t(8, "Fulleroferrocene", 974, 4, null),
   t(9, "Heavy Missile Launcher II", 510, 7, 2),
   t(10, "Graviton Reactor Unit", 334, 17, null, 1),
+  t(11, "Exigent Sentry Drone Firepower Mutaplasmid", 1964, 17, null),
 ];
 const groups = [
   { groupId: 26, categoryId: 6, name: "Cruiser" },
@@ -34,7 +35,8 @@ const blueprints: Blueprint[] = types.map((x) => ({
       blueprintTypeId: 1000 + x.typeId,
       activity: x.typeId === 8 ? "reaction" : "manufacturing",
       time: 60,
-      materials: [],
+      // Caracal is built from the Graviton Reactor Unit; nothing uses the mutaplasmid.
+      materials: x.typeId === 1 ? [{ typeId: 10, quantity: 1 }] : [],
       products: [{ typeId: x.typeId, quantity: 1 }],
       skills: [],
     },
@@ -58,6 +60,9 @@ describe("overview categories", () => {
   it("components tab holds intermediates; ship tabs never do", () => {
     expect(names("components")).toEqual(["Graviton Reactor Unit"]);
     expect(names("caldari_t1")).not.toContain("Graviton Reactor Unit");
+  });
+  it("«Прочие»: commodities that no empire ship needs", () => {
+    expect(names("other")).toEqual(["Exigent Sentry Drone Firepower Mutaplasmid"]);
   });
 
   it("my blueprints show end products only", () => {

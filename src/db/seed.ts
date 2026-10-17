@@ -25,9 +25,15 @@ export interface AppSettings {
   targetJobDays: number;
   /** Decryptor used for invention (type id), null = none. */
   inventionDecryptorId: number | null;
+  /** Own BPCs: "free" (already paid) or valued at what inventing the same runs would cost. */
+  ownBpcValue: "free" | "invention";
   /** Freight ISK per m³: bought materials market → factory, and product factory → market. 0 = off. */
   freightInPerM3: number;
   freightOutPerM3: number;
+  /** Full refresh (characters, prices, volumes) while the app runs; 0 = off. */
+  autoRefreshHours: number;
+  /** When the last full refresh finished (ISO), null = never. */
+  lastAutoRefreshAt: string | null;
   /** Character whose skills drive time/invention; null = best level across all synced characters. */
   industryCharacterId: number | null;
   manufacturingProfileId: number | null;
@@ -48,8 +54,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   minBuildIskPerHour: 100_000,
   targetJobDays: 5,
   inventionDecryptorId: null,
+  ownBpcValue: "free",
   freightInPerM3: 0,
   freightOutPerM3: 0,
+  autoRefreshHours: 24,
+  lastAutoRefreshAt: null,
   industryCharacterId: null,
   manufacturingProfileId: null,
   reactionProfileId: null,

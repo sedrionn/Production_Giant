@@ -207,7 +207,25 @@ export interface VolumeInfo {
   avgDailyVolume7d: number;
   avgDailyVolume30d: number;
   avgPrice30d: number | null;
+  avgPrice7d: number | null;
   updatedAt: string;
+}
+
+export interface DepthInfo {
+  sellOrders: number | null;
+  sellOrdersFresh: number | null;
+}
+
+/** Sell-side competition at the hub, from the last price refresh. */
+export function depthFor(typeIds: number[], locationId: number): Map<number, DepthInfo> {
+  const out = new Map<number, DepthInfo>();
+  const ids = [...new Set(typeIds)];
+  for (let i = 0; i < ids.length; i += 500) {
+    for (const r of getDb().select().from(priceCache).where(inArray(priceCache.typeId, ids.slice(i, i + 500))).all()) {
+      if (r.locationId === locationId) out.set(r.typeId, { sellOrders: r.sellOrders, sellOrdersFresh: r.sellOrdersFresh });
+    }
+  }
+  return out;
 }
 
 export function volumesFor(typeIds: number[], regionId: number): Map<number, VolumeInfo> {

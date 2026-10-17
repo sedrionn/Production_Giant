@@ -87,17 +87,19 @@ eve-industry/
 - Для каждой строки считается полное дерево с теми же пресетами, порогом ISK/ч и режимами цен.
 - Массовое обновление цен для всей категории (ESI, параллельно, с кэшем).
 
-**Этап 1e — недельный план:** выбрать позиции из обзора и подобрать раны так, чтобы каждая джоба шла 4–7 дней (настраивается). С учётом слотов персонажей (этап 2), общий шопинг-лист и список джоб на неделю.
+**Этап 1e — недельный план (сделано, v1):** страница «План недели». Партии подбираются под ритм заходов (по умолчанию раз в 2 дня), джобы раскладываются по свободным слотам персонажей (слоты из скиллов минус активные джобы), компоненты ставятся раньше корпуса, в пределах бюджета и доли рынка. Дальше: лабораторные слоты (инвент) в расписании, запас материалов на несколько недель.
 
 **Этап 2 — персонажи (сделано):** SSO (PKCE, callback на localhost), мультичар, синк скиллов, чертежей, ассетов и джоб. Корповые данные только при наличии роли Director.
 
-**Этап 3 — склад в дереве:** вычет ассетов, шопинг-лист «что докупить».
+**Этап 3a — учёт (сделано):** кошелёк, сделки, ордера, контракты из ESI; страница «Учёт»: деньги по категориям, построено и продано по предметам, сигналы (перебитые ордера, джобы в минусе). Автообновление персонажей и цен раз в сутки.
+
+**Этап 3b — склад в дереве:** вычет ассетов, шопинг-лист «что докупить».
 
 **Этап 4 — дашборд:** прибыльность всех своих чертежей, ISK/час, объёмы рынка.
 
 ## Скоупы ESI (этап 2)
 
-`esi-skills.read_skills.v1`, `esi-characters.read_blueprints.v1`, `esi-assets.read_assets.v1`, `esi-industry.read_character_jobs.v1`, `esi-markets.read_character_orders.v1`, `esi-wallet.read_character_wallet.v1`. Опционально для корпы: `esi-corporations.read_blueprints.v1`, `esi-assets.read_corporation_assets.v1`, `esi-industry.read_corporation_jobs.v1`.
+`esi-skills.read_skills.v1`, `esi-characters.read_blueprints.v1`, `esi-assets.read_assets.v1`, `esi-industry.read_character_jobs.v1`, `esi-markets.read_character_orders.v1`, `esi-wallet.read_character_wallet.v1`, `esi-contracts.read_character_contracts.v1`. Для корпы: `esi-corporations.read_blueprints.v1`, `esi-assets.read_corporation_assets.v1`, `esi-industry.read_corporation_jobs.v1`.
 
 ---
 

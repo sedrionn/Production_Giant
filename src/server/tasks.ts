@@ -42,3 +42,9 @@ export function startTask(label: string, run: (t: TaskState) => Promise<void>): 
 export function getTask(id: string): TaskState | undefined {
   return tasks.get(id);
 }
+
+/** The running task with this label, if any. */
+export function runningTask(label: string): TaskState | undefined {
+  for (const t of tasks.values()) if (t.label === label && !t.finishedAt) return t;
+  return undefined;
+}

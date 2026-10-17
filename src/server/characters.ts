@@ -4,6 +4,7 @@ import { characters, characterSkills, industryJobs, ownedBlueprints } from "@/db
 import { EsiError, esiGet, esiGetAllPages } from "@/esi/client";
 import { refreshToken as ssoRefresh, ssoConfig, verifyAccessToken, type CharacterIdentity, type TokenResponse } from "@/esi/sso";
 import { getDb } from "./data";
+import { esiMoneyApi, syncMoney, type MoneyApi, type MoneySyncResult } from "./money";
 import { decrypt, encrypt } from "./secret";
 
 // ---- ESI shapes (subset) ---------------------------------------------------
@@ -32,6 +33,10 @@ export interface EsiJob {
   status: string;
   start_date: string;
   end_date: string;
+  /** Install fee + facility tax. */
+  cost?: number;
+  completed_date?: string;
+  successful_runs?: number;
 }
 
 /** Injectable for tests; default talks to ESI. */
@@ -48,9 +53,10 @@ export const esiCharacterApi: CharacterApi = {
   publicInfo: (id) => esiGet(`/characters/${id}/`),
   skills: (id, t) => esiGet(`/characters/${id}/skills/`, {}, t),
   blueprints: (id, t) => esiGetAllPages(`/characters/${id}/blueprints/`, {}, t),
-  jobs: (id, t) => esiGet(`/characters/${id}/industry/jobs/`, {}, t),
+  // include_completed: the last 90 days, for the production ledger.
+  jobs: (id, t) => esiGet(`/characters/${id}/industry/jobs/`, { include_completed: "true" }, t),
   corpBlueprints: (corp, t) => esiGetAllPages(`/corporations/${corp}/blueprints/`, {}, t),
-  corpJobs: (corp, t) => esiGetAllPages(`/corporations/${corp}/industry/jobs/`, {}, t),
+  corpJobs: (corp, t) => esiGetAllPages(`/corporations/${corp}/industry/jobs/`, { include_completed: "true" }, t),
 };
 
 // ---- tokens ---------------------------------------------------------------
@@ -163,6 +169,9 @@ const toJob = (j: EsiJob, ownerType: "character" | "corporation", via: number) =
   facilityId: j.facility_id,
   startDate: j.start_date,
   endDate: j.end_date,
+  cost: j.cost ?? null,
+  completedDate: j.completed_date ?? null,
+  successfulRuns: j.successful_runs ?? null,
 });
 
 export interface SyncResult {
@@ -172,6 +181,7 @@ export interface SyncResult {
   blueprints: number;
   corpBlueprints: number | null;
   jobs: number;
+  money: MoneySyncResult | null;
   notes: string[];
 }
 
@@ -179,6 +189,7 @@ export async function syncCharacter(
   characterId: number,
   api: CharacterApi = esiCharacterApi,
   token: (id: number) => Promise<string> = accessToken,
+  moneyApi: MoneyApi = esiMoneyApi,
 ): Promise<SyncResult> {
   const db = getDb();
   const c = db.select().from(characters).where(eq(characters.characterId, characterId)).get();
@@ -214,9 +225,15 @@ export async function syncCharacter(
       tx.delete(ownedBlueprints).where(and(eq(ownedBlueprints.ownerType, "corporation"), eq(ownedBlueprints.ownerId, corpId))).run();
       for (const b of corpBps) tx.insert(ownedBlueprints).values(toBp(b, "corporation", corpId, characterId)).onConflictDoNothing().run();
     }
-    tx.delete(industryJobs).where(eq(industryJobs.viaCharacterId, characterId)).run();
-    for (const j of jobs) tx.insert(industryJobs).values(toJob(j, "character", characterId)).onConflictDoNothing().run();
-    for (const j of corpJobs) tx.insert(industryJobs).values(toJob(j, "corporation", characterId)).onConflictDoNothing().run();
+    // Jobs are history now (ledger): upsert, never clear.
+    for (const j of jobs) {
+      const v = toJob(j, "character", characterId);
+      tx.insert(industryJobs).values(v).onConflictDoUpdate({ target: industryJobs.jobId, set: v }).run();
+    }
+    for (const j of corpJobs) {
+      const v = toJob(j, "corporation", characterId);
+      tx.insert(industryJobs).values(v).onConflictDoUpdate({ target: industryJobs.jobId, set: v }).run();
+    }
     tx.update(characters)
       .set({ corporationId: corpId ?? null, name: info?.name ?? c.name, lastSyncAt: new Date().toISOString(), lastSyncNotes: notes })
       .where(eq(characters.characterId, characterId))
@@ -224,9 +241,22 @@ export async function syncCharacter(
   });
   forgetCharacterLookups();
 
+  // Wallet, orders, contracts — separate so a money problem never blocks the industry sync.
+  let money: MoneySyncResult | null = null;
+  try {
+    money = await syncMoney(characterId, t, moneyApi);
+    if (money.notes.length) {
+      notes.push(...money.notes);
+      db.update(characters).set({ lastSyncNotes: notes }).where(eq(characters.characterId, characterId)).run();
+    }
+  } catch (e) {
+    notes.push(`Кошелёк не синхронизировался: ${(e as Error).message}`);
+  }
+
   return {
     characterId,
     name: c.name,
+    money,
     skills: skills.skills.length,
     blueprints: bps.length,
     corpBlueprints: corpBps?.length ?? null,

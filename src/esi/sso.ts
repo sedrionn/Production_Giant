@@ -22,6 +22,10 @@ export const SCOPES = [
   "esi-corporations.read_blueprints.v1",
   "esi-industry.read_corporation_jobs.v1",
   "esi-assets.read_corporation_assets.v1",
+  // Stage 3 (money): wallet, market orders, contracts. Characters added earlier must log in again.
+  "esi-wallet.read_character_wallet.v1",
+  "esi-markets.read_character_orders.v1",
+  "esi-contracts.read_character_contracts.v1",
 ];
 
 export interface SsoConfig {

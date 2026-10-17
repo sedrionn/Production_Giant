@@ -10,6 +10,7 @@ interface Char {
   corporationId: number | null;
   lastSyncAt: string | null;
   lastSyncNotes: string[];
+  scopes: string[];
   skills: number;
   blueprints: number;
   jobs: number;
@@ -38,6 +39,9 @@ const SCOPES = [
   "esi-corporations.read_blueprints.v1",
   "esi-industry.read_corporation_jobs.v1",
   "esi-assets.read_corporation_assets.v1",
+  "esi-wallet.read_character_wallet.v1",
+  "esi-markets.read_character_orders.v1",
+  "esi-contracts.read_character_contracts.v1",
 ];
 
 export function Characters() {
@@ -141,6 +145,15 @@ export function Characters() {
                     {c.skills} скиллов, {c.blueprints} чертежей, {c.jobs} джоб
                   </span>
                   <span className="text-graphite">синхр. {ago(c.lastSyncAt)}</span>
+                  {SCOPES.some((s) => !c.scopes.includes(s)) && (
+                    <a
+                      href="/api/auth/login"
+                      className="rounded border border-marker/70 px-2 py-0.5 text-sm text-marker hover:bg-marker/10"
+                      title="Персонаж добавлен до того, как приложению понадобились кошелёк, ордера и контракты. Войди им ещё раз — данные не пропадут."
+                    >
+                      Перезайти: нужен доступ к кошельку
+                    </a>
+                  )}
                   <button onClick={() => remove(c)} className="ml-auto text-graphite hover:text-loss">
                     Удалить
                   </button>

@@ -5,13 +5,14 @@ import type { Overview as OverviewData, OverviewRow } from "@/server/overview";
 import type { TaskState } from "@/server/tasks";
 import { ago, duration, full, isk, pct, qty } from "@/lib/format";
 import { ChainPanel } from "./ChainPanel";
+import { FullRefresh } from "./FullRefresh";
 
 export interface CategoryTab {
   key: string;
   label: string;
 }
 
-type SortKey = "name" | "profit" | "profitPerRun" | "margin" | "iskPerHour" | "avgDailyVolume30d" | "marketDays" | "jobSeconds";
+type SortKey = "name" | "profit" | "profitPerRun" | "margin" | "iskPerHour" | "avgDailyVolume30d" | "marketDays" | "priceTrend" | "jobSeconds";
 
 const STORAGE = "pg.overview.v1";
 
@@ -23,6 +24,12 @@ const COLUMNS: { key: SortKey; label: string; title?: string; align?: "right" }[
   { key: "iskPerHour", label: "ISK/ч", align: "right", title: "Прибыль за час джобы самого продукта (занятость слота)" },
   { key: "avgDailyVolume30d", label: "Продают в день", align: "right", title: "Средний объём сделок в регионе за 30 дней (в скобках — за 7)" },
   { key: "marketDays", label: "Партия = дней рынка", align: "right", title: "Сколько дней среднего объёма продаж занимает твоя партия" },
+  {
+    key: "priceTrend",
+    label: "Рынок",
+    align: "right",
+    title: "Ордеров на продажу в Jita (сколько из них перевыставлены за сутки) и изменение цены: неделя против месяца",
+  },
   { key: "jobSeconds", label: "Джоба", align: "right" },
 ];
 
@@ -32,6 +39,7 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
+  const [rigSize, setRigSize] = useState<RigSize>("all");
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "iskPerHour", dir: -1 });
   const [task, setTask] = useState<TaskState | null>(null);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
@@ -103,7 +111,10 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
 
   const rows = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    const list = (data?.rows ?? []).filter((r) => !q || r.name.toLowerCase().includes(q) || r.group.toLowerCase().includes(q));
+    const isRigs = cat.startsWith("rigs");
+    const list = (data?.rows ?? [])
+      .filter((r) => !q || r.name.toLowerCase().includes(q) || r.group.toLowerCase().includes(q))
+      .filter((r) => !isRigs || rigSize === "all" || RIG_SIZES[rigSize].some((p) => r.name.startsWith(p)));
     const val = (r: OverviewRow) => (sort.key === "name" ? r.name : r[sort.key]);
     return [...list].sort((a, b) => {
       const x = val(a);
@@ -112,7 +123,7 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
       if (y === null || y === undefined) return -1;
       return (x < y ? -1 : x > y ? 1 : 0) * sort.dir;
     });
-  }, [data, filter, sort]);
+  }, [data, filter, sort, cat, rigSize]);
 
   const running = task && !task.finishedAt;
 
@@ -125,6 +136,7 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
             Полное дерево по каждому предмету с твоими структурами, порогом выгоды и режимами цен. Партия подобрана так, чтобы
             джоба продукта шла около {data?.targetJobDays ?? 5} дней (меняется в настройках).
           </p>
+          <FullRefresh onDone={() => load(cat)} />
         </div>
         <div className="space-y-1 text-right">
           <button
@@ -162,6 +174,20 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
             </button>
           ))}
         </div>
+        {cat.startsWith("rigs") && (
+          <div role="group" aria-label="Размер ригов" className="flex gap-1 rounded border border-line p-0.5 text-sm">
+            {(Object.keys(RIG_SIZE_LABEL) as RigSize[]).map((k) => (
+              <button
+                key={k}
+                onClick={() => setRigSize(k)}
+                aria-pressed={rigSize === k}
+                className={`rounded px-2.5 py-1 ${rigSize === k ? "bg-sheet-2 text-chalk" : "text-graphite hover:text-chalk"}`}
+              >
+                {RIG_SIZE_LABEL[k]}
+              </button>
+            ))}
+          </div>
+        )}
         <input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -174,7 +200,7 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
       {data?.hint && <p className="rounded border border-marker/40 bg-marker/5 px-4 py-3">{data.hint}</p>}
 
       <div className={`overflow-x-auto transition-opacity ${loading ? "opacity-60" : ""}`}>
-        <table className="w-full min-w-[1100px] whitespace-nowrap text-left">
+        <table className="w-full min-w-[1250px] whitespace-nowrap text-left">
           <thead className="border-b border-line text-sm text-graphite">
             <tr>
               {COLUMNS.map((c) => (
@@ -217,6 +243,11 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
                       .join(", ")}
                   </span>
                   {r.error && <span className="ml-2 text-xs text-loss">{r.error}</span>}
+                  {r.marketRisks.length > 0 && (
+                    <span className="ml-2 rounded border border-marker/60 px-1.5 text-xs text-marker" title={r.marketRisks.join("\n")}>
+                      сложно продать
+                    </span>
+                  )}
                 </td>
                 <td className={`py-1.5 pr-4 text-right ${tone(r.profit)}`} title={full(r.profit)}>
                   {isk(r.profit, true)}
@@ -238,6 +269,21 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
                 </td>
                 <td className={`py-1.5 pr-4 text-right ${r.marketDays !== null && r.marketDays > 7 ? "text-marker" : "text-graphite"}`}>
                   {r.marketDays === null ? "—" : r.marketDays < 0.1 ? "<0.1" : r.marketDays.toFixed(1)}
+                </td>
+                <td className="py-1.5 pr-4 text-right text-graphite" title={r.marketRisks.join("\n") || undefined}>
+                  {r.sellOrders === null ? (
+                    "—"
+                  ) : (
+                    <>
+                      {r.sellOrders} орд.{r.sellOrdersFresh ? <span className="text-xs"> ({r.sellOrdersFresh} за сутки)</span> : null}
+                      {r.priceTrend !== null && (
+                        <span className={`ml-1.5 ${r.priceTrend < -0.05 ? "text-loss" : r.priceTrend > 0.05 ? "text-gain" : ""}`}>
+                          {r.priceTrend > 0 ? "+" : r.priceTrend < 0 ? "−" : ""}
+                          {Math.abs(r.priceTrend * 100).toFixed(0)}%
+                        </span>
+                      )}
+                    </>
+                  )}
                 </td>
                 <td className="py-1.5 text-right text-graphite">{r.jobSeconds ? duration(r.jobSeconds) : "—"}</td>
               </tr>
@@ -266,3 +312,8 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
 const SOURCE_LABEL: Record<string, string> = { invention: "инвент", bpo: "свой BPO", bpc: "свой BPC", none: "нет чертежа" };
 const tone = (v: number | null) => (v === null ? "text-graphite" : v >= 0 ? "text-gain" : "text-loss");
 const vol = (v: number) => (v >= 100 ? qty(Math.round(v)) : v >= 10 ? v.toFixed(0) : v.toFixed(1));
+
+type RigSize = "all" | "capital" | "large" | "ms";
+const RIG_SIZE_LABEL: Record<RigSize, string> = { all: "Все", capital: "Капитальные", large: "Large", ms: "Medium + Small" };
+/** Rig names start with their size. */
+const RIG_SIZES: Record<Exclude<RigSize, "all">, string[]> = { capital: ["Capital "], large: ["Large "], ms: ["Medium ", "Small "] };

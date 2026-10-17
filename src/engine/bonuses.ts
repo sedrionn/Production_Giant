@@ -174,3 +174,13 @@ export const INVENTION = {
   baseMe: 2, // verify
   baseTe: 4, // verify
 } as const;
+
+/** Industry activity ids as ESI reports them on jobs (SDE ramActivities). 9 is the old reactions id. // verify */
+export const JOB_ACTIVITY_IDS = { manufacturing: 1, researchTime: 3, researchMaterial: 4, copying: 5, invention: 8, reactions: [9, 11] } as const;
+
+/** Parallel job slots: 1 + level of each skill below. Standard EVE rule. // verify */
+export const SLOT_SKILLS = {
+  manufacturing: [3387, 24625], // Mass Production, Advanced Mass Production
+  reaction: [45748, 45749], // Mass Reactions, Advanced Mass Reactions
+  science: [3406, 24624], // Laboratory Operation, Advanced Laboratory Operation
+} as const;

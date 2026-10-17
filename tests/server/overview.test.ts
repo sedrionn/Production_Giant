@@ -41,3 +41,12 @@ describe("computeOverview on REAL fixtures", () => {
     expect(s.priceTypes.length).toBeGreaterThan(30);
   });
 });
+
+describe("marketRisks", () => {
+  it("flags oversized batch, price war and falling price; quiet market is fine", async () => {
+    const { marketRisks } = await import("@/server/overview");
+    expect(marketRisks({ marketDays: 2, sellOrders: 10, sellOrdersFresh: 2, priceTrend: 0.01 })).toEqual([]);
+    const r = marketRisks({ marketDays: 12, sellOrders: 10, sellOrdersFresh: 8, priceTrend: -0.2 });
+    expect(r).toHaveLength(3);
+  });
+});

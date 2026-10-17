@@ -39,6 +39,8 @@ export const priceCache = sqliteTable(
     sellMin: real("sell_min"),
     buyVolume: integer("buy_volume").notNull().default(0),
     sellVolume: integer("sell_volume").notNull().default(0),
+    sellOrders: integer("sell_orders"),
+    sellOrdersFresh: integer("sell_orders_fresh"),
     updatedAt: text("updated_at").notNull().default(now),
   },
   (t) => [primaryKey({ columns: [t.typeId, t.locationId] })],
@@ -53,6 +55,7 @@ export const marketStats = sqliteTable(
     avgDailyVolume7d: real("avg_daily_volume_7d").notNull(),
     avgDailyVolume30d: real("avg_daily_volume_30d").notNull(),
     avgPrice30d: real("avg_price_30d"),
+    avgPrice7d: real("avg_price_7d"),
     updatedAt: text("updated_at").notNull().default(now),
   },
   (t) => [primaryKey({ columns: [t.typeId, t.regionId] })],
@@ -163,4 +166,101 @@ export const industryJobs = sqliteTable("industry_jobs", {
   facilityId: integer("facility_id").notNull(),
   startDate: text("start_date").notNull(),
   endDate: text("end_date").notNull(),
+  /** Install fee + facility tax (ESI `cost`). */
+  cost: real("cost"),
+  completedDate: text("completed_date"),
+  successfulRuns: integer("successful_runs"),
 });
+
+// ---- money: wallet, market orders, contracts (stage 3) ---------------------------
+// Kept across syncs (upsert, never cleared) so history grows past ESI's 30/90-day windows.
+
+export const walletJournal = sqliteTable(
+  "wallet_journal",
+  {
+    id: integer("id").primaryKey(),
+    characterId: integer("character_id").notNull(),
+    date: text("date").notNull(),
+    refType: text("ref_type").notNull(),
+    amount: real("amount").notNull(),
+    balance: real("balance"),
+    description: text("description").notNull().default(""),
+    firstPartyId: integer("first_party_id"),
+    secondPartyId: integer("second_party_id"),
+    contextId: integer("context_id"),
+    contextIdType: text("context_id_type"),
+    reason: text("reason"),
+    tax: real("tax"),
+  },
+  (t) => [index("wallet_journal_char_date").on(t.characterId, t.date)],
+);
+
+export const walletTransactions = sqliteTable(
+  "wallet_transactions",
+  {
+    transactionId: integer("transaction_id").primaryKey(),
+    characterId: integer("character_id").notNull(),
+    date: text("date").notNull(),
+    typeId: integer("type_id").notNull(),
+    quantity: integer("quantity").notNull(),
+    unitPrice: real("unit_price").notNull(),
+    isBuy: integer("is_buy", { mode: "boolean" }).notNull(),
+    isPersonal: integer("is_personal", { mode: "boolean" }).notNull().default(true),
+    locationId: integer("location_id").notNull(),
+    clientId: integer("client_id"),
+    journalRefId: integer("journal_ref_id"),
+  },
+  (t) => [index("wallet_transactions_type").on(t.typeId), index("wallet_transactions_date").on(t.date)],
+);
+
+export const marketOrders = sqliteTable(
+  "market_orders",
+  {
+    orderId: integer("order_id").primaryKey(),
+    characterId: integer("character_id").notNull(),
+    typeId: integer("type_id").notNull(),
+    locationId: integer("location_id").notNull(),
+    regionId: integer("region_id").notNull(),
+    isBuy: integer("is_buy", { mode: "boolean" }).notNull(),
+    price: real("price").notNull(),
+    volumeTotal: integer("volume_total").notNull(),
+    volumeRemain: integer("volume_remain").notNull(),
+    issued: text("issued").notNull(),
+    duration: integer("duration").notNull(),
+    escrow: real("escrow"),
+    /** open (from /orders/) or what /orders/history/ says: closed, expired, cancelled. */
+    state: text("state").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (t) => [index("market_orders_type").on(t.typeId)],
+);
+
+export const contracts = sqliteTable("contracts", {
+  contractId: integer("contract_id").primaryKey(),
+  characterId: integer("character_id").notNull(),
+  type: text("type").notNull(),
+  status: text("status").notNull(),
+  issuerId: integer("issuer_id").notNull(),
+  acceptorId: integer("acceptor_id"),
+  forCorporation: integer("for_corporation", { mode: "boolean" }).notNull().default(false),
+  price: real("price"),
+  reward: real("reward"),
+  collateral: real("collateral"),
+  volume: real("volume"),
+  startLocationId: integer("start_location_id"),
+  endLocationId: integer("end_location_id"),
+  title: text("title"),
+  dateIssued: text("date_issued").notNull(),
+  dateCompleted: text("date_completed"),
+});
+
+export const walletBalances = sqliteTable(
+  "wallet_balances",
+  {
+    characterId: integer("character_id").notNull(),
+    /** One row per sync. */
+    at: text("at").notNull(),
+    balance: real("balance").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.characterId, t.at] })],
+);
