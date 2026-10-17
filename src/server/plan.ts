@@ -137,6 +137,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
   const top = [...rows.values()].sort((a, b) => (b.iskPerHour ?? 0) - (a.iskPerHour ?? 0)).slice(0, req.candidates ?? 60);
 
   const calcs = new Map<number, CalcResponse>();
+  const unpriced: string[] = [];
   const candidates: PlanBatch[] = [];
   const unitCap = new Map<number, number>();
   for (const r of top) {
@@ -149,8 +150,15 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     });
     try {
       const c = calculate({ typeId: r.typeId, runs });
+      // A missing price understates the cost: such a "profit" is not real.
+      if (c.warnings.some((w) => w.includes("нет рыночной цены"))) {
+        unpriced.push(r.name);
+        continue;
+      }
       calcs.set(r.typeId, c);
-      candidates.push(toBatch(c));
+      const owned = c.request.blueprintSource === "owned" ? c.ownedBlueprint : null;
+      // Own BPCs: one batch per copy. BPO, invention or no blueprint: limited by market and slots only.
+      candidates.push({ ...toBatch(c), maxBatches: owned && !owned.isBpo ? owned.copies : undefined });
       unitCap.set(r.typeId, r.avgDailyVolume30d ? Math.max(c.summary.output, r.avgDailyVolume30d * horizon * req.marketShare) : c.summary.output);
     } catch {
       /* not calculable at this size — skip */
@@ -206,6 +214,8 @@ export function buildPlan(req: PlanRequest): PlanResponse {
       };
     })
     .sort((a, b) => b.profitPerSlotDay - a.profitPerSlotDay);
+
+  for (const name of unpriced) plan.skipped.push({ name, reason: "нет цены на часть материалов" });
 
   return {
     ...plan,

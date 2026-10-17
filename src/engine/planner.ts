@@ -31,6 +31,8 @@ export interface PlanBatch {
   /** ISK needed up front: materials + job fees + blueprint + freight. */
   capital: number;
   jobs: PlanJob[];
+  /** How many batches of this item are possible at all (e.g. owned BPC copies); undefined = no limit. */
+  maxBatches?: number;
 }
 
 export interface SlotState {
@@ -127,7 +129,7 @@ export function planWeek(input: {
 
   for (const { c } of ranked) {
     let made = 0;
-    while (made < input.maxBatchesPerItem) {
+    while (made < Math.min(input.maxBatchesPerItem, c.maxBatches ?? Infinity)) {
       if (c.capital > budget) {
         if (!made) skipped.push({ name: c.name, reason: "не хватает бюджета" });
         break;
