@@ -110,7 +110,7 @@ function depths(r: CalcResponse): Map<number, number> {
   return depth;
 }
 
-function toBatch(r: CalcResponse): PlanBatch {
+export function toBatch(r: CalcResponse): PlanBatch {
   const depth = depths(r);
   const jobs: PlanJob[] = r.jobs
     .filter((j) => j.activity === "manufacturing" || j.activity === "reaction")
