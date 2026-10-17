@@ -264,3 +264,40 @@ export const walletBalances = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.characterId, t.at] })],
 );
+
+/** Character and corporation assets, replaced per owner on every sync. */
+export const assets = sqliteTable(
+  "assets",
+  {
+    itemId: integer("item_id").primaryKey(),
+    ownerType: text("owner_type", { enum: ["character", "corporation"] }).notNull(),
+    ownerId: integer("owner_id").notNull(),
+    viaCharacterId: integer("via_character_id").notNull(),
+    typeId: integer("type_id").notNull(),
+    quantity: integer("quantity").notNull(),
+    /** Station, structure, or the item id of a container / office / ship. */
+    locationId: integer("location_id").notNull(),
+    locationFlag: text("location_flag").notNull(),
+    locationType: text("location_type").notNull(),
+    isSingleton: integer("is_singleton", { mode: "boolean" }).notNull().default(false),
+    isBlueprintCopy: integer("is_blueprint_copy", { mode: "boolean" }).notNull().default(false),
+  },
+  (t) => [index("assets_type").on(t.typeId), index("assets_location").on(t.locationId)],
+);
+
+/** Names of stations and structures (structures need a docking character's token). */
+export const locationNames = sqliteTable("location_names", {
+  locationId: integer("location_id").primaryKey(),
+  name: text("name").notNull(),
+  updatedAt: text("updated_at").notNull().default(now),
+});
+
+/** The plan Nick decided to run: what the stages page tracks. */
+export const savedPlans = sqliteTable("saved_plans", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  createdAt: text("created_at").notNull(),
+  /** Short label, e.g. "Неделя 17.10". */
+  title: text("title").notNull(),
+  /** Everything the stages page needs, frozen at save time (JSON). */
+  data: text("data", { mode: "json" }).notNull(),
+});

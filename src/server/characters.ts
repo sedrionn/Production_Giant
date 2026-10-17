@@ -3,6 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { characters, characterSkills, industryJobs, ownedBlueprints } from "@/db/schema";
 import { EsiError, esiGet, esiGetAllPages } from "@/esi/client";
 import { refreshToken as ssoRefresh, ssoConfig, verifyAccessToken, type CharacterIdentity, type TokenResponse } from "@/esi/sso";
+import { esiAssetApi, removeCharacterAssets, syncAssets, type AssetApi, type AssetSyncResult } from "./assets";
 import { getDb } from "./data";
 import { esiMoneyApi, syncMoney, type MoneyApi, type MoneySyncResult } from "./money";
 import { decrypt, encrypt } from "./secret";
@@ -137,6 +138,7 @@ export function removeCharacter(characterId: number): void {
     tx.delete(industryJobs).where(eq(industryJobs.viaCharacterId, characterId)).run();
     tx.delete(characters).where(eq(characters.characterId, characterId)).run();
   });
+  removeCharacterAssets(characterId);
   forgetCharacterLookups();
 }
 
@@ -182,6 +184,7 @@ export interface SyncResult {
   corpBlueprints: number | null;
   jobs: number;
   money: MoneySyncResult | null;
+  assets: AssetSyncResult | null;
   notes: string[];
 }
 
@@ -190,6 +193,7 @@ export async function syncCharacter(
   api: CharacterApi = esiCharacterApi,
   token: (id: number) => Promise<string> = accessToken,
   moneyApi: MoneyApi = esiMoneyApi,
+  assetApi: AssetApi = esiAssetApi,
 ): Promise<SyncResult> {
   const db = getDb();
   const c = db.select().from(characters).where(eq(characters.characterId, characterId)).get();
@@ -253,10 +257,21 @@ export async function syncCharacter(
     notes.push(`Кошелёк не синхронизировался: ${(e as Error).message}`);
   }
 
+  // Assets (stock for the plan) — also separate: big and slow, never blocks the rest.
+  let assetsResult: AssetSyncResult | null = null;
+  try {
+    assetsResult = await syncAssets(characterId, corpId ?? null, t, assetApi);
+    if (assetsResult.notes.length) notes.push(...assetsResult.notes);
+  } catch (e) {
+    notes.push(`Ассеты не синхронизировались: ${(e as Error).message}`);
+  }
+  db.update(characters).set({ lastSyncNotes: notes }).where(eq(characters.characterId, characterId)).run();
+
   return {
     characterId,
     name: c.name,
     money,
+    assets: assetsResult,
     skills: skills.skills.length,
     blueprints: bps.length,
     corpBlueprints: corpBps?.length ?? null,
