@@ -82,8 +82,9 @@ export function Planner({ categories }: { categories: { key: string; label: stri
       <div>
         <h1 className="font-display text-4xl font-semibold tracking-wide">План недели</h1>
         <p className="mt-1 max-w-[85ch] text-graphite">
-          Подбирает партии так, чтобы джобы заканчивались к твоему следующему заходу, и раскладывает их по свободным слотам персонажей.
-          Компоненты ставятся первыми, корпус — в следующий заход после них. Берутся только предметы, на которые есть свой чертёж или инвент.
+          Подбирает партии так, чтобы джоба корпуса заканчивалась к твоему следующему заходу, и раскладывает их по свободным слотам
+          персонажей. Корпуса этой недели строятся из готовых компонентов, а компоненты и реакции на следующий круг ставятся параллельно,
+          одной джобой на тип. Берутся только предметы, на которые есть свой чертёж или инвент.
         </p>
       </div>
 
@@ -140,7 +141,7 @@ export function Planner({ categories }: { categories: { key: string; label: stri
             <Stat
               label="Загрузка слотов"
               value={`${pct(plan.utilization.manufacturing, 0)} / ${pct(plan.utilization.reaction, 0)}`}
-              title="Производство / реакции: доля занятого времени слотов за период"
+              title="Производство / реакции: доля времени слотов за период, занятая корпусами и компонентами"
             />
           </section>
 
@@ -159,6 +160,12 @@ export function Planner({ categories }: { categories: { key: string; label: stri
               <div key={l.day} className="rounded border border-line bg-sheet/40 px-4 py-3">
                 <p className="font-medium">{dayLabel(l.day)}</p>
                 {l.finish.length > 0 && <p className="text-sm text-graphite">Забрать: {summarize(l.finish)}</p>}
+                {l.prep.length > 0 && (
+                  <p className="text-sm">
+                    <span className="text-job">Компоненты и реакции на следующий круг:</span>{" "}
+                    {l.prep.map((p) => `${p.name} × ${qty(p.runs)}`).join(", ")}
+                  </p>
+                )}
                 {l.start.length > 0 && (
                   <ul className="mt-1 space-y-0.5 text-sm">
                     {byOwner(l.start).map(([owner, jobs]) => (
@@ -319,6 +326,7 @@ function icsFor(p: PlanResponse): string {
     const lines = [
       l.finish.length ? `Забрать: ${summarize(l.finish)}` : "",
       ...byOwner(l.start).map(([o, j]) => `${o}: поставить ${summarize(j)}`),
+      l.prep.length ? `Компоненты и реакции: ${l.prep.map((p) => `${p.name} × ${p.runs}`).join(", ")}` : "",
     ].filter(Boolean);
     return [
       "BEGIN:VEVENT",
@@ -326,7 +334,7 @@ function icsFor(p: PlanResponse): string {
       `DTSTAMP:${stamp}`,
       `DTSTART;VALUE=DATE:${fmt(day)}`,
       `DTEND;VALUE=DATE:${fmt(next)}`,
-      `SUMMARY:${esc(`EVE: заход — ${l.start.length} джоб поставить, ${l.finish.length} забрать`)}`,
+      `SUMMARY:${esc(`EVE: заход — ${l.start.length + l.prep.length} джоб поставить, ${l.finish.length} забрать`)}`,
       `DESCRIPTION:${esc(lines.join("\n"))}`,
       "END:VEVENT",
     ].join("\r\n");
