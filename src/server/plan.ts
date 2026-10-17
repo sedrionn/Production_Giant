@@ -21,6 +21,8 @@ export interface PlanRequest {
   marketShare: number;
   /** How many top overview items to evaluate in full. */
   candidates?: number;
+  /** Skip batches that earn less than this: not worth a separate job to babysit. */
+  minBatchProfit: number;
 }
 
 export interface SlotSummary {
@@ -134,21 +136,25 @@ export function buildPlan(req: PlanRequest): PlanResponse {
       if (!rows.has(r.typeId)) rows.set(r.typeId, { ...r, category: label });
     }
   }
-  const top = [...rows.values()].sort((a, b) => (b.iskPerHour ?? 0) - (a.iskPerHour ?? 0)).slice(0, req.candidates ?? 60);
+  // Rough score per row at its login-rhythm batch size (product job only), to pick what to evaluate in full.
+  const sized = [...rows.values()].map((r) => {
+    const secondsPerRun = r.jobSeconds / r.runs;
+    const profitPerRun = (r.profit ?? 0) / r.runs;
+    const runs = batchRunsForCadence({ secondsPerRun, profitPerRun, maxRuns: r.maxRuns, cadenceDays: cad, horizonDays: horizon });
+    const occupied = Math.max(cad, Math.ceil((runs * secondsPerRun) / 86_400 / cad) * cad);
+    return { r, runs, profit: profitPerRun * runs, score: (profitPerRun * runs) / occupied };
+  });
+  const top = sized
+    .filter((x) => x.profit >= req.minBatchProfit)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, req.candidates ?? 150);
 
   const calcs = new Map<number, CalcResponse>();
   const unpriced: string[] = [];
   const noBlueprint: string[] = [];
   const candidates: PlanBatch[] = [];
   const unitCap = new Map<number, number>();
-  for (const r of top) {
-    const runs = batchRunsForCadence({
-      secondsPerRun: r.jobSeconds / r.runs,
-      profitPerRun: (r.profit ?? 0) / r.runs,
-      maxRuns: r.maxRuns,
-      cadenceDays: cad,
-      horizonDays: horizon,
-    });
+  for (const { r, runs } of top) {
     try {
       const c = calculate({ typeId: r.typeId, runs });
       // A missing price understates the cost: such a "profit" is not real.
@@ -164,7 +170,9 @@ export function buildPlan(req: PlanRequest): PlanResponse {
       }
       calcs.set(r.typeId, c);
       // Own BPCs: one batch per copy. BPO, invention or no blueprint: limited by market and slots only.
-      candidates.push({ ...toBatch(c), maxBatches: owned && !owned.isBpo ? owned.copies : undefined });
+      const batch = toBatch(c);
+      if (batch.profit < req.minBatchProfit) continue;
+      candidates.push({ ...batch, maxBatches: owned && !owned.isBpo ? owned.copies : undefined });
       unitCap.set(r.typeId, r.avgDailyVolume30d ? Math.max(c.summary.output, r.avgDailyVolume30d * horizon * req.marketShare) : c.summary.output);
     } catch {
       /* not calculable at this size — skip */
@@ -239,7 +247,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
 export function sheetText(p: PlanResponse): string {
   const r = p.request;
   const lines = [
-    `Бюджет ${r.budget.toLocaleString("ru-RU")} ISK, заход раз в ${r.cadenceDays} дн., горизонт ${r.horizonDays} дн., рынок до ${Math.round(r.marketShare * 100)}% недельного объёма.`,
+    `Бюджет ${r.budget.toLocaleString("ru-RU")} ISK, заход раз в ${r.cadenceDays} дн., горизонт ${r.horizonDays} дн., рынок до ${Math.round(r.marketShare * 100)}% недельного объёма, партии от ${r.minBatchProfit.toLocaleString("ru-RU")} ISK прибыли.`,
     `Слоты: ${p.slots.map((s) => `${s.owner} — производство ${s.manufacturing.total} (занято ${s.manufacturing.busy}), реакции ${s.reaction.total} (занято ${s.reaction.busy})`).join("; ")}.`,
     "",
     "Предмет | категория | раны | прибыль | капитал | слото-дней | прибыль/слото-день | джоб | дней рынка | риски",
