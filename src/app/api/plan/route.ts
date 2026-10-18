@@ -1,5 +1,5 @@
 import type { CategoryKey } from "@/server/catalog";
-import { buildPlan, sheetText } from "@/server/plan";
+import { buildPlan, lastPlan, rememberPlan, sheetText } from "@/server/plan";
 import { fail, ok } from "../_util";
 
 export async function POST(req: Request) {
@@ -15,7 +15,18 @@ export async function POST(req: Request) {
       caldariShipsFirst: b.caldariShipsFirst !== false,
       maxItemShare: Math.min(1, Math.max(0.05, Number(b.maxItemShare ?? 0.2))),
     });
-    return ok({ ...plan, text: sheetText(plan) });
+    const out = { ...plan, text: sheetText(plan), computedAt: new Date().toISOString() };
+    rememberPlan(out);
+    return ok(out);
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** The last plan made, so it survives leaving the page or restarting the app. */
+export async function GET() {
+  try {
+    return ok({ plan: lastPlan() });
   } catch (e) {
     return fail(e);
   }
