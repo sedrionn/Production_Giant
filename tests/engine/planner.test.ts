@@ -120,6 +120,10 @@ describe("planWeek (steady state: hulls from ready components, next components p
     const long = (id: number): PlanBatch => ({ ...ship(id, 100, 10), jobs: [{ typeId: 500, name: "Component", activity: "manufacturing", runs: 10, seconds: 60 * H, depth: 1 }, { typeId: id, name: `Ship ${id}`, activity: "manufacturing", runs: 4, seconds: 40 * H, depth: 0 }] });
     const p = planWeek({ candidates: [long(1)], slots: slots(6), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 3, unitCap: () => 99 });
     expect(p.prep[0]).toMatchObject({ runs: 30, jobs: 2 });
+    // The blueprint allows only 5 runs per job → 6 jobs.
+    const capped = long(1);
+    capped.jobs[0].maxRunsPerJob = 5;
+    expect(planWeek({ candidates: [capped], slots: slots(6), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 3, unitCap: () => 99 }).prep[0].jobs).toBe(6);
   });
 
   it("busy slots push the start to the login after they free up", () => {

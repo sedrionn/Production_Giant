@@ -122,9 +122,18 @@ function depths(r: CalcResponse): Map<number, number> {
 
 export function toBatch(r: CalcResponse): PlanBatch {
   const depth = depths(r);
+  const { source: sde } = getSde();
   const jobs: PlanJob[] = r.jobs
     .filter((j) => j.activity === "manufacturing" || j.activity === "reaction")
-    .map((j) => ({ typeId: j.typeId, name: j.name, activity: j.activity, runs: j.runs, seconds: j.timeSeconds, depth: depth.get(j.typeId) ?? 1 }));
+    .map((j) => ({
+      typeId: j.typeId,
+      name: j.name,
+      activity: j.activity,
+      runs: j.runs,
+      seconds: j.timeSeconds,
+      depth: depth.get(j.typeId) ?? 1,
+      maxRunsPerJob: sde.getBlueprint(j.blueprintTypeId)?.maxProductionLimit || undefined,
+    }));
   return {
     typeId: r.product.typeId,
     name: r.product.name,
@@ -397,6 +406,7 @@ function stagesFor(plan: Plan, calcs: Map<string, CalcResponse>, horizonDays: nu
         materialMultiplier: n.job.materialMultiplier,
         // Components and reactions must be ready inside the plan: split what is longer than the horizon.
         maxJobSeconds: isProduct ? undefined : horizonDays * 86_400,
+        maxRunsPerJob: isProduct ? undefined : sde.getBlueprint(n.job.blueprintTypeId)?.maxProductionLimit || undefined,
       });
     }
     for (const l of c.shopping) {

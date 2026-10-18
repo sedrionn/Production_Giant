@@ -104,6 +104,8 @@ describe("planStages: game rounding on merged jobs", () => {
   it("a line longer than the limit is split into equal parallel jobs, each rounded on its own", () => {
     expect(splitRuns(10, 3600, 4 * 3600)).toEqual([4, 3, 3]);
     expect(splitRuns(5, 3600)).toEqual([5]);
+    // Blueprint limit: 25 000 runs on a blueprint capped at 8 000 per job → 4 jobs.
+    expect(splitRuns(25000, 1, undefined, 8000)).toEqual([6250, 6250, 6250, 6250]);
     const long = new Map(r);
     long.set(2, { ...r.get(2)!, maxJobSeconds: 300 });
     const s = planStages({ products: [{ typeId: 1, runs: 10 }], recipes: long, buy, stock: new Map() });

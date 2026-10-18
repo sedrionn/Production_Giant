@@ -28,6 +28,8 @@ export interface StageRecipe {
   materialMultiplier?: number;
   /** Longest single job, seconds: longer lines are split into parallel jobs. 0/undefined = no split. */
   maxJobSeconds?: number;
+  /** Most runs one job may have (blueprint production limit). */
+  maxRunsPerJob?: number;
 }
 
 /** Quantity of one input for `runs` runs of a recipe (one job). */
@@ -37,10 +39,12 @@ export function inputQuantity(r: StageRecipe, i: StageRecipe["inputs"][number], 
   return Math.ceil(runs * i.perRun - 1e-9);
 }
 
-/** Split `runs` into the fewest equal jobs no longer than `maxSeconds` each. */
-export function splitRuns(runs: number, secondsPerRun: number, maxSeconds?: number): number[] {
+/** Split `runs` into the fewest equal jobs no longer than `maxSeconds` and no bigger than `maxRuns` each. */
+export function splitRuns(runs: number, secondsPerRun: number, maxSeconds?: number, maxRuns?: number): number[] {
   if (runs <= 0) return [];
-  const k = maxSeconds && secondsPerRun > 0 ? Math.min(runs, Math.max(1, Math.ceil((runs * secondsPerRun) / maxSeconds - 1e-9))) : 1;
+  const byTime = maxSeconds && secondsPerRun > 0 ? Math.ceil((runs * secondsPerRun) / maxSeconds - 1e-9) : 1;
+  const byRuns = maxRuns && maxRuns > 0 ? Math.ceil(runs / maxRuns) : 1;
+  const k = Math.min(runs, Math.max(1, byTime, byRuns));
   const base = Math.floor(runs / k);
   return Array.from({ length: k }, (_, j) => base + (j < runs % k ? 1 : 0));
 }
@@ -165,7 +169,7 @@ export function planStages(input: StageInput): Stages {
     const fromStock = take(id, need);
     const runs = Math.ceil((need - fromStock) / r.outputPerRun - 1e-9);
     // Each parallel job rounds its own materials, like in game.
-    const jobs = splitRuns(runs, r.secondsPerRun, r.maxJobSeconds);
+    const jobs = splitRuns(runs, r.secondsPerRun, r.maxJobSeconds, r.maxRunsPerJob);
     for (const i of r.inputs) add(demand, i.typeId, jobs.reduce((s, j) => s + inputQuantity(r, i, j), 0));
     lines.push({ typeId: id, name: r.name, activity: r.activity, depth: d, need, fromStock, runs, output: runs * r.outputPerRun, seconds: runs * r.secondsPerRun, jobs, isProduct: false });
   }
