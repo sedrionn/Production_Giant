@@ -73,3 +73,23 @@ describe("overview categories", () => {
     expect(names("reactions")).toEqual(["Fulleroferrocene"]);
   });
 });
+
+describe("blacklist", () => {
+  it("boosters by group, Triglavian and EDENCOM by race, single items by id", async () => {
+    const { blacklistReason, RACE_TRIGLAVIAN, RACE_EDENCOM } = await import("@/server/catalog");
+    // SYNTHETIC types and groups.
+    const g = [
+      { groupId: 303, categoryId: 20, name: "Booster" },
+      { groupId: 4060, categoryId: 7, name: "Vorton Projector" },
+      { groupId: 1986, categoryId: 7, name: "Precursor Weapon" },
+    ];
+    const ts = [t(20, "Synth Crash Booster", 303, 20, null), t(21, "Small Vorton Projector I", 4060, 7, 1, 1), t(22, "Light Entropic Disintegrator I", 1986, 7, 1, RACE_TRIGLAVIAN), t(23, "Thunderchild", 26, 6, null, RACE_EDENCOM)];
+    const s = new FixtureSdeSource({ meta: { source: "test", capturedAt: "", roots: [] }, types: [...types, ...ts], blueprints, groups: [...groups, ...g] });
+    const all = { boosters: true, triglavian: true, edencom: true, typeIds: [1] };
+    const reason = (id: number, bl = all) => blacklistReason(s, s.getType(id)!, bl);
+    expect([20, 21, 22, 23].map((id) => reason(id))).toEqual(["бустеры", "EDENCOM", "триглавское", "EDENCOM"]);
+    expect(reason(1)).toBe("в блэклисте");
+    expect(reason(2)).toBeNull();
+    expect(reason(20, { ...all, boosters: false })).toBeNull();
+  });
+});

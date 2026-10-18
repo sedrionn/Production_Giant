@@ -40,14 +40,13 @@ const ship = (typeId: number, profit: number, capital: number): PlanBatch => ({
 });
 const slots = (n: number, freeAt = 0): SlotState[] => Array.from({ length: n }, (_, i) => ({ kind: "manufacturing", owner: `C${i}`, freeAt }));
 
-describe("planWeek", () => {
-  it("components at login 0, hull at the next login after they finish", () => {
-    const p = planWeek({ candidates: [ship(1, 100, 10)], slots: slots(2), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 99 });
-    const comp = p.jobs.find((j) => j.depth === 1)!;
-    const hull = p.jobs.find((j) => j.depth === 0)!;
-    expect(comp.start).toBe(0);
-    expect(hull.start).toBe(2);
-    expect(p.logins.map((l) => l.day)).toEqual([0, 2, 4]);
+describe("planWeek (steady state: hulls from ready components, next components pooled)", () => {
+  it("hull starts at today's login; components for the next round are one merged job", () => {
+    const p = planWeek({ candidates: [ship(1, 100, 10)], slots: slots(2), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 2, unitCap: () => 99 });
+    expect(p.batches).toHaveLength(2);
+    expect(p.jobs.map((j) => j.start)).toEqual([0, 0]);
+    expect(p.prep).toEqual([expect.objectContaining({ name: "Component", runs: 16, seconds: 20 * H, start: 0 })]);
+    expect(p.logins.map((l) => l.day)).toEqual([0, 2]);
   });
 
   it("budget and market cap limit the plan; best profit per slot-day goes first", () => {
@@ -64,14 +63,50 @@ describe("planWeek", () => {
     expect(p.skipped).toEqual([{ name: "Ship 1", reason: "не хватает бюджета" }]);
   });
 
+  it("tier beats score: Caldari ships first", () => {
+    const p = planWeek({
+      candidates: [{ ...ship(1, 300, 60), tier: 1 }, { ...ship(2, 100, 60), tier: 0 }],
+      slots: slots(4),
+      budget: 60,
+      cadenceDays: 2,
+      horizonDays: 7,
+      maxBatchesPerItem: 1,
+      unitCap: () => 99,
+    });
+    expect(p.batches.map((b) => b.typeId)).toEqual([2]);
+  });
+
+  it("one item may take only its share of the budget: the rest goes to other items", () => {
+    const p = planWeek({
+      candidates: [ship(1, 300, 30), ship(2, 100, 30)],
+      slots: slots(6),
+      budget: 100,
+      cadenceDays: 2,
+      horizonDays: 7,
+      maxBatchesPerItem: 5,
+      unitCap: () => 99,
+      maxItemShare: 0.6,
+    });
+    expect(p.batches.map((b) => b.typeId)).toEqual([1, 1, 2]);
+    expect(p.skipped).toEqual([]);
+  });
+
   it("busy slots push the start to the login after they free up", () => {
     const p = planWeek({ candidates: [ship(1, 100, 10)], slots: slots(1, 3.2), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 99 });
-    expect(p.jobs.find((j) => j.depth === 1)!.start).toBe(4);
+    expect(p.jobs[0].start).toBe(4);
   });
 
   it("nothing starts after the horizon", () => {
     const p = planWeek({ candidates: [ship(1, 100, 10)], slots: slots(1, 7), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 99 });
     expect(p.batches).toEqual([]);
     expect(p.skipped[0].reason).toMatch(/слотов/);
+  });
+});
+
+describe("batchRunsForCadence with a minimum batch profit", () => {
+  it("a batch below the minimum loses to a bigger one even at a better daily rate", () => {
+    // 12.5 h runs, 6.4/run: 3 runs (2 d) = 19.2/2 d is below 30; 7 runs (4 d) = 44.8 clears it.
+    const runs = batchRunsForCadence({ secondsPerRun: 12.5 * H, profitPerRun: 6.4, maxRuns: 10, cadenceDays: 2, horizonDays: 7, minProfit: 30 });
+    expect(runs).toBe(7);
   });
 });

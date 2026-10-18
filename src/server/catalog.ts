@@ -82,15 +82,18 @@ export function categoryHint(sde: SdeSource & { hasRaces?: () => boolean }, key:
  * Every type that goes, at any depth, into a ship of the four empire races. Components outside
  * this set (mutaplasmid-like items, structure and deployable parts, …) go to «Прочие».
  */
-const shipInputsCache = new WeakMap<SdeSource, Set<number>>();
-export function shipInputs(sde: SdeSource): Set<number> {
-  const hit = shipInputsCache.get(sde);
+const shipInputsCache = new WeakMap<SdeSource, Map<string, Set<number>>>();
+export function shipInputs(sde: SdeSource, races: ReadonlySet<number> = EMPIRE_RACES): Set<number> {
+  const key = [...races].sort().join(",");
+  const byRaces = shipInputsCache.get(sde) ?? new Map<string, Set<number>>();
+  shipInputsCache.set(sde, byRaces);
+  const hit = byRaces.get(key);
   if (hit) return hit;
   const recipe = recipeLookup(sde);
   const out = new Set<number>();
   const stack = sde
     .listProducts("manufacturing")
-    .filter((t) => t.categoryId === CATEGORY.ship && t.raceId != null && EMPIRE_RACES.has(t.raceId))
+    .filter((t) => t.categoryId === CATEGORY.ship && t.raceId != null && races.has(t.raceId))
     .map((t) => t.typeId);
   const seen = new Set<number>();
   while (stack.length) {
@@ -102,6 +105,23 @@ export function shipInputs(sde: SdeSource): Set<number> {
       stack.push(m.typeId);
     }
   }
-  shipInputsCache.set(sde, out);
+  byRaces.set(key, out);
   return out;
+}
+
+/** SDE raceID of Triglavian and EDENCOM items (ships, modules, ammo). */
+export const RACE_TRIGLAVIAN = 135;
+export const RACE_EDENCOM = 168;
+
+export type Blacklist = { boosters: boolean; triglavian: boolean; edencom: boolean; typeIds: number[] };
+
+/** Why an item is blacklisted (null = it is not). */
+export function blacklistReason(sde: SdeSource, t: SdeType, bl: Blacklist): string | null {
+  if (bl.typeIds.includes(t.typeId)) return "в блэклисте";
+  const group = sde.getGroup(t.groupId)?.name ?? "";
+  // Boosters and their reaction intermediates (gas from null/WH only).
+  if (bl.boosters && (group === "Booster" || group === "Biochemical Material")) return "бустеры";
+  if (bl.triglavian && t.raceId === RACE_TRIGLAVIAN) return "триглавское";
+  if (bl.edencom && (t.raceId === RACE_EDENCOM || group.startsWith("Vorton Projector"))) return "EDENCOM";
+  return null;
 }

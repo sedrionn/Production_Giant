@@ -1,11 +1,16 @@
 /**
  * Weekly production planner (pure). Nick logs in every `cadenceDays`; a slot that finishes
- * between logins sits idle until the next one. So:
- *  - batch size: pick the run count whose product job ends right before a login
- *    (best profit per *occupied* slot-day, ties → longer jobs = fewer logins);
- *  - schedule: jobs start only at logins; intermediates first (deepest chain level first),
- *    the product job at the first login after its inputs are done;
- *  - greedy fill by profit per slot-day within the budget and a market cap per item.
+ * between logins sits idle until the next one.
+ *
+ * Steady-state model (how Nick runs it): the hulls of this week are built from components made
+ * earlier; the components and reactions for the next round are built this week, merged across
+ * all batches (one job per intermediate type, not one per batch).
+ *  - batch size: the product job should end right before a login — best profit per *occupied*
+ *    slot-day, ties → longer jobs (fewer logins);
+ *  - product jobs start only at logins, on the earliest free manufacturing slot;
+ *  - intermediates are pooled per type and must fit in the slots left over in the period;
+ *  - greedy by tier (e.g. Caldari ships first), then profit per slot-day, within budget, a
+ *    market cap per item and a per-item share of the budget (variety over one big hull).
  */
 import type { Activity } from "./types";
 
@@ -33,6 +38,12 @@ export interface PlanBatch {
   jobs: PlanJob[];
   /** How many batches of this item are possible at all (e.g. owned BPC copies); undefined = no limit. */
   maxBatches?: number;
+  /** Preference multiplier on the ranking score (1 = neutral). */
+  weight?: number;
+  /** Lower tiers are planned first (e.g. 0 = Caldari ships); same tier → by score. */
+  tier?: number;
+  /** Distinguishes routes of the same item (own BPC vs invention); defaults to typeId. */
+  key?: string;
 }
 
 export interface SlotState {
@@ -52,14 +63,29 @@ export interface ScheduledJob extends PlanJob {
   end: number;
 }
 
+/** An intermediate pooled over all batches of the plan. */
+export interface PrepJob {
+  typeId: number;
+  name: string;
+  activity: Activity;
+  runs: number;
+  seconds: number;
+  depth: number;
+  /** Login day to start it: deepest level first, one level per login. */
+  start: number;
+}
+
 export interface Plan {
   batches: (PlanBatch & { start: number; end: number })[];
+  /** Product jobs on slots. */
   jobs: ScheduledJob[];
+  /** Components and reactions for the next round, merged per type. */
+  prep: PrepJob[];
   /** Login days with something to do, and what. */
-  logins: { day: number; start: ScheduledJob[]; finish: ScheduledJob[] }[];
+  logins: { day: number; start: ScheduledJob[]; finish: ScheduledJob[]; prep: PrepJob[] }[];
   profit: number;
   capital: number;
-  /** Share of slot-days within the horizon that are busy, per kind. */
+  /** Share of slot-days within the horizon that are busy (products + prep), per kind. */
   utilization: Record<SlotKind, number>;
   skipped: { name: string; reason: string }[];
 }
@@ -77,16 +103,26 @@ export function batchRunsForCadence(p: {
   maxRuns: number;
   cadenceDays: number;
   horizonDays: number;
+  /** Batches earning less are only taken when nothing bigger fits. */
+  minProfit?: number;
 }): number {
   const { secondsPerRun, profitPerRun, maxRuns, cadenceDays, horizonDays } = p;
   if (secondsPerRun <= 0) return Math.max(1, maxRuns || 1);
   let best = 1;
   let bestScore = -Infinity;
+  let bestBig = false;
   for (let k = 1; k * cadenceDays <= horizonDays + 1e-9; k++) {
     let runs = Math.max(1, Math.floor((k * cadenceDays * DAY) / secondsPerRun));
     if (maxRuns > 0) runs = Math.min(runs, maxRuns);
     const occupied = nextLogin((runs * secondsPerRun) / DAY, cadenceDays) || cadenceDays;
     const score = (profitPerRun * runs) / occupied;
+    // A batch above the minimum always beats one below it: fewer, bigger jobs.
+    const big = profitPerRun * runs >= (p.minProfit ?? 0);
+    if (bestBig && !big) continue;
+    if (big && !bestBig) {
+      [best, bestScore, bestBig] = [runs, score, true];
+      continue;
+    }
     // ≥: a longer batch with the same daily profit means fewer logins.
     if (score >= bestScore - 1e-6 * Math.abs(bestScore)) {
       best = runs;
@@ -98,9 +134,12 @@ export function batchRunsForCadence(p: {
 
 const slotKind = (a: Activity): SlotKind | null => (a === "manufacturing" ? "manufacturing" : a === "reaction" ? "reaction" : null);
 
-/** Days of slot time a batch occupies when every job snaps to logins. */
+/**
+ * Slot-days a batch costs: the product job snaps to logins (its slot waits for you), the
+ * intermediates count at their real length (they are pooled and fill otherwise idle slots).
+ */
 export function slotDays(b: PlanBatch, cadence: number): number {
-  return b.jobs.reduce((s, j) => s + (nextLogin(j.seconds / DAY, cadence) || cadence), 0);
+  return b.jobs.reduce((s, j) => s + (j.depth === 0 ? nextLogin(j.seconds / DAY, cadence) || cadence : j.seconds / DAY), 0);
 }
 
 export function planWeek(input: {
@@ -113,104 +152,124 @@ export function planWeek(input: {
   maxBatchesPerItem: number;
   /** Max units of one item over the plan. */
   unitCap: (typeId: number) => number;
+  /** Max share of the budget one item may take (all its batches together); default 1 = no cap. */
+  maxItemShare?: number;
 }): Plan {
   const { cadenceDays: cad, horizonDays: horizon } = input;
   const slots = input.slots.map((s) => ({ ...s, freeAt: nextLogin(s.freeAt, cad) }));
   const ranked = input.candidates
     .filter((c) => c.profit > 0)
-    .map((c) => ({ c, score: c.profit / Math.max(cad, slotDays(c, cad)) }))
-    .sort((a, b) => b.score - a.score);
+    .map((c) => ({ c, score: (c.profit / Math.max(cad, slotDays(c, cad))) * (c.weight ?? 1) }))
+    .sort((a, b) => (a.c.tier ?? 0) - (b.c.tier ?? 0) || b.score - a.score);
+
+  // Slot-days available per kind in the period, after what is already running.
+  const capacity: Record<SlotKind, number> = { manufacturing: 0, reaction: 0 };
+  for (const s of slots) capacity[s.kind] += Math.max(0, horizon - s.freeAt);
+  const used: Record<SlotKind, number> = { manufacturing: 0, reaction: 0 };
 
   let budget = input.budget;
   const batches: Plan["batches"] = [];
   const jobs: ScheduledJob[] = [];
   const skipped: Plan["skipped"] = [];
   const unitsPlanned = new Map<number, number>();
+  const spentPerItem = new Map<number, number>();
+  const itemCap = input.budget * Math.min(1, Math.max(0, input.maxItemShare ?? 1));
+  const prep = new Map<string, PrepJob>();
 
   for (const { c } of ranked) {
     let made = 0;
+    const product = c.jobs.find((j) => j.depth === 0);
+    if (!product) continue;
+    const intermediates = c.jobs.filter((j) => j.depth > 0 && slotKind(j.activity));
+    const need: Record<SlotKind, number> = { manufacturing: 0, reaction: 0 };
+    for (const j of intermediates) need[slotKind(j.activity)!] += j.seconds / DAY;
     while (made < Math.min(input.maxBatchesPerItem, c.maxBatches ?? Infinity)) {
+      const why = (reason: string) => {
+        if (!made) skipped.push({ name: c.name, reason });
+      };
       if (c.capital > budget) {
-        if (!made) skipped.push({ name: c.name, reason: "не хватает бюджета" });
+        why("не хватает бюджета");
+        break;
+      }
+      // Spread the budget: one expensive hull must not crowd out the rest of the week.
+      if ((spentPerItem.get(c.typeId) ?? 0) + c.capital > itemCap + 1e-6) {
+        why(`одна позиция не больше ${Math.round((itemCap / input.budget) * 100)}% бюджета`);
         break;
       }
       if ((unitsPlanned.get(c.typeId) ?? 0) + c.units > input.unitCap(c.typeId)) {
-        if (!made) skipped.push({ name: c.name, reason: "рынок не возьмёт больше" });
+        why("рынок не возьмёт больше");
         break;
       }
-      const placed = place(c, slots, cad, horizon);
-      if (!placed) {
-        if (!made) skipped.push({ name: c.name, reason: "нет свободных слотов в пределах недели" });
+      // The product job: earliest free manufacturing slot, at a login inside the period.
+      let best = -1;
+      for (let i = 0; i < slots.length; i++) {
+        if (slots[i].kind !== "manufacturing") continue;
+        if (best === -1 || slots[i].freeAt < slots[best].freeAt) best = i;
+      }
+      if (best === -1 || slots[best].freeAt >= horizon) {
+        why("нет свободных слотов в пределах недели");
         break;
       }
-      for (const p of placed.jobs) {
-        slots[p.slot].freeAt = nextLogin(p.end, cad);
-        jobs.push(p);
+      const productDays = (nextLogin(slots[best].freeAt + product.seconds / DAY, cad) - slots[best].freeAt) || cad;
+      const after = { ...used };
+      after.manufacturing += Math.min(productDays, horizon - slots[best].freeAt) + need.manufacturing;
+      after.reaction += need.reaction;
+      if (after.manufacturing > capacity.manufacturing || after.reaction > capacity.reaction) {
+        why("не хватит слотов на компоненты и реакции");
+        break;
       }
-      batches.push({ ...c, start: placed.start, end: placed.end });
+      const start = slots[best].freeAt;
+      const end = start + product.seconds / DAY;
+      jobs.push({ ...product, batchTypeId: c.typeId, slot: best, owner: slots[best].owner, start, end });
+      slots[best].freeAt = nextLogin(end, cad);
+      Object.assign(used, after);
+      for (const j of intermediates) {
+        const k = `${j.typeId}:${j.activity}`;
+        const cur = prep.get(k) ?? { typeId: j.typeId, name: j.name, activity: j.activity, runs: 0, seconds: 0, depth: 0, start: 0 };
+        cur.runs += j.runs;
+        cur.seconds += j.seconds;
+        cur.depth = Math.max(cur.depth, j.depth);
+        prep.set(k, cur);
+      }
+      batches.push({ ...c, start, end });
       budget -= c.capital;
       unitsPlanned.set(c.typeId, (unitsPlanned.get(c.typeId) ?? 0) + c.units);
+      spentPerItem.set(c.typeId, (spentPerItem.get(c.typeId) ?? 0) + c.capital);
       made++;
     }
   }
 
-  const days = new Map<number, { day: number; start: ScheduledJob[]; finish: ScheduledJob[] }>();
+  // Prep: deepest level at the first login, one level per login after that.
+  const prepJobs = [...prep.values()];
+  const maxDepth = Math.max(0, ...prepJobs.map((p) => p.depth));
+  for (const p of prepJobs) p.start = (maxDepth - p.depth) * cad;
+
+  const days = new Map<number, Plan["logins"][number]>();
   const at = (d: number) => {
     let x = days.get(d);
-    if (!x) days.set(d, (x = { day: d, start: [], finish: [] }));
+    if (!x) days.set(d, (x = { day: d, start: [], finish: [], prep: [] }));
     return x;
   };
   for (const j of jobs) {
     at(j.start).start.push(j);
     at(nextLogin(j.end, cad)).finish.push(j);
   }
+  for (const p of prepJobs) at(p.start).prep.push(p);
 
   const utilization = { manufacturing: 0, reaction: 0 } as Record<SlotKind, number>;
   for (const kind of ["manufacturing", "reaction"] as SlotKind[]) {
     const n = slots.filter((s) => s.kind === kind).length;
-    if (!n) continue;
-    const busy = jobs.filter((j) => slotKind(j.activity) === kind).reduce((s, j) => s + Math.min(horizon, j.end) - Math.min(horizon, j.start), 0);
-    utilization[kind] = busy / (n * horizon);
+    if (n) utilization[kind] = Math.min(1, used[kind] / (n * horizon));
   }
 
   return {
     batches,
     jobs,
+    prep: prepJobs.sort((a, b) => b.depth - a.depth || b.seconds - a.seconds),
     logins: [...days.values()].sort((a, b) => a.day - b.day),
     profit: batches.reduce((s, b) => s + b.profit, 0),
     capital: batches.reduce((s, b) => s + b.capital, 0),
     utilization,
     skipped,
   };
-}
-
-/** Places one batch: deepest chain level first, each level at the first login after the previous one ends. */
-function place(b: PlanBatch, slots: SlotState[], cad: number, horizon: number): { jobs: ScheduledJob[]; start: number; end: number } | null {
-  const free = slots.map((s) => s.freeAt);
-  const out: ScheduledJob[] = [];
-  const maxDepth = Math.max(0, ...b.jobs.map((j) => j.depth));
-  let ready = 0;
-  for (let d = maxDepth; d >= 0; d--) {
-    let levelEnd = ready;
-    for (const j of b.jobs.filter((x) => x.depth === d)) {
-      const kind = slotKind(j.activity);
-      if (!kind) continue;
-      let best = -1;
-      for (let i = 0; i < slots.length; i++) {
-        if (slots[i].kind !== kind) continue;
-        if (best === -1 || Math.max(free[i], ready) < Math.max(free[best], ready)) best = i;
-      }
-      if (best === -1) return null;
-      const start = nextLogin(Math.max(free[best], ready), cad);
-      if (start >= horizon) return null;
-      const end = start + j.seconds / DAY;
-      free[best] = nextLogin(end, cad);
-      out.push({ ...j, batchTypeId: b.typeId, slot: best, owner: slots[best].owner, start, end });
-      levelEnd = Math.max(levelEnd, end);
-    }
-    ready = nextLogin(levelEnd, cad);
-  }
-  const product = out.filter((j) => j.depth === 0);
-  if (!product.length) return null;
-  return { jobs: out, start: Math.min(...out.map((j) => j.start)), end: Math.max(...product.map((j) => j.end)) };
 }
