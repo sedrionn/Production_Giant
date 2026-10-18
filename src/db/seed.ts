@@ -36,6 +36,8 @@ export interface AppSettings {
   autoRefreshHours: number;
   /** When the last full refresh finished (ISO), null = never. */
   lastAutoRefreshAt: string | null;
+  /** Locations whose hangars count as stock (station / structure ids); null = where your industry jobs run. */
+  stockLocationIds: number[] | null;
   /** Character whose skills drive time/invention; null = best level across all synced characters. */
   industryCharacterId: number | null;
   manufacturingProfileId: number | null;
@@ -62,6 +64,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   blacklist: { boosters: true, triglavian: true, edencom: true, typeIds: [] },
   autoRefreshHours: 24,
   lastAutoRefreshAt: null,
+  stockLocationIds: null,
   industryCharacterId: null,
   manufacturingProfileId: null,
   reactionProfileId: null,

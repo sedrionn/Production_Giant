@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import type { PlanResponse } from "@/server/plan";
 import type { ScheduledJob } from "@/engine/planner";
 import { full, isk, pct, qty } from "@/lib/format";
+import { stageName } from "@/lib/stages";
+import { BuyList, StockPicker } from "./BuyList";
 
 interface Form {
   budget: number;
@@ -54,6 +56,21 @@ export function Planner({ categories }: { categories: { key: string; label: stri
       setError((e as Error).message);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    if (!plan) return;
+    setSaving(true);
+    try {
+      const r = await fetch("/api/plan/saved", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan }) });
+      const body = await r.json();
+      if (!r.ok) throw new Error(body.error);
+      window.location.href = "/plan/stages";
+    } catch (e) {
+      setError((e as Error).message);
+      setSaving(false);
     }
   };
 
@@ -120,6 +137,9 @@ export function Planner({ categories }: { categories: { key: string; label: stri
           </button>
           {plan && (
             <>
+              <button onClick={save} disabled={saving} className="rounded border border-marker/70 px-3 py-1.5 text-marker hover:bg-marker/10 disabled:opacity-50" title="Сохранить план: на странице «Этапы» видно, что уже запущено и готово">
+                {saving ? "Сохраняю…" : "Запускаю этот план → Этапы"}
+              </button>
               <button onClick={copy} className="rounded border border-line px-3 py-1.5 hover:border-marker hover:text-marker">
                 {copied ? "Скопировано" : "Скопировать лист для Claude"}
               </button>
@@ -223,25 +243,9 @@ export function Planner({ categories }: { categories: { key: string; label: stri
             </div>
           </section>
 
-          <section className="space-y-2">
-            <h2 className="font-display text-2xl font-semibold">Закупка одним списком</h2>
-            <p className="text-sm text-graphite">
-              {qty(plan.shopping.length)} позиций, {isk(plan.shopping.reduce((s, l) => s + (l.cost ?? 0), 0))}, {qty(Math.round(plan.shopping.reduce((s, l) => s + l.volume, 0)))} м³
-            </p>
-            <div className="max-h-[420px] overflow-auto">
-              <table className="w-full text-left">
-                <tbody>
-                  {plan.shopping.map((l) => (
-                    <tr key={l.typeId} className="border-b border-line/30">
-                      <td className="py-1 pr-4">{l.name}</td>
-                      <td className="py-1 pr-4 text-right">{qty(l.quantity)}</td>
-                      <td className="py-1 text-right text-graphite">{isk(l.cost)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+          <StagesPreview stages={plan.stages} />
+
+          <BuyList stages={plan.stages} stockNote={<StockPicker syncedAt={plan.stock.syncedAt} />} />
 
           {plan.skipped.length > 0 && (
             <details className="text-sm text-graphite">
@@ -257,6 +261,31 @@ export function Planner({ categories }: { categories: { key: string; label: stri
         </div>
       )}
     </div>
+  );
+}
+
+/** Short view of the stages on the plan page; the full tracker is on /plan/stages. */
+function StagesPreview({ stages }: { stages: PlanResponse["stages"] }) {
+  const max = Math.max(0, ...stages.stages.map((s) => s.depth));
+  return (
+    <section className="space-y-2">
+      <h2 className="font-display text-2xl font-semibold">Этапы производства</h2>
+      <ol className="space-y-1">
+        {stages.stages.map((s) => {
+          const lines = s.lines.filter((l) => l.runs > 0);
+          const fromStock = s.lines.filter((l) => l.fromStock > 0 && l.runs === 0).length;
+          return (
+            <li key={s.depth}>
+              <span className="font-medium">{stageName(s, max)}</span>
+              <span className="text-graphite">
+                {" "}
+                — {qty(lines.length)} джоб{fromStock ? `, ${fromStock} позиций целиком со склада` : ""}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
 }
 

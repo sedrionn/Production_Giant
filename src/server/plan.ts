@@ -7,9 +7,12 @@ import { JOB_ACTIVITY_IDS, SLOT_SKILLS } from "@/engine/bonuses";
 import { characters, industryJobs } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { calculate, type CalcResponse } from "./calculate";
-import { CATEGORIES, RACE_CALDARI, shipInputs, type CategoryKey } from "./catalog";
+import { CATEGORIES, isCaldariBranchShip, RACE_CALDARI, shipInputs, type CategoryKey } from "./catalog";
 import { skillLevels } from "./characters";
-import { getDb, getSde } from "./data";
+import { getDb, getSde, getSettings, priceBook } from "./data";
+import { stockIndex } from "./assets";
+import { planStages, type StageBuyInfo, type StageRecipe, type Stages } from "@/engine/stages";
+import { quotePrice } from "@/engine/pricing";
 import { computeOverview, type OverviewRow } from "./overview";
 
 export interface PlanRequest {
@@ -42,6 +45,10 @@ export interface PlanResponse extends Plan {
   shopping: { typeId: number; name: string; quantity: number; cost: number | null; volume: number }[];
   /** Invention needed for invented batches (lab slots are not scheduled yet). */
   invention: { name: string; batches: number; attemptsPerBatch: number; source: string; decryptor: string | null; runsPerBpc: number }[];
+  /** The plan split into stages (deepest first) with stock taken off, and the purchase list. */
+  stages: Stages;
+  /** Where the stock came from. */
+  stock: { locations: number[]; syncedAt: string | null; owners: number; types: number };
   /** All evaluated candidates, best first — the "sheet" for planning by hand or with Claude. */
   sheet: {
     name: string;
@@ -191,8 +198,6 @@ export function sizeRoutes(r: Row, cad: number, horizon: number, minProfit = 0):
   return out;
 }
 
-/** SDE category of ships. Caldari ships go first when asked (tier 0); everything else after. */
-const CATEGORY_SHIP = 6;
 
 export function buildPlan(req: PlanRequest): PlanResponse {
   const t0 = Date.now();
@@ -220,7 +225,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
       const t = sde.getType(r.typeId);
       const weight = r.categoryKey === "reactions" && caldariInputs.has(r.typeId) ? PREFER_CALDARI_REACTIONS : 1;
       // 0 = Caldari hulls; 1 = what dilutes them (rigs, reactions, other Caldari items); 2 = the rest.
-      const caldariShip = t?.categoryId === CATEGORY_SHIP && t.raceId === RACE_CALDARI;
+      const caldariShip = !!t && isCaldariBranchShip(t);
       const filler = r.categoryKey.startsWith("rigs") || r.categoryKey === "reactions" || t?.raceId === RACE_CALDARI;
       const tier = !req.caldariShipsFirst ? 0 : caldariShip ? 0 : filler ? 1 : 2;
       return sizeRoutes(r, cad, horizon, req.minBatchProfit).map((s) => ({ r, ...s, weight, tier }));
@@ -309,6 +314,8 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     }
   }
 
+  const stages = stagesFor(plan, calcs);
+
   const sheet = candidates
     .map((b) => {
       const r = rows.get(b.typeId)!;
@@ -339,9 +346,64 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     slots: summary,
     shopping: [...shop.values()].sort((a, b) => (b.cost ?? 0) - (a.cost ?? 0)),
     invention: [...inv.values()],
+    stages: stages.stages,
+    stock: stages.stock,
     sheet,
     computedMs: Date.now() - t0,
   };
+}
+
+/**
+ * Stages of the plan: all batches merged, what is in the stock hangars taken off (built
+ * components and bought materials), plus datacores and decryptors for invention.
+ */
+function stagesFor(plan: Plan, calcs: Map<string, CalcResponse>): { stages: Stages; stock: PlanResponse["stock"] } {
+  const { source: sde } = getSde();
+  const s = getSettings();
+  const recipes = new Map<number, StageRecipe>();
+  const buy = new Map<number, StageBuyInfo>();
+  const extra = new Map<number, number>();
+  for (const b of plan.batches) {
+    const c = calcs.get(b.key ?? String(b.typeId));
+    if (!c) continue;
+    for (const n of c.nodes) {
+      if (n.decision !== "build" || !n.job || n.job.runs <= 0 || recipes.has(n.typeId)) continue;
+      recipes.set(n.typeId, {
+        typeId: n.typeId,
+        name: n.name,
+        activity: n.job.activity,
+        outputPerRun: n.job.outputPerRun,
+        secondsPerRun: n.job.timeSeconds / n.job.runs,
+        inputs: n.children.map((ch) => ({ typeId: ch.typeId, perRun: ch.quantity / n.job!.runs })),
+      });
+    }
+    for (const l of c.shopping) {
+      if (buy.has(l.typeId)) continue;
+      buy.set(l.typeId, { typeId: l.typeId, name: l.name, unitPrice: l.cost === null || !l.quantity ? null : l.cost / l.quantity, volume: l.quantity ? l.volume / l.quantity : 0 });
+    }
+    // Invention: expected attempts per invented BPC; datacores etc. per attempt from the SDE.
+    const ch = c.request.blueprintSource === "invention" ? c.invention.chosen : null;
+    if (ch) {
+      const attempts = Math.ceil(1 / Math.max(ch.chance, 0.01));
+      for (const m of sde.getBlueprint(ch.sourceId)?.activities.invention?.materials ?? []) extra.set(m.typeId, (extra.get(m.typeId) ?? 0) + m.quantity * attempts);
+      if (c.invention.decryptor) extra.set(c.invention.decryptor.typeId, (extra.get(c.invention.decryptor.typeId) ?? 0) + attempts);
+    }
+  }
+  const missing = [...extra.keys()].filter((id) => !buy.has(id));
+  const prices = priceBook(missing, s.priceLocationId);
+  for (const id of missing) {
+    const t = sde.getType(id);
+    buy.set(id, { typeId: id, name: t?.name ?? `#${id}`, unitPrice: quotePrice(prices.quote(id), s.materialPriceMode), volume: t ? t.packagedVolume ?? t.volume : 0 });
+  }
+  const st = stockIndex();
+  const stages = planStages({
+    products: plan.jobs.filter((j) => j.depth === 0).map((j) => ({ typeId: j.typeId, runs: j.runs })),
+    recipes,
+    buy,
+    stock: st.stock,
+    extraBuy: [...extra.entries()].map(([typeId, quantity]) => ({ typeId, quantity, note: "инвент" })),
+  });
+  return { stages, stock: { locations: st.locations, syncedAt: st.syncedAt, owners: st.owners, types: st.stock.size } };
 }
 
 /** Plain-text sheet for pasting into a chat with Claude. */
