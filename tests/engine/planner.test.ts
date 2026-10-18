@@ -91,6 +91,41 @@ describe("planWeek (steady state: hulls from ready components, next components p
     expect(p.skipped).toEqual([]);
   });
 
+  it("a reaction sold as a product takes a reaction slot, not a factory one", () => {
+    const rx: PlanBatch = {
+      typeId: 9,
+      name: "Reaction",
+      runs: 10,
+      units: 2000,
+      profit: 100,
+      capital: 10,
+      jobs: [{ typeId: 9, name: "Reaction", activity: "reaction", runs: 10, seconds: 40 * H, depth: 0 }],
+    };
+    const p = planWeek({
+      candidates: [rx],
+      slots: [{ kind: "manufacturing", owner: "A", freeAt: 0 }, { kind: "reaction", owner: "A", freeAt: 0 }],
+      budget: 100,
+      cadenceDays: 2,
+      horizonDays: 7,
+      maxBatchesPerItem: 1,
+      unitCap: () => 1e9,
+    });
+    expect(p.jobs[0].slot).toBe(1);
+    expect(p.utilization.reaction).toBeGreaterThan(0);
+    expect(p.utilization.manufacturing).toBe(0);
+  });
+
+  it("a pooled component longer than the plan is split into parallel jobs", () => {
+    // 3 batches × 60 h of components = 180 h > 7-day plan → 2 jobs.
+    const long = (id: number): PlanBatch => ({ ...ship(id, 100, 10), jobs: [{ typeId: 500, name: "Component", activity: "manufacturing", runs: 10, seconds: 60 * H, depth: 1 }, { typeId: id, name: `Ship ${id}`, activity: "manufacturing", runs: 4, seconds: 40 * H, depth: 0 }] });
+    const p = planWeek({ candidates: [long(1)], slots: slots(6), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 3, unitCap: () => 99 });
+    expect(p.prep[0]).toMatchObject({ runs: 30, jobs: 2 });
+    // The blueprint allows only 5 runs per job → 6 jobs.
+    const capped = long(1);
+    capped.jobs[0].maxRunsPerJob = 5;
+    expect(planWeek({ candidates: [capped], slots: slots(6), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 3, unitCap: () => 99 }).prep[0].jobs).toBe(6);
+  });
+
   it("busy slots push the start to the login after they free up", () => {
     const p = planWeek({ candidates: [ship(1, 100, 10)], slots: slots(1, 3.2), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 99 });
     expect(p.jobs[0].start).toBe(4);

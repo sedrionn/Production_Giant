@@ -80,6 +80,20 @@ export function BuyList({ stages, stockNote }: { stages: Stages; stockNote?: Rea
           </tbody>
         </table>
       </div>
+      {!!stages.blueprints?.length && (
+        <div className="space-y-1 pt-2">
+          <h3 className="font-display text-xl font-semibold">Чертежи для инвента</h3>
+          <p className="text-sm text-graphite">Каждая попытка инвента съедает одну T1-копию. Реликты для T3 уже в закупке выше.</p>
+          <ul className="text-sm">
+            {stages.blueprints.map((b) => (
+              <li key={b.typeId}>
+                {b.name} × {qty(b.copies)} <span className="text-graphite">для {b.forItem}</span> —{" "}
+                {b.how === "copy" ? <span className="text-job">скопировать со своего BPO</span> : <span className="text-marker">своего BPO нет: купить BPC в контрактах</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }

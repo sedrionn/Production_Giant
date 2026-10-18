@@ -51,6 +51,8 @@ export interface TreeEdge {
   typeId: number;
   /** Quantity this parent's (aggregated) job consumes. */
   quantity: number;
+  /** Blueprint quantity per run before ME and facility bonuses (to recompute for other run counts). */
+  baseQuantity?: number;
 }
 
 export interface TreeNode {
@@ -84,6 +86,8 @@ export interface TreeJob {
   surplus: number;
   cost: JobCostBreakdown;
   timeSeconds: number;
+  /** Facility material multiplier used for this job (structure × rigs). */
+  materialMultiplier: number;
 }
 
 export interface ShoppingLine {
@@ -250,8 +254,9 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
       const facility = ctx.facility(r.activity);
       const { me, te } = levels(r);
       const cls = ctx.itemClass?.(t);
-      const mats = materialsForJob(r.materials, runs, me, materialMultiplier(facility, r.activity, cls));
-      node.children = mats.map((m) => ({ typeId: m.typeId, quantity: m.quantity }));
+      const mult = materialMultiplier(facility, r.activity, cls);
+      const mats = materialsForJob(r.materials, runs, me, mult);
+      node.children = mats.map((m) => ({ typeId: m.typeId, quantity: m.quantity, baseQuantity: m.baseQuantity }));
       for (const m of mats) add(m.typeId, m.quantity);
       const { eiv, missing } = estimatedItemValue(r.materials, runs, ctx.adjustedPrice);
       if (missing.length) warnings.push(`no adjusted price for ${missing.join(", ")} — job cost of ${t} understated`);
@@ -268,6 +273,7 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
         surplus: output - node.demand,
         cost: jobInstallCost(eiv, r.activity, ctx.costIndex(r.activity), facility, cls),
         timeSeconds: jobTime(r.time, runs, te, r.activity, facility, ctx.skills, cls, r.skills),
+        materialMultiplier: mult,
       };
       jobs.push(node.job);
     } else {

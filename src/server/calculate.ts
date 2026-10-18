@@ -59,7 +59,7 @@ export interface NodeDTO {
   buildSavingsPerHour: number | null;
   activity: Activity | null;
   job: (Omit<TreeJob, "cost"> & { cost: number; costBreakdown: TreeJob["cost"] }) | null;
-  children: { typeId: number; quantity: number }[];
+  children: { typeId: number; quantity: number; baseQuantity?: number }[];
 }
 
 export interface InventionOption extends InventionResult {

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { NavLinks } from "@/components/NavLinks";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -25,27 +26,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <Link href="/" className="font-display text-xl font-semibold tracking-wide text-chalk">
               Production Giant
             </Link>
-            <Link href="/" className="text-graphite hover:text-chalk">
-              Калькулятор
-            </Link>
-            <Link href="/overview" className="text-graphite hover:text-chalk">
-              Что выгодно
-            </Link>
-            <Link href="/plan" className="text-graphite hover:text-chalk">
-              План недели
-            </Link>
-            <Link href="/plan/stages" className="text-graphite hover:text-chalk">
-              Этапы
-            </Link>
-            <Link href="/ledger" className="text-graphite hover:text-chalk">
-              Учёт
-            </Link>
-            <Link href="/characters" className="text-graphite hover:text-chalk">
-              Персонажи
-            </Link>
-            <Link href="/presets" className="text-graphite hover:text-chalk">
-              Структуры и настройки
-            </Link>
+            <NavLinks />
           </nav>
         </header>
         {children}

@@ -7,7 +7,8 @@
  * all batches (one job per intermediate type, not one per batch).
  *  - batch size: the product job should end right before a login — best profit per *occupied*
  *    slot-day, ties → longer jobs (fewer logins);
- *  - product jobs start only at logins, on the earliest free manufacturing slot;
+ *  - product jobs start only at logins, on the earliest free slot of their kind (a reaction sold
+ *    as a product goes to a reaction slot, not a factory one);
  *  - intermediates are pooled per type and must fit in the slots left over in the period;
  *  - greedy by tier (e.g. Caldari ships first), then profit per slot-day, within budget, a
  *    market cap per item and a per-item share of the budget (variety over one big hull).
@@ -25,6 +26,8 @@ export interface PlanJob {
   seconds: number;
   /** 0 = the product; 1 = its direct inputs; … Higher levels must finish first. */
   depth: number;
+  /** Blueprint production limit: most runs one job may have. */
+  maxRunsPerJob?: number;
 }
 
 export interface PlanBatch {
@@ -73,6 +76,9 @@ export interface PrepJob {
   depth: number;
   /** Login day to start it: deepest level first, one level per login. */
   start: number;
+  /** Parallel jobs it is split into so each one ends inside the plan. */
+  jobs: number;
+  maxRunsPerJob?: number;
 }
 
 export interface Plan {
@@ -200,10 +206,11 @@ export function planWeek(input: {
         why("рынок не возьмёт больше");
         break;
       }
-      // The product job: earliest free manufacturing slot, at a login inside the period.
+      // The product job: earliest free slot of its kind, at a login inside the period.
+      const kind: SlotKind = slotKind(product.activity) ?? "manufacturing";
       let best = -1;
       for (let i = 0; i < slots.length; i++) {
-        if (slots[i].kind !== "manufacturing") continue;
+        if (slots[i].kind !== kind) continue;
         if (best === -1 || slots[i].freeAt < slots[best].freeAt) best = i;
       }
       if (best === -1 || slots[best].freeAt >= horizon) {
@@ -212,8 +219,9 @@ export function planWeek(input: {
       }
       const productDays = (nextLogin(slots[best].freeAt + product.seconds / DAY, cad) - slots[best].freeAt) || cad;
       const after = { ...used };
-      after.manufacturing += Math.min(productDays, horizon - slots[best].freeAt) + need.manufacturing;
+      after.manufacturing += need.manufacturing;
       after.reaction += need.reaction;
+      after[kind] += Math.min(productDays, horizon - slots[best].freeAt);
       if (after.manufacturing > capacity.manufacturing || after.reaction > capacity.reaction) {
         why("не хватит слотов на компоненты и реакции");
         break;
@@ -225,7 +233,7 @@ export function planWeek(input: {
       Object.assign(used, after);
       for (const j of intermediates) {
         const k = `${j.typeId}:${j.activity}`;
-        const cur = prep.get(k) ?? { typeId: j.typeId, name: j.name, activity: j.activity, runs: 0, seconds: 0, depth: 0, start: 0 };
+        const cur = prep.get(k) ?? { typeId: j.typeId, name: j.name, activity: j.activity, runs: 0, seconds: 0, depth: 0, start: 0, jobs: 1, maxRunsPerJob: j.maxRunsPerJob };
         cur.runs += j.runs;
         cur.seconds += j.seconds;
         cur.depth = Math.max(cur.depth, j.depth);
@@ -242,7 +250,14 @@ export function planWeek(input: {
   // Prep: deepest level at the first login, one level per login after that.
   const prepJobs = [...prep.values()];
   const maxDepth = Math.max(0, ...prepJobs.map((p) => p.depth));
-  for (const p of prepJobs) p.start = (maxDepth - p.depth) * cad;
+  for (const p of prepJobs) {
+    p.start = (maxDepth - p.depth) * cad;
+    // A 22-day pooled job does not fit a week, and a blueprint caps runs per job: run it on as many
+    // parallel slots as needed (components may finish next week: the limit is the horizon).
+    const byTime = Math.ceil(p.seconds / DAY / Math.max(cad, horizon) - 1e-9);
+    const byRuns = p.maxRunsPerJob ? Math.ceil(p.runs / p.maxRunsPerJob) : 1;
+    p.jobs = Math.min(p.runs, Math.max(1, byTime, byRuns));
+  }
 
   const days = new Map<number, Plan["logins"][number]>();
   const at = (d: number) => {

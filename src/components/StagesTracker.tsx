@@ -149,8 +149,8 @@ export function StagesTracker() {
                       Нужно
                     </th>
                     <th className="py-1.5 pr-4 text-right font-normal">Со склада</th>
-                    <th className="py-1.5 pr-4 text-right font-normal">Ранов</th>
-                    <th className="py-1.5 pr-4 text-right font-normal" title="Время всех ранов одной джобой">
+                    <th className="py-1.5 pr-4 text-right font-normal" title="Если джоб несколько: число джоб × ранов в каждой">Ранов</th>
+                    <th className="py-1.5 pr-4 text-right font-normal" title="Длина одной джобы; длинные строки разбиты на параллельные джобы">
                       Время
                     </th>
                     <th className="py-1.5 pr-4 text-right font-normal">Запущено / готово</th>
@@ -186,6 +186,8 @@ export function StagesTracker() {
 
 function Row({ l, who }: { l: StageLine & { progress: LineProgress }; who?: string }) {
   const st = STATE[l.progress.state];
+  // Long lines are split into parallel jobs (older saved plans have no split).
+  const split = !l.isProduct && l.jobs && l.jobs.length > 1 ? l.jobs : null;
   return (
     <tr className={`border-b border-line/40 ${l.progress.state === "done" ? "text-graphite" : ""}`}>
       <td className="py-1.5 pr-4">
@@ -194,8 +196,10 @@ function Row({ l, who }: { l: StageLine & { progress: LineProgress }; who?: stri
       </td>
       <td className="py-1.5 pr-4 text-right">{qty(l.need)}</td>
       <td className="py-1.5 pr-4 text-right text-graphite">{l.fromStock ? qty(l.fromStock) : "—"}</td>
-      <td className="py-1.5 pr-4 text-right font-medium">{l.runs ? qty(l.runs) : "—"}</td>
-      <td className="py-1.5 pr-4 text-right text-graphite">{l.runs ? duration(l.seconds) : "—"}</td>
+      <td className="py-1.5 pr-4 text-right font-medium" title={split ? `${split.length} джоб параллельно: ${split.join(" + ")} ранов` : undefined}>
+        {!l.runs ? "—" : split ? `${split.length} × ${qty(Math.max(...split))}` : qty(l.runs)}
+      </td>
+      <td className="py-1.5 pr-4 text-right text-graphite">{l.runs ? duration(split ? (l.seconds / l.runs) * Math.max(...split) : l.seconds) : "—"}</td>
       <td className="py-1.5 pr-4 text-right">{l.runs ? `${qty(l.progress.started)} / ${qty(l.progress.done)}` : "—"}</td>
       <td className={`py-1.5 pr-4 ${st.cls}`}>
         {l.runs === 0 ? "всё со склада" : st.label}
