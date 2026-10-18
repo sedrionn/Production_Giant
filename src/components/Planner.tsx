@@ -23,11 +23,19 @@ const STORAGE = "pg.plan.v3";
 
 export function Planner({ categories }: { categories: { key: string; label: string }[] }) {
   const [form, setForm] = useState<Form>(DEFAULT);
-  const [plan, setPlan] = useState<(PlanResponse & { text: string }) | null>(null);
+  const [plan, setPlan] = useState<(PlanResponse & { text: string; computedAt?: string }) | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [showSheet, setShowSheet] = useState(false);
+
+  // The last plan comes back when you return to the page (it is kept on the server).
+  useEffect(() => {
+    fetch("/api/plan")
+      .then((r) => r.json())
+      .then((b) => b.plan && setPlan((cur) => cur ?? b.plan))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     try {
@@ -156,6 +164,12 @@ export function Planner({ categories }: { categories: { key: string; label: stri
 
       {plan && (
         <div className={`space-y-8 ${busy ? "opacity-60" : ""}`}>
+          {plan.computedAt && (
+            <p className="text-sm text-graphite">
+              План составлен {new Date(plan.computedAt).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}: бюджет{" "}
+              {isk(plan.request.budget)}, заход раз в {plan.request.cadenceDays} дн. Если цены или склад обновились, составь заново.
+            </p>
+          )}
           <section className="grid gap-4 sm:grid-cols-4">
             <Stat label="Прибыль плана" value={isk(plan.profit, true)} title={full(plan.profit)} tone="gain" />
             <Stat label="Нужно вложить" value={isk(plan.capital)} title={`${full(plan.capital)} из бюджета ${full(plan.request.budget)}`} />

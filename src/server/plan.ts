@@ -11,6 +11,8 @@ import { CATEGORIES, isCaldariBranchShip, RACE_CALDARI, shipInputs, type Categor
 import { ownedBlueprintIndex, skillLevels } from "./characters";
 import { getDb, getSde, getSettings, priceBook } from "./data";
 import { recipeLookup } from "@/sde/recipes";
+import fs from "node:fs";
+import path from "node:path";
 import { stockIndex } from "./assets";
 import { planStages, type StageBuyInfo, type StageRecipe, type Stages } from "@/engine/stages";
 import { quotePrice } from "@/engine/pricing";
@@ -475,3 +477,26 @@ export function sheetText(p: PlanResponse): string {
   return lines.join("\n");
 }
 
+
+// ---- last plan --------------------------------------------------------------
+
+const LAST_PLAN = () => path.resolve("data/last-plan.json");
+
+/** Keeps the last plan on disk (data/ is local and never committed). Tests use an in-memory DB and skip it. */
+export function rememberPlan(p: PlanResponse & { text: string; computedAt: string }): void {
+  if (process.env.PG_APP_DB === ":memory:") return;
+  try {
+    fs.mkdirSync(path.dirname(LAST_PLAN()), { recursive: true });
+    fs.writeFileSync(LAST_PLAN(), JSON.stringify(p));
+  } catch {
+    /* not critical */
+  }
+}
+
+export function lastPlan(): (PlanResponse & { text: string; computedAt: string }) | null {
+  try {
+    return JSON.parse(fs.readFileSync(LAST_PLAN(), "utf8"));
+  } catch {
+    return null;
+  }
+}
