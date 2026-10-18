@@ -9,6 +9,7 @@
  * Quantities scale linearly with runs (inputs per run = the job's input / its runs, rounded up
  * per line). With ME the game rounds per job, so a line can be off by one unit.
  */
+import { materialQuantity } from "./materials";
 import type { Activity } from "./types";
 
 export interface StageRecipe {
@@ -17,8 +18,31 @@ export interface StageRecipe {
   activity: Activity;
   outputPerRun: number;
   secondsPerRun: number;
-  /** Inputs per run (may be fractional after ME). */
-  inputs: { typeId: number; perRun: number }[];
+  /**
+   * Inputs. With `base` the quantity is recomputed for the merged run count exactly as the game
+   * does (ME and facility bonus per job); otherwise `perRun` × runs, rounded up.
+   */
+  inputs: { typeId: number; perRun: number; base?: number }[];
+  /** ME of the blueprint and the facility material multiplier (needed with `base`). */
+  me?: number;
+  materialMultiplier?: number;
+  /** Longest single job, seconds: longer lines are split into parallel jobs. 0/undefined = no split. */
+  maxJobSeconds?: number;
+}
+
+/** Quantity of one input for `runs` runs of a recipe (one job). */
+export function inputQuantity(r: StageRecipe, i: StageRecipe["inputs"][number], runs: number): number {
+  if (runs <= 0) return 0;
+  if (i.base !== undefined && r.materialMultiplier !== undefined) return materialQuantity(i.base, runs, r.me ?? 0, r.materialMultiplier);
+  return Math.ceil(runs * i.perRun - 1e-9);
+}
+
+/** Split `runs` into the fewest equal jobs no longer than `maxSeconds` each. */
+export function splitRuns(runs: number, secondsPerRun: number, maxSeconds?: number): number[] {
+  if (runs <= 0) return [];
+  const k = maxSeconds && secondsPerRun > 0 ? Math.min(runs, Math.max(1, Math.ceil((runs * secondsPerRun) / maxSeconds - 1e-9))) : 1;
+  const base = Math.floor(runs / k);
+  return Array.from({ length: k }, (_, j) => base + (j < runs % k ? 1 : 0));
 }
 
 export interface StageBuyInfo {
@@ -53,7 +77,10 @@ export interface StageLine {
   runs: number;
   /** Units the jobs make (runs × output, can exceed what's needed). */
   output: number;
+  /** All runs back to back, seconds. */
   seconds: number;
+  /** Runs per parallel job (one entry = one job); a long line is split so each job fits the plan. */
+  jobs: number[];
   isProduct: boolean;
 }
 
@@ -80,6 +107,8 @@ export interface Stages {
   /** Same list without stock, for comparison. */
   costWithoutStock: number;
   costWithStock: number;
+  /** T1 blueprint copies for invention (one per attempt): copy from your BPO or buy BPCs. Filled by the server. */
+  blueprints?: { typeId: number; name: string; copies: number; forItem: string; how: "copy" | "buy" }[];
 }
 
 export function planStages(input: StageInput): Stages {
@@ -107,7 +136,7 @@ export function planStages(input: StageInput): Stages {
     add(runsOf, p.typeId, p.runs);
     add(demand, p.typeId, p.runs * (r?.outputPerRun ?? 1));
     // Each product job consumes its own inputs (rounded per job, as in game).
-    if (r) for (const i of r.inputs) add(demand, i.typeId, Math.ceil(p.runs * i.perRun - 1e-9));
+    if (r) for (const i of r.inputs) add(demand, i.typeId, inputQuantity(r, i, p.runs));
   }
 
   const left = new Map(stock);
@@ -126,7 +155,8 @@ export function planStages(input: StageInput): Stages {
     const d = depth.get(id)!;
     if (productIds.has(id) && d === 0) {
       const runs = runsOf.get(id) ?? 0;
-      lines.push({ typeId: id, name: r.name, activity: r.activity, depth: 0, need: demand.get(id) ?? 0, fromStock: 0, runs, output: runs * r.outputPerRun, seconds: runs * r.secondsPerRun, isProduct: true });
+      const jobs = input.products.filter((p) => p.typeId === id).map((p) => p.runs);
+      lines.push({ typeId: id, name: r.name, activity: r.activity, depth: 0, need: demand.get(id) ?? 0, fromStock: 0, runs, output: runs * r.outputPerRun, seconds: runs * r.secondsPerRun, jobs, isProduct: true });
       continue;
     }
     const need = demand.get(id) ?? 0;
@@ -134,8 +164,10 @@ export function planStages(input: StageInput): Stages {
     if (need <= 0) continue;
     const fromStock = take(id, need);
     const runs = Math.ceil((need - fromStock) / r.outputPerRun - 1e-9);
-    for (const i of r.inputs) add(demand, i.typeId, Math.ceil(runs * i.perRun - 1e-9));
-    lines.push({ typeId: id, name: r.name, activity: r.activity, depth: d, need, fromStock, runs, output: runs * r.outputPerRun, seconds: runs * r.secondsPerRun, isProduct: false });
+    // Each parallel job rounds its own materials, like in game.
+    const jobs = splitRuns(runs, r.secondsPerRun, r.maxJobSeconds);
+    for (const i of r.inputs) add(demand, i.typeId, jobs.reduce((s, j) => s + inputQuantity(r, i, j), 0));
+    lines.push({ typeId: id, name: r.name, activity: r.activity, depth: d, need, fromStock, runs, output: runs * r.outputPerRun, seconds: runs * r.secondsPerRun, jobs, isProduct: false });
   }
 
   const buyLines: BuyLine[] = [];

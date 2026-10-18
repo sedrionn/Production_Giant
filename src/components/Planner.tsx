@@ -185,7 +185,7 @@ export function Planner({ categories }: { categories: { key: string; label: stri
                 {l.prep.length > 0 && (
                   <p className="text-sm">
                     <span className="text-job">Компоненты и реакции на следующий круг:</span>{" "}
-                    {l.prep.map((p) => `${p.name} × ${qty(p.runs)}`).join(", ")}
+                    {l.prep.map((p) => `${p.name} × ${qty(p.runs)}${p.jobs > 1 ? ` (${p.jobs} джоб параллельно)` : ""}`).join(", ")}
                   </p>
                 )}
                 {l.start.length > 0 && (
@@ -357,7 +357,7 @@ function icsFor(p: PlanResponse): string {
     const lines = [
       l.finish.length ? `Забрать: ${summarize(l.finish)}` : "",
       ...byOwner(l.start).map(([o, j]) => `${o}: поставить ${summarize(j)}`),
-      l.prep.length ? `Компоненты и реакции: ${l.prep.map((p) => `${p.name} × ${p.runs}`).join(", ")}` : "",
+      l.prep.length ? `Компоненты и реакции: ${l.prep.map((p) => `${p.name} × ${p.runs}${p.jobs > 1 ? ` (${p.jobs} джоб)` : ""}`).join(", ")}` : "",
     ].filter(Boolean);
     return [
       "BEGIN:VEVENT",
@@ -365,7 +365,7 @@ function icsFor(p: PlanResponse): string {
       `DTSTAMP:${stamp}`,
       `DTSTART;VALUE=DATE:${fmt(day)}`,
       `DTEND;VALUE=DATE:${fmt(next)}`,
-      `SUMMARY:${esc(`EVE: заход — ${l.start.length + l.prep.length} джоб поставить, ${l.finish.length} забрать`)}`,
+      `SUMMARY:${esc(`EVE: заход — ${l.start.length + l.prep.reduce((a, p) => a + p.jobs, 0)} джоб поставить, ${l.finish.length} забрать`)}`,
       `DESCRIPTION:${esc(lines.join("\n"))}`,
       "END:VEVENT",
     ].join("\r\n");

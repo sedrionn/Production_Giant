@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { planStages, stageProgress, type StageBuyInfo, type StageRecipe } from "@/engine/stages";
+import { planStages, splitRuns, stageProgress, type StageBuyInfo, type StageRecipe } from "@/engine/stages";
 
 // SYNTHETIC chain: Hull ← 2 Component per run ← 3 Ore + 1 Gas per run (reaction at depth 2: Gas ← 5 Ice).
 const recipes = new Map<number, StageRecipe>([
@@ -86,5 +86,29 @@ describe("planStages: nothing left to build", () => {
   it("a type reached only through stock-covered inputs gets no line", () => {
     const s = planStages({ products: [{ typeId: 1, runs: 1 }], recipes, buy, stock: new Map([[2, 5]]) });
     expect(s.stages.flatMap((x) => x.lines).map((l) => l.typeId)).toEqual([2, 1]);
+  });
+});
+
+describe("planStages: game rounding on merged jobs", () => {
+  // SYNTHETIC: base 21 per run, ME 10, structure 1% → 18.711 per run. From a 1-run job the old
+  // per-run share was ceil(18.711) = 19; for 10 merged runs the game needs ceil(187.11) = 188, not 190.
+  const r = new Map<number, StageRecipe>([
+    [1, { typeId: 1, name: "Hull", activity: "manufacturing", outputPerRun: 1, secondsPerRun: 60, inputs: [{ typeId: 2, perRun: 2 }] }],
+    [2, { typeId: 2, name: "Part", activity: "manufacturing", outputPerRun: 2, secondsPerRun: 60, inputs: [{ typeId: 10, perRun: 19, base: 21 }], me: 10, materialMultiplier: 0.99 }],
+  ]);
+  it("inputs are recomputed with ME on the merged run count", () => {
+    const s = planStages({ products: [{ typeId: 1, runs: 10 }], recipes: r, buy, stock: new Map() });
+    expect(s.stages.find((x) => x.depth === 1)!.lines[0]).toMatchObject({ need: 20, runs: 10 });
+    expect(s.buy.find((b) => b.typeId === 10)!.need).toBe(188);
+  });
+  it("a line longer than the limit is split into equal parallel jobs, each rounded on its own", () => {
+    expect(splitRuns(10, 3600, 4 * 3600)).toEqual([4, 3, 3]);
+    expect(splitRuns(5, 3600)).toEqual([5]);
+    const long = new Map(r);
+    long.set(2, { ...r.get(2)!, maxJobSeconds: 300 });
+    const s = planStages({ products: [{ typeId: 1, runs: 10 }], recipes: long, buy, stock: new Map() });
+    expect(s.stages.find((x) => x.depth === 1)!.lines[0].jobs).toEqual([5, 5]);
+    // 2 × ceil(93.555) = 188.
+    expect(s.buy.find((b) => b.typeId === 10)!.need).toBe(188);
   });
 });

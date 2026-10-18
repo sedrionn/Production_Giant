@@ -342,6 +342,8 @@ export interface OwnedBlueprint {
   runs: number;
   /** BPO count + BPC count across characters and corp. */
   copies: number;
+  /** Runs left on every BPC of this type, longest first (copies differ: one 10-run, four 1-run…). */
+  bpcRuns: number[];
 }
 
 /** Best owned blueprint per blueprint type: BPO over BPC, then higher ME, then TE. */
@@ -356,15 +358,16 @@ function loadOwnedBlueprints(blueprintTypeIds?: number[]): Map<number, OwnedBlue
     : db.select().from(ownedBlueprints).all();
   const out = new Map<number, OwnedBlueprint>();
   for (const r of rows) {
-    const cand: OwnedBlueprint = { blueprintTypeId: r.typeId, me: r.me, te: r.te, isBpo: r.runs === -1, runs: r.runs, copies: 1 };
+    const cand: OwnedBlueprint = { blueprintTypeId: r.typeId, me: r.me, te: r.te, isBpo: r.runs === -1, runs: r.runs, copies: 1, bpcRuns: r.runs > 0 ? [r.runs] : [] };
     const cur = out.get(r.typeId);
     if (!cur) {
       out.set(r.typeId, cand);
       continue;
     }
+    const bpcRuns = [...cur.bpcRuns, ...cand.bpcRuns].sort((a, b) => b - a);
     const better =
       cand.isBpo !== cur.isBpo ? cand.isBpo : cand.me !== cur.me ? cand.me > cur.me : cand.te !== cur.te ? cand.te > cur.te : cand.runs > cur.runs;
-    out.set(r.typeId, { ...(better ? cand : cur), copies: cur.copies + 1 });
+    out.set(r.typeId, { ...(better ? cand : cur), copies: cur.copies + 1, bpcRuns });
   }
   return out;
 }

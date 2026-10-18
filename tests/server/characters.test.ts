@@ -104,7 +104,7 @@ describe("character sync (SYNTHETIC ESI)", () => {
 
   it("best owned blueprint: highest ME wins among BPCs; BPO flagged", () => {
     const idx = ch.ownedBlueprintIndex();
-    expect(idx.get(34829)).toMatchObject({ me: 4, te: 14, isBpo: false, runs: 20, copies: 2 });
+    expect(idx.get(34829)).toMatchObject({ me: 4, te: 14, isBpo: false, runs: 20, copies: 2, bpcRuns: [20, 10] });
     expect(idx.get(11890)).toMatchObject({ isBpo: true, me: 10 });
   });
 
