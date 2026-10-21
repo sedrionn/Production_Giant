@@ -219,3 +219,42 @@ describe("planWeek: a pin counts per item across routes", () => {
     expect(p.skipped).toEqual([{ name: "Ship 1", reason: "закреплено 3 шт., вошло 2: не хватает бюджета" }]);
   });
 });
+
+describe("planWeek: reaction length cap", () => {
+  // SYNTHETIC: a reaction sold as a product, 10 runs × 12 h = 5 days; a component reaction of 6 days.
+  const rx: PlanBatch = {
+    typeId: 9,
+    name: "Reaction",
+    runs: 10,
+    units: 2000,
+    profit: 100,
+    capital: 10,
+    jobs: [
+      { typeId: 8, name: "Sub reaction", activity: "reaction", runs: 12, seconds: 144 * H, depth: 1 },
+      { typeId: 9, name: "Reaction", activity: "reaction", runs: 10, seconds: 120 * H, depth: 0 },
+    ],
+  };
+  const rxSlots = (n: number): SlotState[] => Array.from({ length: n }, (_, i) => ({ kind: "reaction", owner: `R${i}`, freeAt: 0 }));
+
+  it("a 5-day product reaction runs as 3 parallel jobs of ≤ 2 days; the pooled one is split too", () => {
+    const p = planWeek({ candidates: [rx], slots: rxSlots(6), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 1e9, maxJobDays: { reaction: 2 } });
+    expect(p.jobs.map((j) => j.runs)).toEqual([4, 3, 3]);
+    expect(new Set(p.jobs.map((j) => j.slot)).size).toBe(3);
+    expect(Math.max(...p.jobs.map((j) => j.end - j.start))).toBeLessThanOrEqual(2);
+    expect(p.jobs.every((j) => j.start === 0)).toBe(true);
+    expect(p.batches[0]).toMatchObject({ start: 0, end: 2 });
+    expect(p.prep[0]).toMatchObject({ name: "Sub reaction", jobs: 3 });
+  });
+
+  it("without the cap it stays one job", () => {
+    const p = planWeek({ candidates: [rx], slots: rxSlots(6), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 1e9 });
+    expect(p.jobs).toHaveLength(1);
+    expect(p.prep[0].jobs).toBe(1);
+  });
+
+  it("not enough slots for all parts inside the week → the batch is not taken", () => {
+    const p = planWeek({ candidates: [rx], slots: rxSlots(1), budget: 100, cadenceDays: 2, horizonDays: 3, maxBatchesPerItem: 1, unitCap: () => 1e9, maxJobDays: { reaction: 2 } });
+    expect(p.batches).toHaveLength(0);
+    expect(p.jobs).toHaveLength(0);
+  });
+});

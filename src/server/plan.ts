@@ -33,6 +33,8 @@ export interface PlanRequest {
   caldariShipsFirst: boolean;
   /** Max share of the budget one item may take (0..1). */
   maxItemShare: number;
+  /** Longest reaction job, days: longer ones run as parallel jobs. 0 = no cap. */
+  maxReactionJobDays?: number;
   /** Items Nick always wants in the plan, with how many batches; planned before everything else. */
   pins?: { typeId: number; batches: number }[];
 }
@@ -349,6 +351,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     horizonDays: horizon,
     maxBatchesPerItem: 10,
     maxItemShare: req.maxItemShare,
+    maxJobDays: req.maxReactionJobDays ? { reaction: req.maxReactionJobDays } : undefined,
     unitCap: (id) => unitCap.get(id) ?? 0,
   });
 
@@ -381,7 +384,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     }
   }
 
-  const stages = stagesFor(plan, calcs, horizon);
+  const stages = stagesFor(plan, calcs, horizon, req.maxReactionJobDays);
 
   const sheet = candidates
     .map((b) => {
@@ -429,7 +432,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
  * Stages of the plan: all batches merged, what is in the stock hangars taken off (built
  * components and bought materials), plus datacores and decryptors for invention.
  */
-function stagesFor(plan: Plan, calcs: Map<string, CalcResponse>, horizonDays: number): { stages: Stages; stock: PlanResponse["stock"] } {
+function stagesFor(plan: Plan, calcs: Map<string, CalcResponse>, horizonDays: number, maxReactionDays?: number): { stages: Stages; stock: PlanResponse["stock"] } {
   const { source: sde } = getSde();
   const s = getSettings();
   const recipes = new Map<number, StageRecipe>();
@@ -455,7 +458,13 @@ function stagesFor(plan: Plan, calcs: Map<string, CalcResponse>, horizonDays: nu
         me: n.job.me,
         materialMultiplier: n.job.materialMultiplier,
         // Components and reactions must be ready inside the plan: split what is longer than the horizon.
-        maxJobSeconds: isProduct ? undefined : horizonDays * 86_400,
+        // Reactions (also sold ones) have their own cap, e.g. 2 days.
+        maxJobSeconds:
+          n.job.activity === "reaction" && maxReactionDays
+            ? Math.min(horizonDays, maxReactionDays) * 86_400
+            : isProduct
+              ? undefined
+              : horizonDays * 86_400,
         maxRunsPerJob: isProduct ? undefined : sde.getBlueprint(n.job.blueprintTypeId)?.maxProductionLimit || undefined,
       });
     }
