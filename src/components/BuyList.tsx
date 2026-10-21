@@ -70,7 +70,9 @@ export function BuyList({ stages, stockNote }: { stages: Stages; stockNote?: Rea
                 </td>
                 <td className="py-1 pr-4 text-right">{qty(l.need)}</td>
                 <td className="py-1 pr-4 text-right text-graphite">{l.fromStock ? qty(l.fromStock) : "—"}</td>
-                <td className="py-1 pr-4 text-right font-medium">{l.toBuy ? qty(l.toBuy) : "—"}</td>
+                <td className="py-1 pr-4 text-right font-medium" title={l.buffer ? `в т.ч. запас +${qty(l.buffer)}` : undefined}>
+                  {l.toBuy ? qty(l.toBuy) : "—"}
+                </td>
                 <td className="py-1 pr-4 text-right text-graphite" title={full(l.cost)}>
                   {l.toBuy ? isk(l.cost) : "—"}
                 </td>

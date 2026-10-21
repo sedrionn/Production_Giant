@@ -1,5 +1,6 @@
 import { count } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import { DEFAULT_BUY_BUFFER } from "@/engine/bonuses";
 import type { PriceMode } from "@/engine/pricing";
 import * as schema from "./schema";
 import { settings, structureProfiles } from "./schema";
@@ -30,6 +31,8 @@ export interface AppSettings {
   /** Freight ISK per m³: bought materials market → factory, and product factory → market. 0 = off. */
   freightInPerM3: number;
   freightOutPerM3: number;
+  /** Plan purchase list: extra share bought on top of what is needed after stock (0.01 = +1%). */
+  buyBuffer: number;
   /** Hidden from the overview and the plan: whole groups by rule, plus single items. */
   blacklist: { boosters: boolean; triglavian: boolean; edencom: boolean; typeIds: number[] };
   /** Full refresh (characters, prices, volumes) while the app runs; 0 = off. */
@@ -61,6 +64,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   ownBpcValue: "free",
   freightInPerM3: 0,
   freightOutPerM3: 0,
+  buyBuffer: DEFAULT_BUY_BUFFER,
   blacklist: { boosters: true, triglavian: true, edencom: true, typeIds: [] },
   autoRefreshHours: 24,
   lastAutoRefreshAt: null,

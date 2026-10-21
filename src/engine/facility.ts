@@ -1,4 +1,5 @@
 import {
+  defaultRigSecurity,
   RIG_MATERIAL_BONUS,
   RIG_TIME_BONUS,
   RIG_SCOPE_CATEGORIES,
@@ -85,7 +86,7 @@ export function applicableRigs(f: FacilityProfile, activity: Activity, item?: It
 
 /** Effective bonus of one rig in this security band. */
 export function rigBonus(r: RigRule, key: "material" | "time" | "cost", security: Security): number {
-  return (r[key] ?? 0) * (r.security?.[security] ?? SECURITY_RIG_MULTIPLIER[security]);
+  return (r[key] ?? 0) * (r.security?.[security] ?? defaultRigSecurity(r.activity)[security]);
 }
 
 // Rigs covering the same group can't be fitted twice in game; overlapping rules
@@ -116,7 +117,7 @@ export function costMultiplier(f: FacilityProfile, activity: Activity, item?: It
 
 /** Converts the stage-1 preset format ({ manufacturing: { material: "t2", time: "t1" } }) into rules. */
 export function normalizeRigs(raw: unknown): RigRule[] {
-  if (Array.isArray(raw)) return raw as RigRule[];
+  if (Array.isArray(raw)) return (raw as RigRule[]).map(fixReactionSecurity);
   if (!raw || typeof raw !== "object") return [];
   const out: RigRule[] = [];
   for (const [activity, setup] of Object.entries(raw as Record<string, { material?: RigTier; time?: RigTier }>)) {
@@ -125,6 +126,19 @@ export function normalizeRigs(raw: unknown): RigRule[] {
     if (material || time) out.push({ activity: activity as Activity, scopes: ["all"], material, time });
   }
   return out;
+}
+
+/**
+ * Older presets saved reaction rigs with the standard ×1 / ×1.9 / ×2.1 multipliers (the editor
+ * filled them in). No reactor rig has those, so such a rule falls back to the reactor defaults.
+ */
+function fixReactionSecurity(r: RigRule): RigRule {
+  if (r.activity !== "reaction" || !r.security) return r;
+  const std = (["high", "low", "null"] as const).every((z) => r.security?.[z] === SECURITY_RIG_MULTIPLIER[z]);
+  if (!std) return r;
+  const rest = { ...r };
+  delete rest.security;
+  return rest;
 }
 
 export const NPC_STATION: FacilityProfile = {

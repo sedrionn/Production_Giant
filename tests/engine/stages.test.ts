@@ -48,6 +48,17 @@ describe("planStages", () => {
     });
     expect(s.buy.find((b) => b.typeId === 20)).toMatchObject({ need: 10, fromStock: 4, toBuy: 6, cost: 6000, note: "инвент" });
   });
+
+  it("buys a safety margin on top of what is short, rounded up", () => {
+    const s = planStages({ products: [{ typeId: 1, runs: 10 }], recipes, buy, stock: new Map([[10, 7]]), buffer: 0.01 });
+    // Ore: need 60, 7 in stock, 53 short → 53 × 1.01 = 53.53 → 54.
+    expect(s.buy.find((b) => b.typeId === 10)).toMatchObject({ need: 60, fromStock: 7, toBuy: 54, buffer: 1, cost: 540 });
+  });
+
+  it("no margin when stock covers everything", () => {
+    const s = planStages({ products: [{ typeId: 1, runs: 1 }], recipes, buy, stock: new Map([[10, 100], [11, 100]]), buffer: 0.05 });
+    expect(s.buy.find((b) => b.typeId === 10)).toMatchObject({ toBuy: 0, buffer: 0 });
+  });
 });
 
 describe("stageProgress", () => {

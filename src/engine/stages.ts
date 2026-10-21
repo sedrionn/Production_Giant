@@ -68,6 +68,8 @@ export interface StageInput {
   stock: Map<number, number>;
   /** Extra purchases outside the build graph (invention: datacores, decryptors). */
   extraBuy?: { typeId: number; quantity: number; note: string }[];
+  /** Safety margin on what is bought after stock (0.01 = +1%, rounded up). Short is worse than a few extra. */
+  buffer?: number;
 }
 
 export interface StageLine {
@@ -93,7 +95,10 @@ export interface BuyLine {
   name: string;
   need: number;
   fromStock: number;
+  /** Bought, including the safety margin. */
   toBuy: number;
+  /** Of toBuy, units added as the safety margin. */
+  buffer: number;
   unitPrice: number | null;
   /** toBuy × unitPrice; null when unpriced. */
   cost: number | null;
@@ -181,14 +186,15 @@ export function planStages(input: StageInput): Stages {
   const line = (id: number, need: number, note?: string): BuyLine => {
     const b = buy.get(id);
     const fromStock = take(id, need);
-    const toBuy = need - fromStock;
+    const short = need - fromStock;
+    const toBuy = short > 0 ? Math.ceil(short * (1 + Math.max(0, input.buffer ?? 0)) - 1e-9) : 0;
     const price = b?.unitPrice ?? null;
     if (price !== null) {
       costWithout += need * price;
       costWith += toBuy * price;
       saved += fromStock * price;
     }
-    return { typeId: id, name: b?.name ?? `#${id}`, need, fromStock, toBuy, unitPrice: price, cost: price === null ? null : toBuy * price, volume: toBuy * (b?.volume ?? 0), ...(note ? { note } : {}) };
+    return { typeId: id, name: b?.name ?? `#${id}`, need, fromStock, toBuy, buffer: toBuy - short, unitPrice: price, cost: price === null ? null : toBuy * price, volume: toBuy * (b?.volume ?? 0), ...(note ? { note } : {}) };
   };
   for (const [id, need] of demand) {
     if (recipes.has(id) || need <= 0) continue;
@@ -202,6 +208,7 @@ export function planStages(input: StageInput): Stages {
       existing.need += extra.need;
       existing.fromStock += extra.fromStock;
       existing.toBuy += extra.toBuy;
+      existing.buffer += extra.buffer;
       existing.cost = existing.cost === null || extra.cost === null ? null : existing.cost + extra.cost;
       existing.volume += extra.volume;
       existing.note = e.note;
