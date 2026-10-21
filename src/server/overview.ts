@@ -6,6 +6,7 @@ import { calculate, priceTypesFor, type CalcRequest } from "./calculate";
 import { blacklistReason, categoryHint, isCapital, listCategory, type CategoryKey } from "./catalog";
 import { hasCharacters, ownedBlueprintIndex } from "./characters";
 import { depthFor, getSde, getSettings, volumesFor } from "./data";
+import type { SdeType } from "@/sde/types";
 
 /** When a batch looks hard to sell. UX thresholds, not game constants. */
 export const MARKET_RISK = {
@@ -102,6 +103,22 @@ export function computeOverview(category: CategoryKey, extra: Partial<CalcReques
   const { source: sde } = getSde();
   const s = getSettings();
   const items = itemsOf(category);
+  const { rows, oldest } = overviewRows(items, extra);
+  return {
+    category,
+    hint: categoryHint(sde, category, hasCharacters()) ?? (items.length ? null : "В этой категории ничего не нашлось в SDE"),
+    rows,
+    hidden: hiddenCount(category),
+    targetJobDays: s.targetJobDays,
+    pricesOldest: oldest,
+    computedMs: Date.now() - t0,
+  };
+}
+
+/** Overview rows for any items (a category, or single items pinned in the plan). */
+export function overviewRows(items: SdeType[], extra: Partial<CalcRequest> = {}): { rows: OverviewRow[]; oldest: string | null } {
+  const { source: sde } = getSde();
+  const s = getSettings();
   const volumes = volumesFor(items.map((i) => i.typeId), s.priceRegionId);
   const depth = depthFor(items.map((i) => i.typeId), s.priceLocationId);
   let oldest: string | null = null;
@@ -158,16 +175,7 @@ export function computeOverview(category: CategoryKey, extra: Partial<CalcReques
       };
     }
   });
-
-  return {
-    category,
-    hint: categoryHint(sde, category, hasCharacters()) ?? (items.length ? null : "В этой категории ничего не нашлось в SDE"),
-    rows,
-    hidden: hiddenCount(category),
-    targetJobDays: s.targetJobDays,
-    pricesOldest: oldest,
-    computedMs: Date.now() - t0,
-  };
+  return { rows, oldest };
 }
 
 /** Market types to refresh for a whole category, and products for volume history. */

@@ -7,7 +7,7 @@
  */
 import { INVENTION } from "./bonuses";
 import type { FacilityProfile } from "./facility";
-import { estimatedItemValue, jobInstallCost } from "./jobCost";
+import { estimatedItemValue, jobInstallCost, jobTime, type IndustrySkills } from "./jobCost";
 import { acquisitionFeeRate, quotePrice, type FeeRates, type MarketQuote, type PriceMode } from "./pricing";
 import type { BlueprintActivity, Decryptor } from "./types";
 
@@ -40,6 +40,8 @@ export interface InventionInput {
   costIndex: number;
   /** Optional decryptor consumed per attempt; its price comes from `quote`. */
   decryptor?: Decryptor | null;
+  /** Industry skills for the job time (Advanced Industry). */
+  timeSkills?: IndustrySkills;
 }
 
 export interface InventionResult {
@@ -57,6 +59,8 @@ export interface InventionResult {
   costPerAttempt: number;
   costPerSuccess: number;
   costPerRun: number;
+  /** Lab time of one attempt (one invention run), seconds. */
+  secondsPerAttempt: number;
   missingPrices: number[];
 }
 
@@ -100,6 +104,7 @@ export function inventionCost(i: InventionInput): InventionResult {
     costPerAttempt,
     costPerSuccess,
     costPerRun: costPerSuccess / runsPerSuccess,
+    secondsPerAttempt: jobTime(i.invention.time, 1, 0, "invention", i.facility, i.timeSkills),
     missingPrices,
   };
 }

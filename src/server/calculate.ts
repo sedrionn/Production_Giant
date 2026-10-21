@@ -187,6 +187,7 @@ export function calculate(req: CalcRequest): CalcResponse {
       facility: toFacility(mfgProfile),
       costIndex: mfgIdx.indices.invention ?? 0,
       decryptor: d,
+      timeSkills: skills,
     });
     return { ...r, sourceId: src.blueprintTypeId, sourceName: name(src.blueprintTypeId) };
   };

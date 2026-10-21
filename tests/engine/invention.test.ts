@@ -32,6 +32,11 @@ describe("inventionCost on REAL data (Hammerhead II)", () => {
   };
   const r = inventionCost(base);
 
+  it("lab time per attempt: SDE base time (15 900 s), Advanced Industry 3%/lvl", () => {
+    expect(r.secondsPerAttempt).toBe(15900);
+    expect(inventionCost({ ...base, timeSkills: { advancedIndustry: 5 } }).secondsPerAttempt).toBeCloseTo(15900 * 0.85);
+  });
+
   it("10 runs per success at 34% base", () => {
     expect(r.runsPerSuccess).toBe(10);
     expect(r.chance).toBeCloseTo(0.34 * (1 + 4 / 40 + 8 / 30));
