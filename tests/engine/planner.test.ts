@@ -201,3 +201,21 @@ describe("planWeek: invention on lab slots", () => {
     expect(p.skipped[0].reason).toBe("не хватит лабораторных слотов на инвент");
   });
 });
+
+describe("planWeek: a pin counts per item across routes", () => {
+  // SYNTHETIC: own BPCs (2 copies, better) and invention (unlimited) for the same item.
+  const own = { ...ship(1, 200, 10), key: "1:owned", maxBatches: 2, pinned: 3 };
+  const inv = { ...ship(1, 100, 10), key: "1:invention", pinned: 3 };
+
+  it("own BPCs run out → the rest comes from invention", () => {
+    const p = planWeek({ candidates: [inv, own], slots: slots(6), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 0 });
+    expect(p.batches.map((b) => b.key)).toEqual(["1:owned", "1:owned", "1:invention"]);
+    expect(p.skipped).toEqual([]);
+  });
+
+  it("not enough budget for all: one line with how many fit and why", () => {
+    const p = planWeek({ candidates: [inv, own], slots: slots(6), budget: 25, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 0 });
+    expect(p.batches).toHaveLength(2);
+    expect(p.skipped).toEqual([{ name: "Ship 1", reason: "закреплено 3 шт., вошло 2: не хватает бюджета" }]);
+  });
+});

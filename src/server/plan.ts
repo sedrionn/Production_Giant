@@ -292,18 +292,14 @@ export function buildPlan(req: PlanRequest): PlanResponse {
       return [];
     }
   });
-  // A pinned item is pinned on its best route (own blueprint or invention).
-  const pinnedRoute = new Map<number, (typeof sized)[number]>();
-  for (const x of sized) {
-    if (!pins.has(x.r.typeId)) continue;
-    const cur = pinnedRoute.get(x.r.typeId);
-    if (!cur || x.score > cur.score) pinnedRoute.set(x.r.typeId, x);
-  }
-  const isPinned = (x: (typeof sized)[number]) => pinnedRoute.get(x.r.typeId) === x;
+  // A pinned item is pinned on every route (own BPCs, then invention): the planner takes the best
+  // one first and adds the rest from the next when it runs out.
+  const pinnedRoute = new Set(sized.filter((x) => pins.has(x.r.typeId)).map((x) => x.r.typeId));
+  const isPinned = (x: (typeof sized)[number]) => pinnedRoute.has(x.r.typeId);
   const top = sized
     .filter((x) => x.profit >= req.minBatchProfit || isPinned(x))
     .sort((a, b) => Number(isPinned(b)) - Number(isPinned(a)) || a.tier - b.tier || b.score * b.weight - a.score * a.weight)
-    .slice(0, (req.candidates ?? 150) + pinnedRoute.size);
+    .slice(0, (req.candidates ?? 150) + sized.filter(isPinned).length);
 
   const calcs = new Map<string, CalcResponse>();
   const unpriced: string[] = [];

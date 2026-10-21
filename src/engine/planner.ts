@@ -239,22 +239,37 @@ export function planWeek(input: {
     made.set(c, (made.get(c) ?? 0) + 1);
     return null;
   };
-  const fill = (c: PlanBatch, upTo: number, pinned: boolean) => {
+  const fill = (c: PlanBatch, upTo: number) => {
     if (!c.jobs.some((j) => j.depth === 0)) return;
     while ((made.get(c) ?? 0) < Math.min(upTo, c.maxBatches ?? Infinity)) {
-      const why = place(c, pinned);
+      const why = place(c, false);
       if (!why) continue;
-      // A pinned item that did not fit is always reported; others only when nothing of them fit.
-      if (pinned) skipped.push({ name: c.name, reason: `закреплено ${c.pinned} шт., вошло ${made.get(c) ?? 0}: ${why}` });
-      else if (!made.get(c) && !reported.has(c.key ?? String(c.typeId))) skipped.push({ name: c.name, reason: why });
+      // Reported only when nothing of the item fit.
+      if (!made.get(c) && !reported.has(c.key ?? String(c.typeId))) skipped.push({ name: c.name, reason: why });
       reported.add(c.key ?? String(c.typeId));
       break;
     }
   };
 
-  // Pinned first (they may lose money: Nick decided), then everything by tier and score.
-  for (const { c } of ranked) if (c.pinned) fill(c, c.pinned, true);
-  for (const { c } of ranked) if (c.profit > 0) fill(c, input.maxBatchesPerItem, false);
+  // Pinned first (they may lose money: Nick decided). The count is per item: when one route runs out
+  // (own BPCs used up), the next one (invention) adds the rest.
+  const pinnedItems = new Map<number, PlanBatch[]>();
+  for (const { c } of ranked) if (c.pinned && c.jobs.some((j) => j.depth === 0)) pinnedItems.set(c.typeId, [...(pinnedItems.get(c.typeId) ?? []), c]);
+  for (const routes of pinnedItems.values()) {
+    const want = Math.max(...routes.map((c) => c.pinned ?? 0));
+    const count = () => routes.reduce((n, c) => n + (made.get(c) ?? 0), 0);
+    let why: string | null = null;
+    for (const c of routes) {
+      while (count() < want && (made.get(c) ?? 0) < (c.maxBatches ?? Infinity)) {
+        why = place(c, true);
+        if (why) break;
+      }
+      if (count() >= want) break;
+    }
+    if (count() < want) skipped.push({ name: routes[0].name, reason: `закреплено ${want} шт., вошло ${count()}: ${why ?? "кончились свои BPC, инвента нет"}` });
+    for (const c of routes) reported.add(c.key ?? String(c.typeId));
+  }
+  for (const { c } of ranked) if (c.profit > 0) fill(c, input.maxBatchesPerItem);
 
   // Prep: deepest level at the first login, one level per login after that.
   const prepJobs = [...prep.values()];

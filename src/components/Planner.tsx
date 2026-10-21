@@ -208,7 +208,10 @@ export function Planner({ categories }: { categories: { key: string; label: stri
                     <span className="text-job">Инвент в лаборатории на следующий круг:</span>{" "}
                     {l.prep
                       .filter((p) => p.activity === "invention")
-                      .map((p) => `${p.name.replace(" (инвент)", "")} — ${qty(p.runs)} попыток, ${hours(p.seconds)}${p.jobs > 1 ? ` (${p.jobs} джоб параллельно)` : ""}`)
+                      .map(
+                        (p) =>
+                          `${p.name.replace(" (инвент)", "")} — ${qty(p.runs)} попыток, ${p.jobs > 1 ? `${p.jobs} джобы параллельно по ~${hours(p.seconds / p.jobs)}` : `одна джоба на ${hours(p.seconds)}`}`,
+                      )
                       .join(", ")}
                   </p>
                 )}
@@ -374,7 +377,8 @@ function Pins({ pins, onChange }: { pins: Form["pins"]; onChange: (p: Form["pins
   );
 }
 
-const hours = (sec: number) => (sec >= 86_400 ? `${(sec / 86_400).toFixed(1)} дн.` : `${Math.round(sec / 3600)} ч`);
+const hours = (sec: number) =>
+  sec >= 86_400 ? `${(sec / 86_400).toFixed(1)} дн.` : sec >= 3600 ? `${(sec / 3600).toFixed(sec < 36_000 ? 1 : 0)} ч` : `${Math.max(1, Math.round(sec / 60))} мин`;
 
 function Num({ label, value, onChange, step, min, max }: { label: string; value: number; onChange: (v: number) => void; step: number; min?: number; max?: number }) {
   return (
