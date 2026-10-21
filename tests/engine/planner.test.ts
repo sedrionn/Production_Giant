@@ -42,7 +42,7 @@ const slots = (n: number, freeAt = 0): SlotState[] => Array.from({ length: n }, 
 
 describe("planWeek (steady state: hulls from ready components, next components pooled)", () => {
   it("hull starts at today's login; components for the next round are one merged job", () => {
-    const p = planWeek({ candidates: [ship(1, 100, 10)], slots: slots(2), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 2, unitCap: () => 99 });
+    const p = planWeek({ candidates: [ship(1, 100, 10)], slots: slots(3), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 2, unitCap: () => 99 });
     expect(p.batches).toHaveLength(2);
     expect(p.jobs.map((j) => j.start)).toEqual([0, 0]);
     expect(p.prep).toEqual([expect.objectContaining({ name: "Component", runs: 16, seconds: 20 * H, start: 0 })]);
@@ -119,11 +119,13 @@ describe("planWeek (steady state: hulls from ready components, next components p
     // 3 batches × 60 h of components = 180 h > 7-day plan → 2 jobs.
     const long = (id: number): PlanBatch => ({ ...ship(id, 100, 10), jobs: [{ typeId: 500, name: "Component", activity: "manufacturing", runs: 10, seconds: 60 * H, depth: 1 }, { typeId: id, name: `Ship ${id}`, activity: "manufacturing", runs: 4, seconds: 40 * H, depth: 0 }] });
     const p = planWeek({ candidates: [long(1)], slots: slots(6), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 3, unitCap: () => 99 });
-    expect(p.prep[0]).toMatchObject({ runs: 30, jobs: 2 });
+    const jobsOf = (x: typeof p) => x.prep.filter((j) => j.typeId === 500).reduce((n, j) => n + j.jobs, 0);
+    expect(p.prep.reduce((n, j) => n + j.runs, 0)).toBe(30);
+    expect(jobsOf(p)).toBe(2);
     // The blueprint allows only 5 runs per job → 6 jobs.
     const capped = long(1);
     capped.jobs[0].maxRunsPerJob = 5;
-    expect(planWeek({ candidates: [capped], slots: slots(6), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 3, unitCap: () => 99 }).prep[0].jobs).toBe(6);
+    expect(jobsOf(planWeek({ candidates: [capped], slots: slots(6), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 3, unitCap: () => 99 }))).toBe(6);
   });
 
   it("busy slots push the start to the login after they free up", () => {
@@ -184,7 +186,7 @@ describe("planWeek: invention on lab slots", () => {
   const labs = (n: number): SlotState[] => Array.from({ length: n }, (_, i) => ({ kind: "science", owner: `C${i}`, freeAt: 0 }));
 
   it("attempts are pooled and rounded up once; invention starts at the first login; lab time does not change the ranking", () => {
-    const p = planWeek({ candidates: [invented(1)], slots: [...slots(2), ...labs(1)], budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 2, unitCap: () => 99 });
+    const p = planWeek({ candidates: [invented(1)], slots: [...slots(3), ...labs(1)], budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 2, unitCap: () => 99 });
     expect(p.batches).toHaveLength(2);
     const inv = p.prep.find((x) => x.activity === "invention")!;
     expect(inv).toMatchObject({ runs: 5, start: 0 });
@@ -256,5 +258,31 @@ describe("planWeek: reaction length cap", () => {
     const p = planWeek({ candidates: [rx], slots: rxSlots(1), budget: 100, cadenceDays: 2, horizonDays: 3, maxBatchesPerItem: 1, unitCap: () => 1e9, maxJobDays: { reaction: 2 } });
     expect(p.batches).toHaveLength(0);
     expect(p.jobs).toHaveLength(0);
+  });
+});
+
+describe("planWeek: pooled jobs go on real free slots", () => {
+  it("slots busy with hulls → components wait for the next login", () => {
+    const p = planWeek({ candidates: [ship(1, 100, 10)], slots: slots(2), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 2, unitCap: () => 99 });
+    expect(p.jobs.map((j) => j.start)).toEqual([0, 0]);
+    expect(p.prep).toEqual([expect.objectContaining({ name: "Component", start: 2 })]);
+    expect(p.warnings).toEqual([]);
+  });
+
+  it("more parallel jobs than slots: the rest moves to the next login; past the end of the plan → a warning", () => {
+    // SYNTHETIC: 30 reaction jobs of 1.5 days (45 slot-days, fits 2 slots × 28 days in total), but
+    // each one holds its slot until the next login (2 days): only 28 start before the end.
+    const rx: PlanBatch = {
+      ...ship(1, 100, 10),
+      jobs: [
+        { typeId: 7, name: "Sub reaction", activity: "reaction", runs: 30, seconds: 30 * 36 * H, depth: 1 },
+        { typeId: 1, name: "Ship 1", activity: "manufacturing", runs: 4, seconds: 40 * H, depth: 0 },
+      ],
+    };
+    const rxSlots: SlotState[] = [0, 1].map((i) => ({ kind: "reaction", owner: `R${i}`, freeAt: 0 }));
+    const p = planWeek({ candidates: [rx], slots: [...slots(1), ...rxSlots], budget: 100, cadenceDays: 2, horizonDays: 28, maxBatchesPerItem: 1, unitCap: () => 99, maxJobDays: { reaction: 1.5 } });
+    const sub = p.prep.filter((j) => j.typeId === 7);
+    expect(sub.map((j) => [j.start, j.jobs])).toEqual([[0, 2], [2, 2], [4, 2], [6, 2], [8, 2], [10, 2], [12, 2], [14, 2], [16, 2], [18, 2], [20, 2], [22, 2], [24, 2], [26, 2], [28, 2]]);
+    expect(p.warnings).toEqual(["Sub reaction: 2 из 30 джоб — не хватает свободных реакционных слотов до конца плана, начнутся позже"]);
   });
 });

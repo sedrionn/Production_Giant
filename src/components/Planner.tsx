@@ -202,6 +202,13 @@ export function Planner({ categories }: { categories: { key: string; label: stri
 
           <section className="space-y-3">
             <h2 className="font-display text-2xl font-semibold">По заходам</h2>
+            {plan.warnings?.length > 0 && (
+              <ul className="space-y-0.5 rounded border border-loss/50 bg-loss/10 px-4 py-2 text-sm text-loss">
+                {plan.warnings.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+            )}
             {plan.logins.map((l) => (
               <div key={l.day} className="rounded border border-line bg-sheet/40 px-4 py-3">
                 <p className="font-medium">{dayLabel(l.day)}</p>

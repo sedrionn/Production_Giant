@@ -528,6 +528,7 @@ export function sheetText(p: PlanResponse): string {
     `Бюджет ${r.budget.toLocaleString("ru-RU")} ISK, заход раз в ${r.cadenceDays} дн., горизонт ${r.horizonDays} дн., рынок до ${Math.round(r.marketShare * 100)}% недельного объёма, партии от ${r.minBatchProfit.toLocaleString("ru-RU")} ISK прибыли.`,
     `Слоты: ${p.slots.map((s) => `${s.owner} — производство ${s.manufacturing.total} (занято ${s.manufacturing.busy}), реакции ${s.reaction.total} (занято ${s.reaction.busy}), лаборатории ${s.science.total} (занято ${s.science.busy})`).join("; ")}.`,
     ...(r.pins?.length ? [`Закреплено: ${r.pins.map((x) => `${sheetName(x.typeId)} × ${x.batches}`).join(", ")}.`] : []),
+    ...(p.warnings.length ? ["", "Предупреждения плана:", ...p.warnings.map((w) => `- ${w}`)] : []),
     "",
     "Предмет | категория | раны | декриптор | прибыль | капитал | слото-дней | прибыль/слото-день | джоб | дней рынка | риски",
     ...p.sheet.map((s) =>
