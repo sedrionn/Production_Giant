@@ -39,3 +39,18 @@ describe("buildPlan: pins and lab slots (real fixtures)", () => {
     expect(plan.buildPlan(req).batches).toEqual([]);
   });
 });
+
+describe("buildPlan: no market", () => {
+  it("a pinned product without market is still planned, at its real (buy-order) price", async () => {
+    const { getDb, getSettings } = await import("@/server/data");
+    const { marketStats } = await import("@/db/schema");
+    // SYNTHETIC history: Hammerhead II traded on 2 days out of 30.
+    getDb()
+      .insert(marketStats)
+      .values({ typeId: 2185, regionId: getSettings().priceRegionId, avgDailyVolume7d: 0, avgDailyVolume30d: 0.1, vwap7d: null, vwap30d: 1, median30d: 1, daysTraded7d: 0, daysTraded30d: 2 })
+      .run();
+    const pinned = plan.buildPlan({ ...req, pins: [{ typeId: 2185, batches: 1 }] });
+    expect(pinned.batches.map((b) => b.name)).toEqual(["Hammerhead II"]);
+    expect(pinned.batches[0].profit).toBeLessThan(0); // sold into buy orders only: at a loss, but pinned
+  });
+});

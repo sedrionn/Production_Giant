@@ -40,6 +40,7 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
   const [rigSize, setRigSize] = useState<RigSize>("all");
+  const [hideNoMarket, setHideNoMarket] = useState(true);
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "iskPerHour", dir: -1 });
   const [task, setTask] = useState<TaskState | null>(null);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
@@ -53,17 +54,18 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
 
   useEffect(() => {
     try {
-      const s = JSON.parse(localStorage.getItem(STORAGE) ?? "{}") as { cat?: string; sort?: typeof sort };
+      const s = JSON.parse(localStorage.getItem(STORAGE) ?? "{}") as { cat?: string; sort?: typeof sort; hideNoMarket?: boolean };
       if (s.cat && categories.some((c) => c.key === s.cat)) setCat(s.cat);
       if (s.sort) setSort(s.sort);
+      if (s.hideNoMarket === false) setHideNoMarket(false);
     } catch {}
   }, [categories]);
 
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE, JSON.stringify({ cat, sort }));
+      localStorage.setItem(STORAGE, JSON.stringify({ cat, sort, hideNoMarket }));
     } catch {}
-  }, [cat, sort]);
+  }, [cat, sort, hideNoMarket]);
 
   const load = useCallback(async (key: string) => {
     setLoading(true);
@@ -119,7 +121,8 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
     const isRigs = cat.startsWith("rigs");
     const list = (data?.rows ?? [])
       .filter((r) => !q || r.name.toLowerCase().includes(q) || r.group.toLowerCase().includes(q))
-      .filter((r) => !isRigs || rigSize === "all" || RIG_SIZES[rigSize].some((p) => r.name.startsWith(p)));
+      .filter((r) => !isRigs || rigSize === "all" || RIG_SIZES[rigSize].some((p) => r.name.startsWith(p)))
+      .filter((r) => !hideNoMarket || !r.priceFlags?.some((f) => f.kind === "no_market"));
     const val = (r: OverviewRow) => (sort.key === "name" ? r.name : r[sort.key]);
     return [...list].sort((a, b) => {
       const x = val(a);
@@ -128,7 +131,8 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
       if (y === null || y === undefined) return -1;
       return (x < y ? -1 : x > y ? 1 : 0) * sort.dir;
     });
-  }, [data, filter, sort, cat, rigSize]);
+  }, [data, filter, sort, cat, rigSize, hideNoMarket]);
+  const noMarket = (data?.rows ?? []).filter((r) => r.priceFlags?.some((f) => f.kind === "no_market")).length;
 
   const running = task && !task.finishedAt;
 
@@ -193,11 +197,15 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
             ))}
           </div>
         )}
+        <label className="ml-auto flex items-center gap-1.5 text-sm text-graphite" title="Сделки меньше чем в 10 днях из 30 или истории нет: продать можно только в buy-ордера">
+          <input type="checkbox" className="accent-[var(--marker)]" checked={hideNoMarket} onChange={(e) => setHideNoMarket(e.target.checked)} />
+          Скрыть неликвид{noMarket ? ` (${noMarket})` : ""}
+        </label>
         <input
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           placeholder="Фильтр по названию или группе"
-          className="ml-auto w-72 rounded border border-line bg-sheet px-3 py-1.5 focus:border-marker focus:outline-none"
+          className=" w-72 rounded border border-line bg-sheet px-3 py-1.5 focus:border-marker focus:outline-none"
         />
       </div>
 
@@ -261,13 +269,18 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
                       сложно продать
                     </span>
                   )}
+                  {r.priceFlags?.map((f) => (
+                    <span key={f.kind} className="ml-2 rounded border border-loss/60 px-1.5 text-xs text-loss" title={r.priceNote}>
+                      {f.kind === "no_market" ? "нет рынка" : f.label}
+                    </span>
+                  ))}
                   {r.capital && (
                     <span className="ml-2 rounded border border-job/60 px-1.5 text-xs text-job" title="Капитал: курьером не возится, доставка в цене не учитывается">
                       капитал
                     </span>
                   )}
                 </td>
-                <td className={`py-1.5 pr-4 text-right ${tone(r.profit)}`} title={full(r.profit)}>
+                <td className={`py-1.5 pr-4 text-right ${tone(r.profit)}`} title={[full(r.profit), r.priceNote && `Цена продажи: ${r.priceNote}`].filter(Boolean).join("\n")}>
                   {isk(r.profit, true)}
                 </td>
                 <td className="py-1.5 pr-4 text-right text-graphite" title={full(r.profitPerRun)}>

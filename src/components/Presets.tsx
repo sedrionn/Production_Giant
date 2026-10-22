@@ -396,6 +396,7 @@ export function SettingsForm() {
             className={input}
           />
         </L>
+        <MarketSanityFields s={s} set={set} />
         <L label="Свои BPC в расчёте">
           <select value={s.ownBpcValue} onChange={(e) => set({ ownBpcValue: e.target.value as AppSettings["ownBpcValue"] })} className={input}>
             <option value="free">бесплатные (уже оплачены)</option>
@@ -478,5 +479,37 @@ function L({ label, children, className = "" }: { label: string; children: React
       <span className="text-sm text-graphite">{label}</span>
       {children}
     </label>
+  );
+}
+
+/** Thresholds of the sale-price check against market history (src/engine/marketSanity.ts). */
+function MarketSanityFields({ s, set }: { s: AppSettings; set: (p: Partial<AppSettings>) => void }) {
+  const m = s.marketSanity;
+  const field = (label: string, title: string, value: number, apply: (v: number) => Partial<AppSettings["marketSanity"]>, step: number, min: number, max: number) => (
+    <L label={label}>
+      <input
+        type="number"
+        title={title}
+        step={step}
+        min={min}
+        max={max}
+        value={value}
+        onChange={(e) => set({ marketSanity: { ...m, ...apply(Math.min(max, Math.max(min, Number(e.target.value)))) } })}
+        className={input}
+      />
+    </L>
+  );
+  return (
+    <>
+      {field("Цена продукта не выше истории +, %", "Продажа считается не дороже средней цены сделок за 7 дней (или 30) плюс этот процент", Math.round(m.maxPremium * 100), (v) => ({ maxPremium: v / 100 }), 5, 0, 200)}
+      {field("Нет рынка: сделки меньше чем в, дней из 30", "Тогда продукт считается по buy-ордеру и не берётся в план", m.minDaysTraded30, (v) => ({ minDaysTraded30: Math.round(v) }), 1, 0, 30)}
+      {field("Цена за 7 дней, если сделки от, дней", "Иначе опорная цена берётся за 30 дней", m.minDays7, (v) => ({ minDays7: Math.round(v) }), 1, 1, 7)}
+      {field("Плашка «цена выше истории» от, ×", "sell_min выше опорной цены во столько раз", m.spikeRatio, (v) => ({ spikeRatio: v }), 0.1, 1, 100)}
+      {field("Плашка «широкий спред» от, ×", "sell_min / buy_max", m.maxSpread, (v) => ({ maxSpread: v }), 0.5, 1, 100)}
+      <label className="flex items-center gap-2 self-end pb-2 text-sm">
+        <input type="checkbox" className="accent-[var(--marker)]" checked={s.planSkipNoMarket} onChange={(e) => set({ planSkipNoMarket: e.target.checked })} />
+        Не брать в план предметы без рынка
+      </label>
+    </>
   );
 }
