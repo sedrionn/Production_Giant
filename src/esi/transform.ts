@@ -1,6 +1,7 @@
 /** Pure transforms from raw ESI data to engine-friendly shapes. Fully unit-tested. */
 import type { Activity } from "@/engine/types";
 import type { MarketQuote } from "@/engine/pricing";
+import type { MarketHistory } from "@/engine/marketSanity";
 import type { EsiIndustrySystem, EsiMarketHistoryDay, EsiMarketOrder, EsiMarketPrice } from "./types";
 
 export interface HubQuote extends MarketQuote {
@@ -66,18 +67,22 @@ export function costIndicesBySystem(systems: EsiIndustrySystem[]): Map<number, C
   return m;
 }
 
-export interface VolumeStats {
+export interface VolumeStats extends MarketHistory {
   typeId: number;
   /** Units traded per day, averaged over the last 7 / 30 days (days without trades count as 0). */
   avgDailyVolume7d: number;
   avgDailyVolume30d: number;
-  /** Volume-weighted average price over 30 days; null if nothing traded. */
+  /** Volume-weighted average price over 30 days; null if nothing traded. Same as vwap30d (kept for old readers). */
   avgPrice30d: number | null;
-  /** Volume-weighted average price over the last 7 days; null if nothing traded. */
+  /** Volume-weighted average price over the last 7 days; null if nothing traded. Same as vwap7d. */
   avgPrice7d: number | null;
 }
 
-/** Region market history → average daily volume. `today` = YYYY-MM-DD (UTC). */
+/**
+ * Region market history → daily volume, volume-weighted prices, the median of the daily averages
+ * and the days with trades. `today` = YYYY-MM-DD (UTC); ESI history ends yesterday, so
+ * "last 7 days" = ages 1..7.
+ */
 export function volumeStats(typeId: number, history: EsiMarketHistoryDay[], today: string): VolumeStats {
   const end = Date.parse(today + "T00:00:00Z");
   const day = 86_400_000;
@@ -85,23 +90,39 @@ export function volumeStats(typeId: number, history: EsiMarketHistoryDay[], toda
   let v30 = 0;
   let isk30 = 0;
   let isk7 = 0;
+  let days7 = 0;
+  const averages30: number[] = [];
   for (const h of history) {
     const age = (end - Date.parse(h.date + "T00:00:00Z")) / day;
-    // ESI history ends yesterday; "last 7 days" = ages 1..7.
-    if (age >= 1 && age <= 7) {
+    if (age < 1 || age > 30 || h.volume <= 0) continue;
+    v30 += h.volume;
+    isk30 += h.volume * h.average;
+    averages30.push(h.average);
+    if (age <= 7) {
       v7 += h.volume;
       isk7 += h.volume * h.average;
-    }
-    if (age >= 1 && age <= 30) {
-      v30 += h.volume;
-      isk30 += h.volume * h.average;
+      days7++;
     }
   }
+  const vwap7d = v7 ? isk7 / v7 : null;
+  const vwap30d = v30 ? isk30 / v30 : null;
   return {
     typeId,
     avgDailyVolume7d: v7 / 7,
     avgDailyVolume30d: v30 / 30,
-    avgPrice30d: v30 ? isk30 / v30 : null,
-    avgPrice7d: v7 ? isk7 / v7 : null,
+    avgPrice30d: vwap30d,
+    avgPrice7d: vwap7d,
+    vwap7d,
+    vwap30d,
+    median30d: median(averages30),
+    daysTraded7d: days7,
+    daysTraded30d: averages30.length,
   };
+}
+
+function median(xs: number[]): number | null {
+  if (!xs.length) return null;
+  const s = [...xs].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }

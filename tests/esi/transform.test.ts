@@ -66,6 +66,13 @@ describe("volumeStats", () => {
     expect(s.avgDailyVolume7d).toBeCloseTo((70 + 7) / 7);
     expect(s.avgDailyVolume30d).toBeCloseTo((70 + 7 + 30 + 3000) / 30);
   });
+  it("market sanity: VWAP, median of daily averages, days with trades", () => {
+    const s = volumeStats(1, [h("2026-10-15", 1, 100), h("2026-10-14", 3, 200), h("2026-10-01", 1, 1000), h("2026-10-16", 50, 5)], "2026-10-16");
+    expect(s).toMatchObject({ daysTraded7d: 2, daysTraded30d: 3, median30d: 200 });
+    expect(s.vwap7d).toBeCloseTo(175);
+    expect(s.vwap30d).toBeCloseTo((100 + 600 + 1000) / 5);
+    expect(volumeStats(1, [], "2026-10-16")).toMatchObject({ vwap7d: null, vwap30d: null, median30d: null, daysTraded7d: 0, daysTraded30d: 0 });
+  });
   it("volume-weighted price, null when nothing traded", () => {
     expect(volumeStats(1, [h("2026-10-15", 1, 100), h("2026-10-14", 3, 200)], "2026-10-16").avgPrice30d).toBeCloseTo(175);
     expect(volumeStats(1, [], "2026-10-16").avgPrice30d).toBeNull();
