@@ -108,6 +108,11 @@ function Row({
             {node.name}
           </span>
           {node.activity === "reaction" && built && <span className="shrink-0 text-xs text-job">реакция</span>}
+          {!built && node.priceFlags?.map((f) => (
+            <span key={f.kind} className="shrink-0 rounded border border-loss/60 px-1 text-xs text-loss" title="Цена материала не подменяется: проверь стакан перед покупкой">
+              {f.label}
+            </span>
+          ))}
         </span>
         <span className="text-right">{qty(quantity)}</span>
         <span className="flex items-center gap-2">

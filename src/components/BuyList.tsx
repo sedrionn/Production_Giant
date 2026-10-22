@@ -67,6 +67,11 @@ export function BuyList({ stages, stockNote }: { stages: Stages; stockNote?: Rea
                 <td className="py-1 pr-4">
                   {l.name}
                   {l.note && <span className="ml-2 rounded bg-sheet-2 px-1.5 text-xs text-graphite">{l.note}</span>}
+                  {l.flags?.map((f) => (
+                    <span key={f} className="ml-2 rounded border border-loss/60 px-1 text-xs text-loss" title="Цена не подменяется: проверь стакан перед покупкой">
+                      {f}
+                    </span>
+                  ))}
                 </td>
                 <td className="py-1 pr-4 text-right">{qty(l.need)}</td>
                 <td className="py-1 pr-4 text-right text-graphite">{l.fromStock ? qty(l.fromStock) : "—"}</td>

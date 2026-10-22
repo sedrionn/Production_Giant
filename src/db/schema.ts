@@ -56,6 +56,12 @@ export const marketStats = sqliteTable(
     avgDailyVolume30d: real("avg_daily_volume_30d").notNull(),
     avgPrice30d: real("avg_price_30d"),
     avgPrice7d: real("avg_price_7d"),
+    /** Market sanity (null until the next history refresh). */
+    vwap7d: real("vwap_7d"),
+    vwap30d: real("vwap_30d"),
+    median30d: real("median_30d"),
+    daysTraded7d: integer("days_traded_7d"),
+    daysTraded30d: integer("days_traded_30d"),
     updatedAt: text("updated_at").notNull().default(now),
   },
   (t) => [primaryKey({ columns: [t.typeId, t.regionId] })],

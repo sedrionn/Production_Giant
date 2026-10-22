@@ -88,7 +88,14 @@ export function ShoppingTable({ lines }: { lines: CalcResponse["shopping"] }) {
           <tbody>
             {lines.map((l) => (
               <tr key={l.typeId} className="border-b border-line/40 hover:bg-sheet/70">
-                <td className="py-1.5 pr-3">{l.name}</td>
+                <td className="py-1.5 pr-3">
+                  {l.name}
+                  {l.priceFlags?.map((f) => (
+                    <span key={f.kind} className="ml-2 rounded border border-loss/60 px-1 text-xs text-loss" title="Цена материала не подменяется: проверь стакан перед покупкой">
+                      {f.label}
+                    </span>
+                  ))}
+                </td>
                 <td className="py-1.5 pr-3 text-right">{qty(l.quantity)}</td>
                 <td className="py-1.5 pr-3 text-right text-graphite" title={full(l.unitPrice)}>{isk(l.unitPrice)}</td>
                 <td className={`py-1.5 pr-3 text-right ${l.cost === null ? "text-loss" : ""}`} title={full(l.cost)}>
