@@ -14,6 +14,8 @@
  *    market cap per item and a per-item share of the budget (variety over one big hull);
  *  - pinned items go first, with their batch count, past the market cap and the budget share;
  *  - invention for the next round is pooled like components and must fit the lab slots;
+ *  - stock: what a batch takes from the hangars is not paid from the budget; the stock is used up
+ *    batch by batch, and batches made largely from stock go first within their tier;
  *  - jobs of a kind may have a length cap (reactions ≤ 2 days): longer ones run as parallel jobs.
  */
 import { splitRuns } from "./stages";
@@ -90,7 +92,8 @@ export interface PrepJob {
 }
 
 export interface Plan {
-  batches: (PlanBatch & { start: number; end: number })[];
+  /** fromStock: market value taken from stock (capital − fromStock = ISK spent). */
+  batches: (PlanBatch & { start: number; end: number; fromStock: number })[];
   /** Product jobs on slots. */
   jobs: ScheduledJob[];
   /** Components and reactions for the next round, merged per type. */
@@ -98,7 +101,10 @@ export interface Plan {
   /** Login days with something to do, and what. */
   logins: { day: number; start: ScheduledJob[]; finish: ScheduledJob[]; prep: PrepJob[] }[];
   profit: number;
+  /** ISK to spend: batch capital minus what comes from stock. */
   capital: number;
+  /** Market value of what the plan takes from stock (not paid from the budget). */
+  fromStock: number;
   /** Share of slot-days within the horizon that are busy (products + prep), per kind. */
   utilization: Record<SlotKind, number>;
   skipped: { name: string; reason: string }[];
@@ -107,6 +113,12 @@ export interface Plan {
 }
 
 /** Round a day up to the next login. */
+/** What a batch takes from stock: units by type and their market value. Computed by the caller (it knows the recipe tree). */
+export type StockUse = (batch: PlanBatch, left: ReadonlyMap<number, number>) => { take: Map<number, number>; value: number };
+
+/** A batch with at least this share of its cost covered by stock counts as "made from stock" (goes first in its tier). UX choice. */
+export const STOCK_FIRST_SHARE = 0.3;
+
 export const nextLogin = (day: number, cadence: number) => Math.max(0, Math.ceil(day / cadence - 1e-9)) * cadence + 0;
 
 /**
@@ -179,13 +191,22 @@ export function planWeek(input: {
   maxItemShare?: number;
   /** Longest single job per slot kind, days (e.g. reactions: 2); longer ones are split into parallel jobs. */
   maxJobDays?: Partial<Record<SlotKind, number>>;
+  /** Units on hand by type and how a batch uses them; without it everything is bought. */
+  stock?: Map<number, number>;
+  stockUse?: StockUse;
+  /** Batches made largely from stock go first within their tier (profitable ones only). */
+  stockFirst?: boolean;
 }): Plan {
   const { cadenceDays: cad, horizonDays: horizon } = input;
+  const stockLeft = new Map(input.stock ?? []);
+  const stockTakenBy = (c: PlanBatch) => (input.stockUse && stockLeft.size ? input.stockUse(c, stockLeft) : { take: new Map<number, number>(), value: 0 });
+  // Static share at the start: decides the order only; the real use is taken batch by batch.
+  const fromStockFirst = (c: PlanBatch) => (input.stockFirst && c.profit > 0 && c.capital > 0 && stockTakenBy(c).value / c.capital >= STOCK_FIRST_SHARE ? 0 : 1);
   const slots = input.slots.map((s) => ({ ...s, freeAt: nextLogin(s.freeAt, cad) }));
   const ranked = input.candidates
     .filter((c) => c.profit > 0 || c.pinned)
-    .map((c) => ({ c, score: (c.profit / Math.max(cad, slotDays(c, cad))) * (c.weight ?? 1) }))
-    .sort((a, b) => (a.c.tier ?? 0) - (b.c.tier ?? 0) || b.score - a.score);
+    .map((c) => ({ c, score: (c.profit / Math.max(cad, slotDays(c, cad))) * (c.weight ?? 1), stock: fromStockFirst(c) }))
+    .sort((a, b) => (a.c.tier ?? 0) - (b.c.tier ?? 0) || a.stock - b.stock || b.score - a.score);
 
   // Slot-days available per kind in the period, after what is already running.
   const capacity: Record<SlotKind, number> = { manufacturing: 0, reaction: 0, science: 0 };
@@ -206,10 +227,13 @@ export function planWeek(input: {
   /** Places one batch of `c`, or returns why not. Pinned batches skip the market cap and the budget share. */
   const place = (c: PlanBatch, pinned: boolean): string | null => {
     const product = c.jobs.find((j) => j.depth === 0)!;
-    if (c.capital > budget) return "не хватает бюджета";
+    // What stock covers is not paid: only the rest comes from the budget.
+    const use = stockTakenBy(c);
+    const cash = Math.max(0, c.capital - use.value);
+    if (cash > budget) return "не хватает бюджета";
     if (!pinned) {
       // Spread the budget: one expensive hull must not crowd out the rest of the week.
-      if ((spentPerItem.get(c.typeId) ?? 0) + c.capital > itemCap + 1e-6) return `одна позиция не больше ${Math.round((itemCap / input.budget) * 100)}% бюджета`;
+      if ((spentPerItem.get(c.typeId) ?? 0) + cash > itemCap + 1e-6) return `одна позиция не больше ${Math.round((itemCap / input.budget) * 100)}% бюджета`;
       if ((unitsPlanned.get(c.typeId) ?? 0) + c.units > input.unitCap(c.typeId)) return "рынок не возьмёт больше";
     }
     const intermediates = c.jobs.filter((j) => j.depth > 0 && slotKind(j.activity));
@@ -254,10 +278,11 @@ export function planWeek(input: {
       cur.depth = Math.max(cur.depth, j.depth);
       prep.set(k, cur);
     }
-    batches.push({ ...c, start, end });
-    budget -= c.capital;
+    batches.push({ ...c, start, end, fromStock: c.capital - cash });
+    budget -= cash;
+    for (const [id, q] of use.take) stockLeft.set(id, Math.max(0, (stockLeft.get(id) ?? 0) - q));
     unitsPlanned.set(c.typeId, (unitsPlanned.get(c.typeId) ?? 0) + c.units);
-    spentPerItem.set(c.typeId, (spentPerItem.get(c.typeId) ?? 0) + c.capital);
+    spentPerItem.set(c.typeId, (spentPerItem.get(c.typeId) ?? 0) + cash);
     made.set(c, (made.get(c) ?? 0) + 1);
     return null;
   };
@@ -342,7 +367,8 @@ export function planWeek(input: {
     warnings,
     logins: [...days.values()].sort((a, b) => a.day - b.day),
     profit: batches.reduce((s, b) => s + b.profit, 0),
-    capital: batches.reduce((s, b) => s + b.capital, 0),
+    capital: batches.reduce((s, b) => s + b.capital - b.fromStock, 0),
+    fromStock: batches.reduce((s, b) => s + b.fromStock, 0),
     utilization,
     skipped,
   };

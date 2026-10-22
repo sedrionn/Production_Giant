@@ -78,3 +78,29 @@ describe("buildPlan: T1 copies for invention", () => {
     expect(withBpo.stages.blueprints?.[0].how).toBe("copy");
   });
 });
+
+describe("buildPlan: stock", () => {
+  it("materials in the stock hangar are taken by the batch and not paid from the budget", async () => {
+    const before = plan.buildPlan({ ...req, pins: [{ typeId: 2185, batches: 1 }] });
+    const b0 = before.batches[0];
+    expect(b0.fromStock).toBe(0);
+
+    // SYNTHETIC: 1000 Morphite in a structure that counts as stock.
+    const { getDb, saveSettings } = await import("@/server/data");
+    const { assets } = await import("@/db/schema");
+    const morphite = before.shopping.find((l) => l.name === "Morphite")!;
+    saveSettings({ stockLocationIds: [1_000_000_000_001] });
+    getDb()
+      .insert(assets)
+      .values({ itemId: 77, ownerType: "character", ownerId: 1, viaCharacterId: 1, typeId: morphite.typeId, quantity: 1000, locationId: 1_000_000_000_001, locationFlag: "Hangar", locationType: "other" })
+      .run();
+
+    const after = plan.buildPlan({ ...req, pins: [{ typeId: 2185, batches: 1 }] });
+    const b = after.batches[0];
+    // The batch needs less Morphite than there is: all of it comes from stock, at its market cost.
+    expect(b.fromStock).toBeCloseTo(morphite.cost!);
+    expect(after.capital).toBeCloseTo(b.capital - b.fromStock);
+    expect(after.fromStock).toBeCloseTo(morphite.cost!);
+    expect(after.stages.buy.find((l) => l.typeId === morphite.typeId)).toMatchObject({ toBuy: 0 });
+  });
+});

@@ -2,12 +2,12 @@
  * Weekly plan: candidates from the overview, batches sized to Nick's login rhythm, scheduled on
  * the real free slots of the characters (skills − running jobs), within a budget.
  */
-import { batchRunsForCadence, planWeek, slotDays, type Plan, type PlanBatch, type PlanJob, type SlotKind, type SlotState } from "@/engine/planner";
+import { batchRunsForCadence, planWeek, slotDays, type StockUse, type Plan, type PlanBatch, type PlanJob, type SlotKind, type SlotState } from "@/engine/planner";
 import { JOB_ACTIVITY_IDS, SLOT_SKILLS } from "@/engine/bonuses";
 import { characters, industryJobs } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { calculate, type CalcResponse } from "./calculate";
-import { CATEGORIES, isCaldariBranchShip, RACE_CALDARI, shipInputs, type CategoryKey } from "./catalog";
+import { CATEGORIES, isCaldariBranchShip, isCapitalRig, RACE_CALDARI, shipInputs, type CategoryKey } from "./catalog";
 import { ownedBlueprintIndex, skillLevels } from "./characters";
 import { getDb, getSde, getSettings, priceBook } from "./data";
 import { recipeLookup } from "@/sde/recipes";
@@ -33,6 +33,8 @@ export interface PlanRequest {
   caldariShipsFirst: boolean;
   /** Max share of the budget one item may take (0..1). */
   maxItemShare: number;
+  /** Batches made largely from what is in stock go first within their tier (default on). */
+  stockFirst?: boolean;
   /** Purchase list: materials for this many weeks of the same plan (stock counted once). */
   buyWeeks?: number;
   /** Longest reaction job, days: longer ones run as parallel jobs. 0 = no cap. */
@@ -282,6 +284,8 @@ export function buildPlan(req: PlanRequest): PlanResponse {
       if (!noMarket.has(r.typeId)) noMarket.set(r.typeId, r.name);
       return;
     }
+    // Capital rigs are never planned (expensive blueprints, too much capital per batch) unless pinned.
+    if (!pinned && isCapitalRig(sde, sde.getType(r.typeId))) return;
     if (!rows.has(r.typeId)) rows.set(r.typeId, { ...r, category, categoryKey });
   };
   for (const key of req.categories) {
@@ -369,6 +373,10 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     maxItemShare: req.maxItemShare,
     maxJobDays: req.maxReactionJobDays ? { reaction: req.maxReactionJobDays } : undefined,
     unitCap: (id) => unitCap.get(id) ?? 0,
+    // Stock is used up batch by batch and is not paid from the budget.
+    stock: stockIndex().stock,
+    stockUse: stockUseFor(calcs, horizon, req.maxReactionJobDays),
+    stockFirst: req.stockFirst !== false,
   });
 
   // One shopping list for everything in the plan.
@@ -462,33 +470,9 @@ function stagesFor(plan: Plan, calcs: Map<string, CalcResponse>, horizonDays: nu
     const key = b.key ?? String(b.typeId);
     const c = calcs.get(key);
     if (!c) continue;
-    for (const n of c.nodes) {
-      if (n.decision !== "build" || !n.job || n.job.runs <= 0 || recipes.has(n.typeId)) continue;
-      const isProduct = n.typeId === c.product.typeId;
-      recipes.set(n.typeId, {
-        typeId: n.typeId,
-        name: n.name,
-        activity: n.job.activity,
-        outputPerRun: n.job.outputPerRun,
-        secondsPerRun: n.job.timeSeconds / n.job.runs,
-        inputs: n.children.map((ch) => ({ typeId: ch.typeId, perRun: ch.quantity / n.job!.runs, base: ch.baseQuantity })),
-        me: n.job.me,
-        materialMultiplier: n.job.materialMultiplier,
-        // Components and reactions must be ready inside the plan: split what is longer than the horizon.
-        // Reactions (also sold ones) have their own cap, e.g. 2 days.
-        maxJobSeconds:
-          n.job.activity === "reaction" && maxReactionDays
-            ? Math.min(horizonDays, maxReactionDays) * 86_400
-            : isProduct
-              ? undefined
-              : horizonDays * 86_400,
-        maxRunsPerJob: isProduct ? undefined : sde.getBlueprint(n.job.blueprintTypeId)?.maxProductionLimit || undefined,
-      });
-    }
-    for (const l of c.shopping) {
-      if (buy.has(l.typeId)) continue;
-      buy.set(l.typeId, { typeId: l.typeId, name: l.name, unitPrice: l.cost === null || !l.quantity ? null : l.cost / l.quantity, volume: l.quantity ? l.volume / l.quantity : 0, flags: l.priceFlags?.map((f) => f.label) });
-    }
+    const m = stageModel(c, horizonDays, maxReactionDays);
+    for (const [id, r] of m.recipes) if (!recipes.has(id)) recipes.set(id, r);
+    for (const [id, b] of m.buy) if (!buy.has(id)) buy.set(id, b);
     if (c.request.blueprintSource === "invention" && c.invention.chosen) {
       const cur = invented.get(key) ?? { c, bpcs: 0 };
       cur.bpcs++;
@@ -534,6 +518,73 @@ function stagesFor(plan: Plan, calcs: Map<string, CalcResponse>, horizonDays: nu
   });
   stages.blueprints = copies.sort((a, b) => a.how.localeCompare(b.how) || b.copies - a.copies);
   return { stages, stock: { locations: st.locations, syncedAt: st.syncedAt, owners: st.owners, types: st.stock.size } };
+}
+
+/** Recipes and bought items of one calculation, in the shape planStages reads. */
+function stageModel(c: CalcResponse, horizonDays: number, maxReactionDays?: number): { recipes: Map<number, StageRecipe>; buy: Map<number, StageBuyInfo> } {
+  const { source: sde } = getSde();
+  const recipes = new Map<number, StageRecipe>();
+  const buy = new Map<number, StageBuyInfo>();
+  for (const n of c.nodes) {
+    if (n.decision !== "build" || !n.job || n.job.runs <= 0 || recipes.has(n.typeId)) continue;
+    const isProduct = n.typeId === c.product.typeId;
+    recipes.set(n.typeId, {
+      typeId: n.typeId,
+      name: n.name,
+      activity: n.job.activity,
+      outputPerRun: n.job.outputPerRun,
+      secondsPerRun: n.job.timeSeconds / n.job.runs,
+      inputs: n.children.map((ch) => ({ typeId: ch.typeId, perRun: ch.quantity / n.job!.runs, base: ch.baseQuantity })),
+      me: n.job.me,
+      materialMultiplier: n.job.materialMultiplier,
+      // Components and reactions must be ready inside the plan: split what is longer than the horizon.
+      // Reactions (also sold ones) have their own cap, e.g. 2 days.
+      maxJobSeconds:
+        n.job.activity === "reaction" && maxReactionDays
+          ? Math.min(horizonDays, maxReactionDays) * 86_400
+          : isProduct
+            ? undefined
+            : horizonDays * 86_400,
+      maxRunsPerJob: isProduct ? undefined : sde.getBlueprint(n.job.blueprintTypeId)?.maxProductionLimit || undefined,
+    });
+  }
+  for (const l of c.shopping) {
+    if (buy.has(l.typeId)) continue;
+    buy.set(l.typeId, { typeId: l.typeId, name: l.name, unitPrice: l.cost === null || !l.quantity ? null : l.cost / l.quantity, volume: l.quantity ? l.volume / l.quantity : 0, flags: l.priceFlags?.map((f) => f.label) });
+  }
+  return { recipes, buy };
+}
+
+/**
+ * How one batch uses the stock left: the same top-down pass as the stages (a component on hand
+ * also saves its materials), valued at what building (intermediates) or buying (materials) would cost.
+ */
+function stockUseFor(calcs: Map<string, CalcResponse>, horizonDays: number, maxReactionDays?: number): StockUse {
+  const models = new Map<string, ReturnType<typeof stageModel> & { unit: Map<number, number> }>();
+  return (b, left) => {
+    const key = b.key ?? String(b.typeId);
+    const c = calcs.get(key);
+    if (!c) return { take: new Map(), value: 0 };
+    let m = models.get(key);
+    if (!m) {
+      const unit = new Map(c.nodes.filter((n) => n.decision === "build" && n.buildUnitCost !== null).map((n) => [n.typeId, n.buildUnitCost!]));
+      models.set(key, (m = { ...stageModel(c, horizonDays, maxReactionDays), unit }));
+    }
+    const st = planStages({ products: [{ typeId: b.typeId, runs: b.runs }], recipes: m.recipes, buy: m.buy, stock: new Map(left) });
+    const take = new Map<number, number>();
+    let value = 0;
+    for (const line of st.stages.flatMap((x) => x.lines)) {
+      if (line.isProduct || line.fromStock <= 0) continue;
+      take.set(line.typeId, (take.get(line.typeId) ?? 0) + line.fromStock);
+      value += line.fromStock * (m.unit.get(line.typeId) ?? 0);
+    }
+    for (const l of st.buy) {
+      if (l.fromStock <= 0) continue;
+      take.set(l.typeId, (take.get(l.typeId) ?? 0) + l.fromStock);
+      value += l.fromStock * (l.unitPrice ?? 0);
+    }
+    return { take, value };
+  };
 }
 
 /** SDE category of blueprints (and nothing else): a T1 invention source, not a relic. */
