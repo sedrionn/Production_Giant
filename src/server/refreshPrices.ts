@@ -118,6 +118,11 @@ export async function refreshVolumes(typeIds: number[], regionId: number, onProg
         avgDailyVolume30d: s.avgDailyVolume30d,
         avgPrice30d: s.avgPrice30d,
         avgPrice7d: s.avgPrice7d,
+        vwap7d: s.vwap7d,
+        vwap30d: s.vwap30d,
+        median30d: s.median30d,
+        daysTraded7d: s.daysTraded7d,
+        daysTraded30d: s.daysTraded30d,
         updatedAt: at,
       };
       tx.insert(marketStats)

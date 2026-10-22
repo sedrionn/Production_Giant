@@ -1,6 +1,7 @@
 "use client";
 
 import type { ProfitSummary } from "@/engine/profit";
+import { saleNote } from "@/lib/marketSanity";
 import { duration, full, isk, pct } from "@/lib/format";
 
 /**
@@ -80,6 +81,11 @@ export function Ledger({ s }: { s: ProfitSummary }) {
         <li>
           {s.output} шт по <span className="text-chalk">{isk(s.unitPrice)}</span>
         </li>
+        {saleNote(s.priceCheck, s.unitPrice) && s.priceCheck.checked && (
+          <li className="w-full text-sm text-loss" title="Цена продажи сверена с историей сделок (настройки → пороги рынка)">
+            Цена урезана: {saleNote(s.priceCheck, s.unitPrice)}
+          </li>
+        )}
       </ul>
     </section>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { saleNote } from "@/lib/marketSanity";
 import { useEffect, useState } from "react";
 import type { CalcResponse } from "@/server/calculate";
 import type { Decision } from "@/engine/tree";
@@ -52,7 +53,7 @@ export function ChainPanel({ typeId, name, runs }: { typeId: number; name: strin
     ...(s.blueprintCost ? ([["Чертёж (инвент)", isk(s.blueprintCost), full(s.blueprintCost)]] as [string, string, string][]) : []),
     ...(s.shippingCost ? ([["Доставка", isk(s.shippingCost), full(s.shippingCost)]] as [string, string, string][]) : []),
     ["Налог и брокер", isk(s.saleFees), full(s.saleFees)],
-    ["Выручка", isk(s.grossRevenue), full(s.grossRevenue)],
+    ["Выручка", isk(s.grossRevenue), [full(s.grossRevenue), s.priceCheck.checked && saleNote(s.priceCheck, s.unitPrice)].filter(Boolean).join("\n")],
     ["Маржа", pct(s.margin)],
     ...(root ? ([["Джоба продукта", duration(root.timeSeconds)]] as [string, string][]) : []),
   ];

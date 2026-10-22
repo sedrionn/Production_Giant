@@ -4,6 +4,7 @@ import { inventionCost, type InventionResult } from "@/engine/invention";
 import { jobTime } from "@/engine/jobCost";
 import type { PriceMode } from "@/engine/pricing";
 import { summarizeProfit, type ProfitSummary } from "@/engine/profit";
+import { materialFlags, realisticPrice, type SanityFlag } from "@/engine/marketSanity";
 import { buildTree, type Decision, type TreeJob } from "@/engine/tree";
 import type { Activity } from "@/engine/types";
 import { recipeLookup } from "@/sde/recipes";
@@ -14,7 +15,7 @@ import type { InventionSkills } from "@/engine/invention";
 import type { BlueprintActivity } from "@/engine/types";
 import { isCapital } from "./catalog";
 import { hasCharacters, ownedBlueprintIndex, skillLevels, type OwnedBlueprint } from "./characters";
-import { costIndicesFor, getProfile, getSde, getSettings, listProfiles, priceBook, type Profile } from "./data";
+import { costIndicesFor, getProfile, getSde, getSettings, historyFor, listProfiles, priceBook, type Profile } from "./data";
 
 export interface CalcRequest {
   typeId: number;
@@ -58,6 +59,8 @@ export interface NodeDTO {
   buyUnitCost: number | null;
   buildUnitCost: number | null;
   buildSavingsPerHour: number | null;
+  /** Bought materials: not on sale, or far above market history (price is not replaced). */
+  priceFlags: SanityFlag[];
   activity: Activity | null;
   job: (Omit<TreeJob, "cost"> & { cost: number; costBreakdown: TreeJob["cost"] }) | null;
   children: { typeId: number; quantity: number; baseQuantity?: number }[];
@@ -76,7 +79,7 @@ export interface CalcResponse {
   summary: ProfitSummary;
   nodes: NodeDTO[];
   jobs: (NodeDTO["job"] & { name: string })[];
-  shopping: { typeId: number; name: string; quantity: number; unitPrice: number | null; cost: number | null; freight: number; volume: number }[];
+  shopping: { typeId: number; name: string; quantity: number; unitPrice: number | null; cost: number | null; freight: number; volume: number; priceFlags: SanityFlag[] }[];
   invention: {
     options: InventionOption[];
     chosen: InventionOption | null;
@@ -163,7 +166,12 @@ export function calculate(req: CalcRequest): CalcResponse {
   const fees = { salesTax: s.salesTax, brokerFee: s.brokerFee };
 
   // Price book over every type the tree or invention might touch.
-  const prices = priceBook(touchedTypes(sde, recipe, req.typeId), s.priceLocationId);
+  const touched = touchedTypes(sde, recipe, req.typeId);
+  const prices = priceBook(touched, s.priceLocationId);
+  const history = historyFor(touched, s.priceRegionId);
+  // The product's sale price, capped by market history (one rule for every page).
+  const sale = realisticPrice(prices.quote(req.typeId), history.get(req.typeId), productPriceMode, s.marketSanity);
+  const flagsOf = (id: number) => materialFlags(prices.quote(id), history.get(id), materialPriceMode, s.marketSanity);
 
   const decryptors = sde.listDecryptors();
   const wantedDecryptor = req.decryptorId === undefined ? s.inventionDecryptorId : req.decryptorId;
@@ -249,7 +257,9 @@ export function calculate(req: CalcRequest): CalcResponse {
     else warnings.push("Свой BPC: инвента нет, стоимость чертежа не учтена");
   }
   const blueprintPerRun = chosen?.costPerRun ?? bpcValue;
-  const summary = summarizeProfit(tree, prices.quote(req.typeId), productPriceMode, fees, blueprintPerRun, productFreight);
+  const summary = summarizeProfit(tree, sale, productPriceMode, fees, blueprintPerRun, productFreight);
+  const oddMaterials = tree.shopping.filter((l) => flagsOf(l.typeId).length).map((l) => `${name(l.typeId)} — ${flagsOf(l.typeId).map((f) => f.label).join(", ")}`);
+  if (oddMaterials.length) warnings.push(`Проверь цены материалов: ${oddMaterials.join("; ")}`);
 
   // Same batch with every decryptor (and none), each with its own ME/TE → full tree.
   const comparison: DecryptorComparison[] = [];
@@ -259,7 +269,7 @@ export function calculate(req: CalcRequest): CalcResponse {
       const o = inventFrom(src, d);
       if (!o) continue;
       const t = treeFor(o.me, o.te);
-      const p = summarizeProfit(t, prices.quote(req.typeId), productPriceMode, fees, o.costPerRun, productFreight);
+      const p = summarizeProfit(t, sale, productPriceMode, fees, o.costPerRun, productFreight);
       comparison.push({
         decryptorId: d?.typeId ?? null,
         name: d?.name ?? "Без декриптора",
@@ -282,6 +292,7 @@ export function calculate(req: CalcRequest): CalcResponse {
     buyUnitCost: n.buyUnitCost,
     buildUnitCost: n.buildUnitCost,
     buildSavingsPerHour: n.buildSavingsPerHour,
+    priceFlags: n.decision === "buy" ? flagsOf(n.typeId) : [],
     activity: recipe(n.typeId)?.activity ?? null,
     job: n.job ? { ...n.job, cost: n.job.cost.total, costBreakdown: n.job.cost } : null,
     children: n.children,
@@ -306,7 +317,7 @@ export function calculate(req: CalcRequest): CalcResponse {
     summary,
     nodes,
     jobs: tree.jobs.map((j) => ({ ...j, cost: j.cost.total, costBreakdown: j.cost, name: name(j.typeId) })),
-    shopping: tree.shopping.map((l) => ({ ...l, name: name(l.typeId), volume: volumeOf(l.typeId) * l.quantity })),
+    shopping: tree.shopping.map((l) => ({ ...l, name: name(l.typeId), volume: volumeOf(l.typeId) * l.quantity, priceFlags: flagsOf(l.typeId) })),
     invention: { options, chosen, decryptor: decryptor && { typeId: decryptor.typeId, name: decryptor.name }, comparison },
     ownedBlueprint: ownedRoot,
     skillsSource: levels ? "characters" : "settings",
