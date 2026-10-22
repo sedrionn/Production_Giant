@@ -95,7 +95,7 @@ export function BuyList({ stages, stockNote }: { stages: Stages; stockNote?: Rea
             {stages.blueprints.map((b) => (
               <li key={b.typeId}>
                 {b.name} × {qty(b.copies)} <span className="text-graphite">для {b.forItem}</span> —{" "}
-                {b.how === "copy" ? <span className="text-job">скопировать со своего BPO</span> : <span className="text-marker">своего BPO нет: купить BPC в контрактах</span>}
+                {b.how === "copy" ? <span className="text-job">скопировать со своего BPO (джоба копирования в плане по заходам)</span> : <span className="text-marker">своего BPO нет: купить BPC в контрактах</span>}
               </li>
             ))}
           </ul>

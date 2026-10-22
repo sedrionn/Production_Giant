@@ -213,6 +213,18 @@ export function Planner({ categories }: { categories: { key: string; label: stri
               <div key={l.day} className="rounded border border-line bg-sheet/40 px-4 py-3">
                 <p className="font-medium">{dayLabel(l.day)}</p>
                 {l.finish.length > 0 && <p className="text-sm text-graphite">Забрать: {summarize(l.finish)}</p>}
+                {l.prep.some((p) => p.activity === "copying") && (
+                  <p className="text-sm">
+                    <span className="text-job">Копии T1 со своего BPO (лаборатория):</span>{" "}
+                    {l.prep
+                      .filter((p) => p.activity === "copying")
+                      .map(
+                        (p) =>
+                          `${p.name} — ${qty(p.runs)} копий по 1 рану, ${p.jobs > 1 ? `${p.jobs} джобы параллельно по ~${hours(p.seconds / p.jobs)}` : `одна джоба на ${hours(p.seconds)}`}`,
+                      )
+                      .join(", ")}
+                  </p>
+                )}
                 {l.prep.some((p) => p.activity === "invention") && (
                   <p className="text-sm">
                     <span className="text-job">Инвент в лаборатории на следующий круг:</span>{" "}
@@ -225,11 +237,11 @@ export function Planner({ categories }: { categories: { key: string; label: stri
                       .join(", ")}
                   </p>
                 )}
-                {l.prep.some((p) => p.activity !== "invention") && (
+                {l.prep.some((p) => p.activity === "manufacturing" || p.activity === "reaction") && (
                   <p className="text-sm">
                     <span className="text-job">Компоненты и реакции на следующий круг:</span>{" "}
                     {l.prep
-                      .filter((p) => p.activity !== "invention")
+                      .filter((p) => p.activity === "manufacturing" || p.activity === "reaction")
                       .map((p) => `${p.name} × ${qty(p.runs)}${p.jobs > 1 ? ` (${p.jobs} джоб параллельно)` : ""}`)
                       .join(", ")}
                   </p>

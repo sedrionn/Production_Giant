@@ -1,6 +1,7 @@
 /** Assembles engine inputs from SDE + settings + profiles + prices and returns a UI-ready result. */
 import { normalizeRigs, type FacilityProfile } from "@/engine/facility";
 import { inventionCost, type InventionResult } from "@/engine/invention";
+import { jobTime } from "@/engine/jobCost";
 import type { PriceMode } from "@/engine/pricing";
 import { summarizeProfit, type ProfitSummary } from "@/engine/profit";
 import { materialFlags, realisticPrice, type SanityFlag } from "@/engine/marketSanity";
@@ -68,6 +69,8 @@ export interface NodeDTO {
 export interface InventionOption extends InventionResult {
   sourceId: number;
   sourceName: string;
+  /** T1 blueprint source: lab time to copy one run of it (null for relics). */
+  copySecondsPerRun: number | null;
 }
 
 export interface CalcResponse {
@@ -197,7 +200,9 @@ export function calculate(req: CalcRequest): CalcResponse {
       decryptor: d,
       timeSkills: skills,
     });
-    return { ...r, sourceId: src.blueprintTypeId, sourceName: name(src.blueprintTypeId) };
+    const copying = isBlueprint ? sde.getBlueprint(src.blueprintTypeId)?.activities.copying : undefined;
+    const copySecondsPerRun = copying ? jobTime(copying.time, 1, 0, "copying", toFacility(mfgProfile), skills) : null;
+    return { ...r, sourceId: src.blueprintTypeId, sourceName: name(src.blueprintTypeId), copySecondsPerRun };
   };
   const options = sources.map((src) => inventFrom(src, decryptor)).filter((o): o is InventionOption => !!o);
   const chosen =

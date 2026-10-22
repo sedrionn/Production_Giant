@@ -177,6 +177,12 @@ export const SKILL_TIME = {
   advancedIndustryScience: true, // verify
 } as const;
 
+/** Blueprint copying: the Science skill shortens copy jobs. */
+export const COPYING = {
+  scienceSkillId: 3402,
+  sciencePerLevel: 0.05, // verify — Science: 5% faster copying per level
+} as const;
+
 /** Market fee bases. */
 export const MARKET = {
   salesTaxBase: 0.075, // verify
