@@ -63,7 +63,7 @@ A personal, local, single-user EVE Online industry planner, a replacement for EV
    - **Depth:** only Jita, by order count, freshness and price trend.
    - **Other hubs:** not compared.
    - **Sale speed:** not fed back from real sales (the ledger has the data).
-6. **Stock snapshot:** the saved plan freezes stock at save time; jobs started later consume it.
+6. **Stock snapshot:** the saved plan freezes stock at save time; jobs started later consume it. Stock already lowers the cash a batch needs and can put stock-made batches first (2026-10-22); output of running jobs is not counted as stock yet.
 7. **UI:** no active-page highlight in the top menu (planned).
 
 ## What feedback is wanted
