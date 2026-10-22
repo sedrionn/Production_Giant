@@ -1,4 +1,4 @@
-import { ACTIVITY_EIV_FACTOR, SCC_SURCHARGE, SKILL_IDS, SKILL_TIME, STRUCTURES } from "./bonuses";
+import { ACTIVITY_EIV_FACTOR, SCC_SURCHARGE, SKILL_IDS, SKILL_TIME, STRUCTURES, COPYING } from "./bonuses";
 import type { FacilityProfile } from "./facility";
 import { costMultiplier, timeMultiplier, type ItemClass } from "./facility";
 import type { Activity, MaterialRequirement, SkillRequirement } from "./types";
@@ -78,11 +78,16 @@ export interface IndustrySkills {
  * Skills time multiplier. Manufacturing: Industry 4%/lvl × Advanced Industry 3%/lvl ×
  * the bonus of every other required skill that has one — 1%/lvl for science skills
  * (confirmed in game: Jackdaw with all V = −41.7%; EVE Guru: Shield Rigging on T2 rigs gives nothing).
- * Science jobs (invention, copying, research): Advanced Industry only.
+ * Science jobs (invention, copying, research): Advanced Industry; copying also Science 5%/lvl.
  */
 export function skillTimeMultiplier(activity: Activity, s: IndustrySkills, required: SkillRequirement[] = []): number {
   if (activity === "reaction") return 1 - SKILL_TIME.reactionsPerLevel * (s.reactions ?? 0);
-  if (activity !== "manufacturing") return SKILL_TIME.advancedIndustryScience ? 1 - SKILL_TIME.advancedIndustryPerLevel * (s.advancedIndustry ?? 0) : 1;
+  if (activity !== "manufacturing") {
+    const adv = SKILL_TIME.advancedIndustryScience ? 1 - SKILL_TIME.advancedIndustryPerLevel * (s.advancedIndustry ?? 0) : 1;
+    if (activity !== "copying") return adv;
+    const science = s.levels ? (s.levels[COPYING.scienceSkillId] ?? 0) : (s.blueprintSkills ?? 0);
+    return adv * (1 - COPYING.sciencePerLevel * science);
+  }
   let m =
     (1 - SKILL_TIME.industryPerLevel * (s.industry ?? 0)) *
     (1 - SKILL_TIME.advancedIndustryPerLevel * (s.advancedIndustry ?? 0));
