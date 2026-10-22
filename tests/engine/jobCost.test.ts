@@ -96,3 +96,11 @@ describe("skillTimeMultiplier — per-skill bonus from SDE", () => {
     expect(skillTimeMultiplier("manufacturing", base, required)).toBeCloseTo(0.8 * 0.85 * 0.95 ** 3);
   });
 });
+
+describe("science job time", () => {
+  it("invention: Advanced Industry only; copying: also Science 5%/lvl", () => {
+    expect(skillTimeMultiplier("invention", { advancedIndustry: 5, levels: { 3402: 5 } })).toBeCloseTo(0.85);
+    expect(skillTimeMultiplier("copying", { advancedIndustry: 5, levels: { 3402: 5 } })).toBeCloseTo(0.85 * 0.75);
+    expect(skillTimeMultiplier("copying", { advancedIndustry: 0, blueprintSkills: 4 })).toBeCloseTo(0.8);
+  });
+});

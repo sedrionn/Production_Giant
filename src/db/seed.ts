@@ -2,6 +2,7 @@ import { count } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { DEFAULT_BUY_BUFFER } from "@/engine/bonuses";
 import type { PriceMode } from "@/engine/pricing";
+import { MARKET_SANITY, type MarketSanityConfig } from "@/engine/marketSanity";
 import * as schema from "./schema";
 import { settings, structureProfiles } from "./schema";
 
@@ -45,6 +46,10 @@ export interface AppSettings {
   industryCharacterId: number | null;
   manufacturingProfileId: number | null;
   reactionProfileId: number | null;
+  /** Product sale price vs market history (speculators' walls, illiquid items). */
+  marketSanity: MarketSanityConfig;
+  /** Weekly plan: leave out products flagged "no market". */
+  planSkipNoMarket: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -72,6 +77,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   industryCharacterId: null,
   manufacturingProfileId: null,
   reactionProfileId: null,
+  marketSanity: { ...MARKET_SANITY },
+  planSkipNoMarket: true,
 };
 
 /** Idempotent: only fills empty tables / missing keys. Rigs are left empty — Nick fills them in the UI. */

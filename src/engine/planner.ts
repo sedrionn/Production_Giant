@@ -149,7 +149,9 @@ export function batchRunsForCadence(p: {
 }
 
 const slotKind = (a: Activity): SlotKind | null =>
-  a === "manufacturing" ? "manufacturing" : a === "reaction" ? "reaction" : a === "invention" ? "science" : null;
+  a === "manufacturing" ? "manufacturing" : a === "reaction" ? "reaction" : isLab(a) ? "science" : null;
+/** Lab jobs (copying the T1 blueprint, then invention) feed only the hull: they live outside the component chain. */
+const isLab = (a: Activity) => a === "invention" || a === "copying";
 
 /**
  * Factory and reaction slot-days a batch costs: the product job snaps to logins (its slot waits
@@ -293,11 +295,11 @@ export function planWeek(input: {
 
   // Prep: deepest level at the first login, one level per login after that.
   const prepJobs = [...prep.values()];
-  // Invention is on its own (lab) slots and only feeds the hull: it starts at the first login and
-  // does not push the component chain back.
-  const maxDepth = Math.max(0, ...prepJobs.filter((p) => p.activity !== "invention").map((p) => p.depth));
+  // Copying and invention are on their own (lab) slots and only feed the hull: they start at the
+  // first login (invention once the copies are ready) and do not push the component chain back.
+  const maxDepth = Math.max(0, ...prepJobs.filter((p) => !isLab(p.activity)).map((p) => p.depth));
   for (const p of prepJobs) {
-    p.start = p.activity === "invention" ? 0 : (maxDepth - p.depth) * cad;
+    p.start = isLab(p.activity) ? 0 : (maxDepth - p.depth) * cad;
     // A 22-day pooled job does not fit a week, and a blueprint caps runs per job: run it on as many
     // parallel slots as needed (components may finish next week: the limit is the horizon).
     const kind = slotKind(p.activity);
@@ -305,8 +307,8 @@ export function planWeek(input: {
     const byTime = Math.ceil(p.seconds / DAY / (cap ? Math.min(cap, Math.max(cad, horizon)) : Math.max(cad, horizon)) - 1e-9);
     const byRuns = p.maxRunsPerJob ? Math.ceil(p.runs / p.maxRunsPerJob) : 1;
     p.jobs = Math.min(p.runs, Math.max(1, byTime, byRuns));
-    // Invention attempts are an expectation per batch: round up once over the pool.
-    if (p.activity === "invention") {
+    // Invention attempts (and the T1 copies they eat) are an expectation per batch: round up once over the pool.
+    if (isLab(p.activity)) {
       const runs = Math.ceil(p.runs - 1e-9);
       p.seconds = p.runs > 0 ? (p.seconds * runs) / p.runs : 0;
       p.runs = runs;
@@ -358,11 +360,15 @@ function schedulePrep(pool: PrepJob[], slots: SlotState[], cad: number, horizon:
   const out: PrepJob[] = [];
   const warnings: string[] = [];
   const latestStart = new Map<number, number>();
-  const order = [...pool].sort((a, b) => b.depth - a.depth || b.seconds - a.seconds);
+  /** Per item: when its T1 copies are ready (invention starts at the login after). */
+  const copiesReady = new Map<number, number>();
+  const rank = (a: Activity) => (a === "copying" ? 0 : a === "invention" ? 1 : 2);
+  const order = [...pool].sort((a, b) => rank(a.activity) - rank(b.activity) || b.depth - a.depth || b.seconds - a.seconds);
   for (const p of order) {
     const kind = slotKind(p.activity) ?? "manufacturing";
     let earliest = p.start;
-    if (p.activity !== "invention") for (const [d, st] of latestStart) if (d > p.depth) earliest = Math.max(earliest, nextLogin(st + cad, cad));
+    if (!isLab(p.activity)) for (const [d, st] of latestStart) if (d > p.depth) earliest = Math.max(earliest, nextLogin(st + cad, cad));
+    if (p.activity === "invention" && copiesReady.has(p.typeId)) earliest = Math.max(earliest, nextLogin(copiesReady.get(p.typeId)!, cad));
     const runs = splitRuns(p.runs, p.runs ? p.seconds / p.runs : 0, undefined, Math.ceil(p.runs / p.jobs));
     const byDay = new Map<number, PrepJob>();
     let late = 0;
@@ -381,7 +387,8 @@ function schedulePrep(pool: PrepJob[], slots: SlotState[], cad: number, horizon:
       e.seconds += seconds;
       e.jobs++;
       byDay.set(start, e);
-      if (p.activity !== "invention") latestStart.set(p.depth, Math.max(latestStart.get(p.depth) ?? 0, start));
+      if (!isLab(p.activity)) latestStart.set(p.depth, Math.max(latestStart.get(p.depth) ?? 0, start));
+      if (p.activity === "copying") copiesReady.set(p.typeId, Math.max(copiesReady.get(p.typeId) ?? 0, start + seconds / DAY));
     }
     out.push(...byDay.values());
     if (late) {

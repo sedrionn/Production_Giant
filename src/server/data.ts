@@ -12,6 +12,7 @@ import type { Activity } from "@/engine/types";
 import { openAppDb, type AppDb } from "@/db/client";
 import { adjustedPrices, costIndices, marketStats, priceCache, settings, structureProfiles } from "@/db/schema";
 import { DEFAULT_SETTINGS, type AppSettings } from "@/db/seed";
+import type { MarketHistory } from "@/engine/marketSanity";
 import { FixtureSdeSource } from "@/sde/fixtureSource";
 import { SqliteSdeSource } from "@/sde/sqliteSource";
 import type { SdeSource, SdeSubset } from "@/sde/types";
@@ -208,6 +209,11 @@ export interface VolumeInfo {
   avgDailyVolume30d: number;
   avgPrice30d: number | null;
   avgPrice7d: number | null;
+  vwap7d?: number | null;
+  vwap30d?: number | null;
+  median30d?: number | null;
+  daysTraded7d?: number | null;
+  daysTraded30d?: number | null;
   updatedAt: string;
 }
 
@@ -224,6 +230,19 @@ export function depthFor(typeIds: number[], locationId: number): Map<number, Dep
     for (const r of getDb().select().from(priceCache).where(inArray(priceCache.typeId, ids.slice(i, i + 500))).all()) {
       if (r.locationId === locationId) out.set(r.typeId, { sellOrders: r.sellOrders, sellOrdersFresh: r.sellOrdersFresh });
     }
+  }
+  return out;
+}
+
+/**
+ * Market history aggregates for the sanity check; only rows refreshed since the market-sanity
+ * migration (older rows have no day counts and are treated as "not loaded").
+ */
+export function historyFor(typeIds: number[], regionId: number): Map<number, MarketHistory> {
+  const out = new Map<number, MarketHistory>();
+  for (const [id, r] of volumesFor(typeIds, regionId)) {
+    if (r.daysTraded30d == null || r.daysTraded7d == null) continue;
+    out.set(id, { vwap7d: r.vwap7d ?? null, vwap30d: r.vwap30d ?? null, median30d: r.median30d ?? null, daysTraded7d: r.daysTraded7d, daysTraded30d: r.daysTraded30d });
   }
   return out;
 }

@@ -7,6 +7,8 @@ import { blacklistReason, categoryHint, isCapital, listCategory, type CategoryKe
 import { hasCharacters, ownedBlueprintIndex } from "./characters";
 import { depthFor, getSde, getSettings, volumesFor } from "./data";
 import type { SdeType } from "@/sde/types";
+import type { SanityFlag } from "@/engine/marketSanity";
+import { saleNote } from "@/lib/marketSanity";
 
 /** When a batch looks hard to sell. UX thresholds, not game constants. */
 export const MARKET_RISK = {
@@ -60,6 +62,9 @@ export interface OverviewRow {
   marketRisks: string[];
   /** Capital ship: no courier freight, sold or flown from where it is built. */
   capital: boolean;
+  /** Market sanity of the sale price: flags and the line explaining the cut (empty = price as listed). */
+  priceFlags: SanityFlag[];
+  priceNote: string;
   warnings: number;
   error: string | null;
 }
@@ -163,6 +168,8 @@ export function overviewRows(items: SdeType[], extra: Partial<CalcRequest> = {})
         ...market,
         marketRisks: marketRisks(market),
         capital: isCapital(sde, item),
+        priceFlags: r.summary.priceCheck.flags,
+        priceNote: saleNote(r.summary.priceCheck, r.summary.unitPrice),
         warnings: r.warnings.length,
         error: null,
       };
@@ -170,7 +177,7 @@ export function overviewRows(items: SdeType[], extra: Partial<CalcRequest> = {})
       return {
         typeId: item.typeId, name: item.name, group, blueprintSource: null, runs: 0, maxRuns: 0, output: 0, profit: null, profitPerRun: null,
         margin: null, totalCost: 0, iskPerHour: null, jobSeconds: 0, unitPrice: null, avgDailyVolume7d: null,
-        avgDailyVolume30d: null, marketDays: null, sellOrders: null, sellOrdersFresh: null, priceTrend: null, marketRisks: [], capital: isCapital(sde, item),
+        avgDailyVolume30d: null, marketDays: null, sellOrders: null, sellOrdersFresh: null, priceTrend: null, marketRisks: [], capital: isCapital(sde, item), priceFlags: [], priceNote: "",
         warnings: 0, error: (e as Error).message,
       };
     }

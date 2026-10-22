@@ -55,6 +55,8 @@ export interface StageBuyInfo {
   unitPrice: number | null;
   /** m³ per unit. */
   volume: number;
+  /** Market warnings on the price (not on sale, far above history). */
+  flags?: string[];
 }
 
 export interface StageInput {
@@ -109,6 +111,7 @@ export interface BuyLine {
   /** m³ of what is bought. */
   volume: number;
   note?: string;
+  flags?: string[];
 }
 
 export interface Stages {
@@ -205,7 +208,7 @@ export function planStages(input: StageInput): Stages {
       costWith += toBuy * price;
       saved += fromStock * price;
     }
-    return { typeId: id, name: b?.name ?? `#${id}`, need, fromStock, toBuy, buffer: toBuy - short, unitPrice: price, cost: price === null ? null : toBuy * price, volume: toBuy * (b?.volume ?? 0), ...(note ? { note } : {}) };
+    return { typeId: id, name: b?.name ?? `#${id}`, need, fromStock, toBuy, buffer: toBuy - short, unitPrice: price, cost: price === null ? null : toBuy * price, volume: toBuy * (b?.volume ?? 0), ...(note ? { note } : {}), ...(b?.flags?.length ? { flags: b.flags } : {}) };
   };
   for (const [id, need] of demand) {
     if (recipes.has(id) || need <= 0) continue;

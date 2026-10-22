@@ -286,3 +286,31 @@ describe("planWeek: pooled jobs go on real free slots", () => {
     expect(p.warnings).toEqual(["Sub reaction: 2 из 30 джоб — не хватает свободных реакционных слотов до конца плана, начнутся позже"]);
   });
 });
+
+describe("planWeek: T1 copies before invention", () => {
+  // SYNTHETIC: an invented ship; 2.5 attempts per BPC, each eats one 1-run T1 copy of 1 h.
+  const withCopies = (id: number): PlanBatch => {
+    const b = ship(id, 100, 10);
+    return {
+      ...b,
+      jobs: [
+        ...b.jobs,
+        { typeId: id, name: `Ship ${id} (инвент)`, activity: "invention", runs: 2.5, seconds: 2.5 * 10 * H, depth: 2 },
+        { typeId: id, name: "Ship BP (копии)", activity: "copying", runs: 2.5, seconds: 2.5 * H, depth: 3 },
+      ],
+    };
+  };
+  const labs: SlotState[] = [0, 1].map((i) => ({ kind: "science", owner: `L${i}`, freeAt: 0 }));
+
+  it("copies go on a lab slot at the first login; invention waits for the next login; both rounded up once", () => {
+    const p = planWeek({ candidates: [withCopies(1)], slots: [...slots(3), ...labs], budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 2, unitCap: () => 99 });
+    const copy = p.prep.find((x) => x.activity === "copying")!;
+    const inv = p.prep.find((x) => x.activity === "invention")!;
+    expect(copy).toMatchObject({ runs: 5, start: 0 });
+    expect(copy.seconds).toBeCloseTo(5 * H);
+    expect(inv).toMatchObject({ runs: 5, start: 2 });
+    // The component chain is not pushed back by the lab jobs.
+    expect(p.prep.find((x) => x.name === "Component")!.start).toBe(0);
+    expect(p.logins.find((l) => l.day === 0)!.prep.map((x) => x.activity)).toContain("copying");
+  });
+});

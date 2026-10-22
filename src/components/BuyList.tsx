@@ -74,6 +74,11 @@ export function BuyList({ stages, stockNote }: { stages: Stages; stockNote?: Rea
                 <td className="py-1 pr-4">
                   {l.name}
                   {l.note && <span className="ml-2 rounded bg-sheet-2 px-1.5 text-xs text-graphite">{l.note}</span>}
+                  {l.flags?.map((f) => (
+                    <span key={f} className="ml-2 rounded border border-loss/60 px-1 text-xs text-loss" title="Цена не подменяется: проверь стакан перед покупкой">
+                      {f}
+                    </span>
+                  ))}
                 </td>
                 <td className="py-1 pr-4 text-right">{qty(l.need)}</td>
                 <td className="py-1 pr-4 text-right text-graphite">{l.fromStock ? qty(l.fromStock) : "—"}</td>
@@ -97,7 +102,7 @@ export function BuyList({ stages, stockNote }: { stages: Stages; stockNote?: Rea
             {stages.blueprints.map((b) => (
               <li key={b.typeId}>
                 {b.name} × {qty(b.copies)} <span className="text-graphite">для {b.forItem}</span> —{" "}
-                {b.how === "copy" ? <span className="text-job">скопировать со своего BPO</span> : <span className="text-marker">своего BPO нет: купить BPC в контрактах</span>}
+                {b.how === "copy" ? <span className="text-job">скопировать со своего BPO (джоба копирования в плане по заходам)</span> : <span className="text-marker">своего BPO нет: купить BPC в контрактах</span>}
               </li>
             ))}
           </ul>

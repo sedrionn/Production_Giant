@@ -155,14 +155,19 @@ export function toBatch(r: CalcResponse): PlanBatch {
   // Invention for the next round's BPC: expected attempts on a lab slot, before everything else.
   const inv = r.request.blueprintSource === "invention" ? r.invention.chosen : null;
   if (inv && inv.chance > 0 && inv.secondsPerAttempt > 0) {
-    jobs.push({
-      typeId: r.product.typeId,
-      name: `${r.product.name} (инвент)`,
-      activity: "invention",
-      runs: 1 / inv.chance,
-      seconds: inv.secondsPerAttempt / inv.chance,
-      depth: Math.max(0, ...jobs.map((j) => j.depth)) + 1,
-    });
+    const depth = Math.max(0, ...jobs.map((j) => j.depth)) + 1;
+    jobs.push({ typeId: r.product.typeId, name: `${r.product.name} (инвент)`, activity: "invention", runs: 1 / inv.chance, seconds: inv.secondsPerAttempt / inv.chance, depth });
+    // Each attempt eats one run of a T1 copy: copied from your own BPO on a lab slot first.
+    if (inv.copySecondsPerRun && ownedBlueprintIndex().get(inv.sourceId)?.isBpo) {
+      jobs.push({
+        typeId: r.product.typeId,
+        name: `${inv.sourceName} (копии для ${r.product.name})`,
+        activity: "copying",
+        runs: 1 / inv.chance,
+        seconds: inv.copySecondsPerRun / inv.chance,
+        depth: depth + 1,
+      });
+    }
   }
   return {
     typeId: r.product.typeId,
@@ -199,7 +204,9 @@ const MAX_BPC_GROUPS = 3;
  * Own BPO/BPC: its runs. Invention (also when you still have a few BPCs left): every decryptor is
  * tried — +runs decryptors turn 1-run BPCs into multi-day jobs (Flycatcher with Augmentation).
  */
-export function sizeRoutes(r: Row, cad: number, horizon: number, minProfit = 0, bpcRuns: number[] = []): Sized[] {
+export function sizeRoutes(r: Row, cad: number, horizon: number, minProfit = 0, bpcRuns: number[] = [], allowLoss = false): Sized[] {
+  // Pinned items are sized even at a loss (Nick decided to build them anyway).
+  const ok = (profit: number) => profit > 0 || allowLoss;
   const pick = (secondsPerRun: number, profitPerRun: number, maxRuns: number) => {
     const runs = batchRunsForCadence({ secondsPerRun, profitPerRun, maxRuns, cadenceDays: cad, horizonDays: horizon, minProfit });
     const occupied = Math.max(cad, Math.ceil((runs * secondsPerRun) / 86_400 / cad) * cad);
@@ -209,7 +216,7 @@ export function sizeRoutes(r: Row, cad: number, horizon: number, minProfit = 0, 
   if (r.blueprintSource === "bpo" || r.blueprintSource === "bpc") {
     const perRun = (r.profit ?? 0) / r.runs;
     // An own BPC is used up whole, one batch per copy of its real length; a BPO is sized for the login rhythm.
-    if (perRun > 0 && r.blueprintSource === "bpc" && r.maxRuns > 0) {
+    if (ok(perRun) && r.blueprintSource === "bpc" && r.maxRuns > 0) {
       const groups = new Map<number, number>();
       for (const n of bpcRuns.length ? bpcRuns : [r.maxRuns]) groups.set(n, (groups.get(n) ?? 0) + 1);
       for (const [runs, count] of [...groups.entries()].sort((a, b) => b[0] - a[0]).slice(0, MAX_BPC_GROUPS)) {
@@ -217,7 +224,7 @@ export function sizeRoutes(r: Row, cad: number, horizon: number, minProfit = 0, 
         const occupied = Math.max(cad, Math.ceil(secs / 86_400 / cad) * cad);
         out.push({ route: "owned", runs, profit: perRun * runs, score: (perRun * runs) / occupied, maxBatches: count });
       }
-    } else if (perRun > 0) out.push({ route: "owned", ...pick(r.jobSeconds / r.runs, perRun, r.maxRuns) });
+    } else if (ok(perRun)) out.push({ route: "owned", ...pick(r.jobSeconds / r.runs, perRun, r.maxRuns) });
     if (r.blueprintSource === "bpo") return out;
   }
   const c = calculate({ typeId: r.typeId, runs: r.runs, blueprintSource: "invention", compareDecryptors: true });
@@ -235,7 +242,7 @@ export function sizeRoutes(r: Row, cad: number, horizon: number, minProfit = 0, 
     // Batches above the minimum first; then score; ties → the longer batch (fewer logins).
     const big = (x: { profit: number }) => x.profit >= minProfit;
     if (
-      s.profit > 0 &&
+      ok(s.profit) &&
       (!best ||
         (big(s) && !big(best)) ||
         (big(s) === big(best) && (s.score > best.score * 1.0001 || (s.score >= best.score * 0.9999 && s.runs > best.runs))))
@@ -260,6 +267,8 @@ export function buildPlan(req: PlanRequest): PlanResponse {
   // Candidates: best overview rows across the chosen categories (one row per item).
   const rows = new Map<number, Row>();
   const pinErrors = new Map<number, { name: string; reason: string }>();
+  const skipNoMarket = getSettings().planSkipNoMarket;
+  const noMarket = new Map<number, string>();
   const addRow = (r: OverviewRow, category: string, categoryKey: CategoryKey) => {
     const pinned = pins.has(r.typeId);
     if (r.error || r.profit === null || !r.jobSeconds || !r.runs) {
@@ -268,6 +277,11 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     }
     // Invented rows stay even if unprofitable at the default decryptor: another one may fix that.
     if (r.profit <= 0 && r.blueprintSource !== "invention" && !pinned) return;
+    // No market (history): it would only sell into buy orders. Pinned items are Nick's call.
+    if (skipNoMarket && !pinned && r.priceFlags.some((f) => f.kind === "no_market")) {
+      if (!noMarket.has(r.typeId)) noMarket.set(r.typeId, r.name);
+      return;
+    }
     if (!rows.has(r.typeId)) rows.set(r.typeId, { ...r, category, categoryKey });
   };
   for (const key of req.categories) {
@@ -291,7 +305,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
       const filler = r.categoryKey.startsWith("rigs") || r.categoryKey === "reactions" || t?.raceId === RACE_CALDARI;
       const tier = !req.caldariShipsFirst ? 0 : caldariShip ? 0 : filler ? 1 : 2;
       const bp = recipe(r.typeId)?.blueprintTypeId;
-      return sizeRoutes(r, cad, horizon, req.minBatchProfit, bp ? ownedIdx.get(bp)?.bpcRuns : undefined).map((s) => ({ r, ...s, weight, tier }));
+      return sizeRoutes(r, cad, horizon, req.minBatchProfit, bp ? ownedIdx.get(bp)?.bpcRuns : undefined, pins.has(r.typeId)).map((s) => ({ r, ...s, weight, tier }));
     } catch {
       return [];
     }
@@ -412,6 +426,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
   for (const name of unpriced) plan.skipped.push({ name, reason: "нет цены на часть материалов" });
   for (const name of noBlueprint) plan.skipped.push({ name, reason: "нет чертежа и нельзя заинвентить" });
   plan.skipped.push(...pinErrors.values());
+  for (const [id, name] of noMarket) if (!rows.has(id)) plan.skipped.push({ name, reason: "нет рынка: почти нет сделок за 30 дней" });
   for (const id of pins.keys()) {
     if (!sde.getType(id)) plan.skipped.push({ name: `#${id}`, reason: "закреплено, но нет в SDE" });
     else if (rows.has(id) && !pinnedRoute.has(id)) plan.skipped.push({ name: rows.get(id)!.name, reason: "закреплено, но нет своего чертежа в плюс и нельзя заинвентить" });
@@ -472,7 +487,7 @@ function stagesFor(plan: Plan, calcs: Map<string, CalcResponse>, horizonDays: nu
     }
     for (const l of c.shopping) {
       if (buy.has(l.typeId)) continue;
-      buy.set(l.typeId, { typeId: l.typeId, name: l.name, unitPrice: l.cost === null || !l.quantity ? null : l.cost / l.quantity, volume: l.quantity ? l.volume / l.quantity : 0 });
+      buy.set(l.typeId, { typeId: l.typeId, name: l.name, unitPrice: l.cost === null || !l.quantity ? null : l.cost / l.quantity, volume: l.quantity ? l.volume / l.quantity : 0, flags: l.priceFlags?.map((f) => f.label) });
     }
     if (c.request.blueprintSource === "invention" && c.invention.chosen) {
       const cur = invented.get(key) ?? { c, bpcs: 0 };
