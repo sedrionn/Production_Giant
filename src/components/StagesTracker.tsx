@@ -7,6 +7,7 @@ import type { LineProgress, StageLine } from "@/engine/stages";
 import { ago, duration, isk, pct, qty } from "@/lib/format";
 import { stageName } from "@/lib/stages";
 import { BuyList } from "./BuyList";
+import { CopyName } from "./CopyName";
 
 const STATE: Record<LineProgress["state"], { label: string; cls: string }> = {
   todo: { label: "не начато", cls: "text-graphite" },
@@ -191,6 +192,7 @@ function Row({ l, who }: { l: StageLine & { progress: LineProgress }; who?: stri
   return (
     <tr className={`border-b border-line/40 ${l.progress.state === "done" ? "text-graphite" : ""}`}>
       <td className="py-1.5 pr-4">
+        <CopyName name={l.name} />
         {l.name}
         {l.activity === "reaction" && <span className="ml-2 text-xs text-graphite">реакция</span>}
       </td>
