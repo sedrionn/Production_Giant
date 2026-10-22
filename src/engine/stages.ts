@@ -70,6 +70,10 @@ export interface StageInput {
   extraBuy?: { typeId: number; quantity: number; note: string }[];
   /** Safety margin on what is bought after stock (0.01 = +1%, rounded up). Short is worse than a few extra. */
   buffer?: number;
+  /** Buy materials for this many weeks of the same plan at once (stock counted once); intermediates are not touched. */
+  weeks?: number;
+  /** Freight of bought materials to the factory, ISK per m³ (0 = not counted). */
+  freightPerM3?: number;
 }
 
 export interface StageLine {
@@ -116,6 +120,11 @@ export interface Stages {
   /** Same list without stock, for comparison. */
   costWithoutStock: number;
   costWithStock: number;
+  /** Weeks of materials in the list, m³ to haul and what the courier costs at the current rate. */
+  weeks?: number;
+  volume?: number;
+  freightPerM3?: number;
+  freightCost?: number;
   /** T1 blueprint copies for invention (one per attempt): copy from your BPO or buy BPCs. Filled by the server. */
   blueprints?: { typeId: number; name: string; copies: number; forItem: string; how: "copy" | "buy" }[];
 }
@@ -183,7 +192,9 @@ export function planStages(input: StageInput): Stages {
   let costWithout = 0;
   let costWith = 0;
   let saved = 0;
-  const line = (id: number, need: number, note?: string): BuyLine => {
+  const weeks = Math.max(1, Math.round(input.weeks ?? 1));
+  const line = (id: number, perWeek: number, note?: string): BuyLine => {
+    const need = perWeek * weeks;
     const b = buy.get(id);
     const fromStock = take(id, need);
     const short = need - fromStock;
@@ -225,6 +236,10 @@ export function planStages(input: StageInput): Stages {
     savedByStock: saved,
     costWithoutStock: costWithout,
     costWithStock: costWith,
+    weeks,
+    volume: buyLines.reduce((s, l) => s + l.volume, 0),
+    freightPerM3: input.freightPerM3 ?? 0,
+    freightCost: buyLines.reduce((s, l) => s + l.volume, 0) * (input.freightPerM3 ?? 0),
   };
 }
 

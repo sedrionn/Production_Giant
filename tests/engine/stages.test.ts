@@ -49,6 +49,19 @@ describe("planStages", () => {
     expect(s.buy.find((b) => b.typeId === 20)).toMatchObject({ need: 10, fromStock: 4, toBuy: 6, cost: 6000, note: "инвент" });
   });
 
+  it("N weeks: materials ×N minus stock (counted once); intermediates and jobs are not touched; m³ and freight", () => {
+    const one = planStages({ products: [{ typeId: 1, runs: 10 }], recipes, buy, stock: new Map([[10, 7]]) });
+    const three = planStages({ products: [{ typeId: 1, runs: 10 }], recipes, buy, stock: new Map([[10, 7]]), weeks: 3, freightPerM3: 333 });
+    // Ore: 60 a week → 180 for 3 weeks, 7 in stock → 173. Ice: 10 → 30.
+    expect(three.buy.find((b) => b.typeId === 10)).toMatchObject({ need: 180, fromStock: 7, toBuy: 173, cost: 1730 });
+    expect(three.buy.find((b) => b.typeId === 11)).toMatchObject({ need: 30, toBuy: 30 });
+    expect(three.stages).toEqual(one.stages);
+    expect(three.weeks).toBe(3);
+    expect(three.volume).toBeCloseTo(173 * 0.1 + 30 * 1);
+    expect(three.freightCost).toBeCloseTo((173 * 0.1 + 30 * 1) * 333);
+    expect(one).toMatchObject({ weeks: 1, freightCost: 0 });
+  });
+
   it("buys a safety margin on top of what is short, rounded up", () => {
     const s = planStages({ products: [{ typeId: 1, runs: 10 }], recipes, buy, stock: new Map([[10, 7]]), buffer: 0.01 });
     // Ore: need 60, 7 in stock, 53 short → 53 × 1.01 = 53.53 → 54.
