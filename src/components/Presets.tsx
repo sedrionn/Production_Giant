@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { AppSettings } from "@/db/seed";
-import type { RigScope } from "@/engine/bonuses";
+import { defaultRigSecurity, type RigScope } from "@/engine/bonuses";
 import type { RigRule } from "@/engine/facility";
 import type { Activity, Decryptor } from "@/engine/types";
 import { Search } from "./ItemSearch";
@@ -49,7 +49,6 @@ const RIG_ACTIVITIES: [Activity, string][] = [
   ["copying", "копирование"],
 ];
 /** Starting points; base values must be checked against Show Info → Attributes on the rig. */
-const STD_SECURITY = { high: 1, low: 1.9, null: 2.1 };
 const THUKKER = { high: 0.1, low: 1.9, null: 0.1 };
 const RIG_TEMPLATES: { label: string; rule: RigRule; extra?: RigRule[] }[] = [
   {
@@ -288,8 +287,8 @@ function ProfileForm({ initial, onSave, onCancel, error }: { initial: Profile; o
                     step="0.1"
                     min={0}
                     max={5}
-                    value={r.security?.[z] ?? STD_SECURITY[z]}
-                    onChange={(e) => setRig(i, { security: { ...STD_SECURITY, ...r.security, [z]: Number(e.target.value) } })}
+                    value={r.security?.[z] ?? defaultRigSecurity(r.activity)[z]}
+                    onChange={(e) => setRig(i, { security: { ...defaultRigSecurity(r.activity), ...r.security, [z]: Number(e.target.value) } })}
                     className={`${input} w-20`}
                   />
                 </label>
@@ -385,6 +384,17 @@ export function SettingsForm() {
         </L>
         <L label="Доставка продукта на рынок, ISK/м³">
           <input type="number" min={0} step={10} value={s.freightOutPerM3} onChange={(e) => set({ freightOutPerM3: Math.max(0, Number(e.target.value)) })} className={input} />
+        </L>
+        <L label="Запас к закупке, %">
+          <input
+            type="number"
+            min={0}
+            max={20}
+            step={0.5}
+            value={Math.round((s.buyBuffer ?? 0) * 1000) / 10}
+            onChange={(e) => set({ buyBuffer: Math.min(0.2, Math.max(0, Number(e.target.value) / 100)) })}
+            className={input}
+          />
         </L>
         <L label="Свои BPC в расчёте">
           <select value={s.ownBpcValue} onChange={(e) => set({ ownBpcValue: e.target.value as AppSettings["ownBpcValue"] })} className={input}>

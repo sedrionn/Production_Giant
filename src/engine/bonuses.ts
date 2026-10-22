@@ -117,6 +117,25 @@ export const SECURITY_RIG_MULTIPLIER: Record<Security, number> = {
   null: 2.1, // verify
 };
 
+/**
+ * Reactor rigs (Standup M/L-Set Reactor Efficiency) have their own security multipliers:
+ * banned in highsec, ×1 in lowsec, ×1.1 in null/WH. Used when a reaction rig has no explicit
+ * `security`. Lowsec ✓ in game (Tatara in Auner, T2 rig: "Installed Rig −24.0%", materials 97.6 per 100).
+ */
+export const REACTION_RIG_SECURITY_MULTIPLIER: Record<Security, number> = {
+  high: 0, // rig can't be fitted in highsec
+  low: 1.0, // ✓ in game
+  null: 1.1, // verify
+};
+
+/** Default rig security multipliers for a rig of this activity. */
+export function defaultRigSecurity(activity: Activity): Record<Security, number> {
+  return activity === "reaction" ? REACTION_RIG_SECURITY_MULTIPLIER : SECURITY_RIG_MULTIPLIER;
+}
+
+/** Default share of extra materials bought on top of what the plan needs (0.01 = +1%). */
+export const DEFAULT_BUY_BUFFER = 0.01;
+
 /** Material-efficiency rig bonus per tier (before security multiplier). */
 export const RIG_MATERIAL_BONUS: Record<RigTier, number> = {
   none: 0,

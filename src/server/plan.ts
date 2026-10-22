@@ -454,6 +454,7 @@ function stagesFor(plan: Plan, calcs: Map<string, CalcResponse>, horizonDays: nu
     buy,
     stock: st.stock,
     extraBuy: [...extra.entries()].map(([typeId, quantity]) => ({ typeId, quantity, note: note.get(typeId) ?? "инвент" })),
+    buffer: s.buyBuffer,
   });
   stages.blueprints = copies.sort((a, b) => a.how.localeCompare(b.how) || b.copies - a.copies);
   return { stages, stock: { locations: st.locations, syncedAt: st.syncedAt, owners: st.owners, types: st.stock.size } };
