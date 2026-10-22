@@ -4,7 +4,7 @@ import { fail, ok } from "../_util";
 
 export async function POST(req: Request) {
   try {
-    const b = (await req.json()) as Partial<{ budget: number; cadenceDays: number; horizonDays: number; categories: CategoryKey[]; marketShare: number; minBatchProfit: number; caldariShipsFirst: boolean; maxItemShare: number; pins: { typeId: number; batches: number }[]; maxReactionJobDays: number; buyWeeks: number }>;
+    const b = (await req.json()) as Partial<{ budget: number; cadenceDays: number; horizonDays: number; categories: CategoryKey[]; marketShare: number; minBatchProfit: number; caldariShipsFirst: boolean; maxItemShare: number; pins: { typeId: number; batches: number }[]; maxReactionJobDays: number; buyWeeks: number; stockFirst: boolean }>;
     const plan = buildPlan({
       budget: Math.max(0, Number(b.budget) || 10e9),
       cadenceDays: Math.min(7, Math.max(1, Number(b.cadenceDays) || 2)),
@@ -14,6 +14,7 @@ export async function POST(req: Request) {
       minBatchProfit: Math.max(0, Number(b.minBatchProfit ?? 30e6)),
       caldariShipsFirst: b.caldariShipsFirst !== false,
       maxItemShare: Math.min(1, Math.max(0.05, Number(b.maxItemShare ?? 0.2))),
+      stockFirst: b.stockFirst !== false,
       buyWeeks: Math.min(8, Math.max(1, Math.round(Number(b.buyWeeks) || 1))),
       maxReactionJobDays: Math.min(28, Math.max(0, Number(b.maxReactionJobDays ?? 2) || 0)),
       pins: (Array.isArray(b.pins) ? b.pins : [])

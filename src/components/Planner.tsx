@@ -10,6 +10,8 @@ import { Search } from "./ItemSearch";
 
 interface Form {
   budget: number;
+  /** Batches made largely from stock go first within their tier. */
+  stockFirst: boolean;
   cadenceDays: number;
   horizonDays: number;
   marketShare: number;
@@ -25,7 +27,7 @@ interface Form {
   pins: { typeId: number; name: string; batches: number }[];
 }
 
-const DEFAULT: Form = { budget: 10e9, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, caldariShipsFirst: true, maxItemShare: 0.2, maxReactionJobDays: 2, buyWeeks: 1, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions"], pins: [] };
+const DEFAULT: Form = { budget: 10e9, stockFirst: true, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, caldariShipsFirst: true, maxItemShare: 0.2, maxReactionJobDays: 2, buyWeeks: 1, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions"], pins: [] };
 const STORAGE = "pg.plan.v3";
 
 export function Planner({ categories }: { categories: { key: string; label: string }[] }) {
@@ -134,6 +136,10 @@ export function Planner({ categories }: { categories: { key: string; label: stri
           <input type="checkbox" className="accent-[var(--marker)]" checked={form.caldariShipsFirst} onChange={(e) => set({ caldariShipsFirst: e.target.checked })} />
           Сначала калдарские корабли, остальное — заполнить свободные слоты и бюджет
         </label>
+        <label className="flex items-center gap-2 sm:col-span-2 lg:col-span-8" title="Партия, у которой треть стоимости и больше лежит на складе, идёт первой в своём ярусе (только прибыльные). Склад в любом случае не тратит бюджет">
+          <input type="checkbox" className="accent-[var(--marker)]" checked={form.stockFirst} onChange={(e) => set({ stockFirst: e.target.checked })} />
+          Сначала то, что делается из склада (компоненты и материалы в твоих структурах)
+        </label>
         <fieldset className="flex flex-wrap gap-x-4 gap-y-1 sm:col-span-2 lg:col-span-8">
           <legend className="mb-1 text-sm text-graphite">Что рассматривать</legend>
           {categories.map((c) => (
@@ -180,9 +186,10 @@ export function Planner({ categories }: { categories: { key: string; label: stri
               {isk(plan.request.budget)}, заход раз в {plan.request.cadenceDays} дн. Если цены или склад обновились, составь заново.
             </p>
           )}
-          <section className="grid gap-4 sm:grid-cols-4">
+          <section className="grid gap-4 sm:grid-cols-5">
             <Stat label="Прибыль плана" value={isk(plan.profit, true)} title={full(plan.profit)} tone="gain" />
-            <Stat label="Нужно вложить" value={isk(plan.capital)} title={`${full(plan.capital)} из бюджета ${full(plan.request.budget)}`} />
+            <Stat label="Нужно вложить" value={isk(plan.capital)} title={`${full(plan.capital)} из бюджета ${full(plan.request.budget)}: только то, что покупается`} />
+            <Stat label="Из склада" value={isk(plan.fromStock ?? 0)} title="Сколько стоили бы на рынке материалы и компоненты, которые план берёт со склада. Бюджет на них не тратится" />
             <Stat label="Заходов" value={String(plan.logins.length)} title="Дни, когда нужно что-то забрать или поставить" />
             <Stat
               label="Загрузка слотов"
@@ -284,6 +291,7 @@ export function Planner({ categories }: { categories: { key: string; label: stri
                     <th className="py-2 pr-4 text-right font-normal">Партий × ранов</th>
                     <th className="py-2 pr-4 text-right font-normal">Прибыль</th>
                     <th className="py-2 pr-4 text-right font-normal">Вложить</th>
+                    <th className="py-2 pr-4 text-right font-normal">Из склада</th>
                     <th className="py-2 text-right font-normal">Готово к</th>
                   </tr>
                 </thead>
@@ -302,6 +310,9 @@ export function Planner({ categories }: { categories: { key: string; label: stri
                       </td>
                       <td className="py-1.5 pr-4 text-right" title={full(g.capital)}>
                         {isk(g.capital)}
+                      </td>
+                      <td className="py-1.5 pr-4 text-right text-gain" title={full(g.fromStock)}>
+                        {g.fromStock > 0 ? isk(g.fromStock) : <span className="text-graphite">—</span>}
                       </td>
                       <td className="py-1.5 text-right text-graphite">{dayLabel(Math.ceil(g.end / plan.request.cadenceDays) * plan.request.cadenceDays)}</td>
                     </tr>
@@ -455,13 +466,14 @@ function byOwner(jobs: ScheduledJob[]): [string, ScheduledJob[]][] {
 }
 
 function groupBatches(b: PlanResponse["batches"]) {
-  const m = new Map<string, { name: string; count: number; runs: number; profit: number; capital: number; end: number; pinned: boolean }>();
+  const m = new Map<string, { name: string; count: number; runs: number; profit: number; capital: number; fromStock: number; end: number; pinned: boolean }>();
   for (const x of b) {
-    const g = m.get(x.name) ?? { name: x.name, count: 0, runs: x.runs, profit: 0, capital: 0, end: 0, pinned: false };
+    const g = m.get(x.name) ?? { name: x.name, count: 0, runs: x.runs, profit: 0, capital: 0, fromStock: 0, end: 0, pinned: false };
+    g.fromStock += x.fromStock ?? 0;
     g.pinned ||= !!x.pinned;
     g.count++;
     g.profit += x.profit;
-    g.capital += x.capital;
+    g.capital += x.capital - (x.fromStock ?? 0);
     g.end = Math.max(g.end, x.end);
     m.set(x.name, g);
   }
