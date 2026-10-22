@@ -7,7 +7,7 @@ import { JOB_ACTIVITY_IDS, SLOT_SKILLS } from "@/engine/bonuses";
 import { characters, industryJobs } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { calculate, type CalcResponse } from "./calculate";
-import { CATEGORIES, isCaldariBranchShip, RACE_CALDARI, shipInputs, type CategoryKey } from "./catalog";
+import { CATEGORIES, isCaldariBranchShip, isCapitalRig, RACE_CALDARI, shipInputs, type CategoryKey } from "./catalog";
 import { ownedBlueprintIndex, skillLevels } from "./characters";
 import { getDb, getSde, getSettings, priceBook } from "./data";
 import { recipeLookup } from "@/sde/recipes";
@@ -284,6 +284,8 @@ export function buildPlan(req: PlanRequest): PlanResponse {
       if (!noMarket.has(r.typeId)) noMarket.set(r.typeId, r.name);
       return;
     }
+    // Capital rigs are never planned (expensive blueprints, too much capital per batch) unless pinned.
+    if (!pinned && isCapitalRig(sde, sde.getType(r.typeId))) return;
     if (!rows.has(r.typeId)) rows.set(r.typeId, { ...r, category, categoryKey });
   };
   for (const key of req.categories) {

@@ -79,6 +79,14 @@ describe("overview categories", () => {
     expect(names("reactions")).toEqual(["Fulleroferrocene"]);
   });
 
+  it("capital rigs: Capital + Rig group only (SYNTHETIC types)", async () => {
+    const { isCapitalRig } = await import("@/server/catalog");
+    const capRig = t(30, "Capital Warhead Flare Catalyst II", 774, 7, 2);
+    const largeRig = t(31, "Large Warhead Flare Catalyst II", 774, 7, 2);
+    const capModule = t(32, "Capital Shield Booster II", 510, 7, 2);
+    expect([capRig, largeRig, capModule].map((x) => isCapitalRig(sde, x))).toEqual([true, false, false]);
+  });
+
   it("Mobile Warp Disruptor: T1 and T2 bubbles by group, no Syndicate, no other deployables", () => {
     expect(names("warp_disruptors")).toEqual(["Mobile Large Warp Disruptor II", "Mobile Small Warp Disruptor I"]);
   });

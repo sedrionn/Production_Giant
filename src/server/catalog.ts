@@ -55,6 +55,13 @@ const CAPITAL_GROUPS: ReadonlySet<string> = new Set([
 ]);
 export const isCapital = (sde: SdeSource, t: SdeType | undefined) => !!t && t.categoryId === CATEGORY.ship && CAPITAL_GROUPS.has(sde.getGroup(t.groupId)?.name ?? "");
 
+/**
+ * Capital-size rig (name starts with "Capital", group "Rig …"). Nick does not plan them: the
+ * blueprints are expensive and the batches tie up too much capital for the margin.
+ */
+export const isCapitalRig = (sde: SdeSource, t: SdeType | undefined) =>
+  !!t && t.categoryId === CATEGORY.module && t.name.startsWith("Capital ") && (sde.getGroup(t.groupId)?.name ?? "").startsWith("Rig ");
+
 /** T1 items usually carry no meta group in the SDE. */
 const isMeta = (t: SdeType, meta: number) => (meta === META.t1 ? t.metaGroupId == null || t.metaGroupId === META.t1 : t.metaGroupId === meta);
 
