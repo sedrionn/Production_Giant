@@ -33,6 +33,8 @@ export interface PlanRequest {
   caldariShipsFirst: boolean;
   /** Max share of the budget one item may take (0..1). */
   maxItemShare: number;
+  /** Purchase list: materials for this many weeks of the same plan (stock counted once). */
+  buyWeeks?: number;
   /** Longest reaction job, days: longer ones run as parallel jobs. 0 = no cap. */
   maxReactionJobDays?: number;
   /** Items Nick always wants in the plan, with how many batches; planned before everything else. */
@@ -398,7 +400,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     }
   }
 
-  const stages = stagesFor(plan, calcs, horizon, req.maxReactionJobDays);
+  const stages = stagesFor(plan, calcs, horizon, req.maxReactionJobDays, req.buyWeeks);
 
   const sheet = candidates
     .map((b) => {
@@ -447,7 +449,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
  * Stages of the plan: all batches merged, what is in the stock hangars taken off (built
  * components and bought materials), plus datacores and decryptors for invention.
  */
-function stagesFor(plan: Plan, calcs: Map<string, CalcResponse>, horizonDays: number, maxReactionDays?: number): { stages: Stages; stock: PlanResponse["stock"] } {
+function stagesFor(plan: Plan, calcs: Map<string, CalcResponse>, horizonDays: number, maxReactionDays?: number, buyWeeks = 1): { stages: Stages; stock: PlanResponse["stock"] } {
   const { source: sde } = getSde();
   const s = getSettings();
   const recipes = new Map<number, StageRecipe>();
@@ -527,6 +529,8 @@ function stagesFor(plan: Plan, calcs: Map<string, CalcResponse>, horizonDays: nu
     stock: st.stock,
     extraBuy: [...extra.entries()].map(([typeId, quantity]) => ({ typeId, quantity, note: note.get(typeId) ?? "инвент" })),
     buffer: s.buyBuffer,
+    weeks: buyWeeks,
+    freightPerM3: s.freightInPerM3,
   });
   stages.blueprints = copies.sort((a, b) => a.how.localeCompare(b.how) || b.copies - a.copies);
   return { stages, stock: { locations: st.locations, syncedAt: st.syncedAt, owners: st.owners, types: st.stock.size } };

@@ -40,7 +40,14 @@ export function BuyList({ stages, stockNote }: { stages: Stages; stockNote?: Rea
         </div>
       </div>
       <p className="text-sm text-graphite">
-        Купить {qty(toBuy.length)} позиций на {isk(stages.costWithStock)}, {qty(Math.round(toBuy.reduce((s, l) => s + l.volume, 0)))} м³.
+        {(stages.weeks ?? 1) > 1 && <span className="text-chalk">Материалы на {stages.weeks} нед. (промежуточные — на одну). </span>}
+        Купить {qty(toBuy.length)} позиций на {isk(stages.costWithStock)}, {qty(Math.round(toBuy.reduce((s, l) => s + l.volume, 0)))} м³
+        {stages.freightPerM3 ? (
+          <>
+            , доставка <span className="text-chalk">{isk(stages.freightCost ?? 0)}</span> (по {qty(stages.freightPerM3)} ISK/м³)
+          </>
+        ) : null}
+        .
         {stages.savedByStock > 0 && (
           <>
             {" "}
