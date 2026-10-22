@@ -314,3 +314,37 @@ describe("planWeek: T1 copies before invention", () => {
     expect(p.logins.find((l) => l.day === 0)!.prep.map((x) => x.activity)).toContain("copying");
   });
 });
+
+describe("planWeek: stock", () => {
+  // SYNTHETIC: each batch needs `mat` units of material 900 worth 1 ISK each; stock is taken unit by unit.
+  const withMat = (b: PlanBatch, mat: number) => ({ ...b, materials: mat });
+  const stockUse = (b: PlanBatch, left: ReadonlyMap<number, number>) => {
+    const want = (b as PlanBatch & { materials?: number }).materials ?? 0;
+    const q = Math.min(want, left.get(900) ?? 0);
+    return { take: new Map([[900, q]]), value: q };
+  };
+
+  it("what stock covers is not paid from the budget", () => {
+    const c = withMat(ship(1, 100, 80), 40);
+    const base = { slots: slots(4), budget: 50, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 99 };
+    expect(planWeek({ ...base, candidates: [c] }).batches).toHaveLength(0);
+    const p = planWeek({ ...base, candidates: [c], stock: new Map([[900, 40]]), stockUse });
+    expect(p.batches).toHaveLength(1);
+    expect(p).toMatchObject({ capital: 40, fromStock: 40 });
+  });
+
+  it("stock is used up batch by batch: the second batch pays in full", () => {
+    const p = planWeek({ candidates: [withMat(ship(1, 100, 50), 30)], slots: slots(4), budget: 1000, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 2, unitCap: () => 99, stock: new Map([[900, 40]]), stockUse });
+    expect(p.batches.map((b) => b.fromStock)).toEqual([30, 10]);
+    expect(p.capital).toBe(100 - 40);
+  });
+
+  it("stock first: a batch made largely from stock goes before a better one in the same tier; the tier still wins", () => {
+    const fromStock = withMat(ship(1, 100, 60), 30); // half its cost is on hand
+    const better = ship(2, 300, 60);
+    const base = { slots: slots(4), budget: 60, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 99, stock: new Map([[900, 30]]), stockUse };
+    expect(planWeek({ ...base, candidates: [better, fromStock] }).batches.map((b) => b.typeId)).toEqual([2]);
+    expect(planWeek({ ...base, candidates: [better, fromStock], stockFirst: true }).batches.map((b) => b.typeId)).toEqual([1]);
+    expect(planWeek({ ...base, candidates: [{ ...better, tier: 0 }, { ...fromStock, tier: 1 }], stockFirst: true }).batches.map((b) => b.typeId)).toEqual([2]);
+  });
+});
