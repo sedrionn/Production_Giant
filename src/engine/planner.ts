@@ -13,8 +13,10 @@
  *  - greedy by tier (e.g. Caldari ships first), then profit per slot-day, within budget, a
  *    market cap per item and a per-item share of the budget (variety over one big hull);
  *  - pinned items go first, with their batch count, past the market cap and the budget share;
- *  - invention for the next round is pooled like components and must fit the lab slots.
+ *  - invention for the next round is pooled like components and must fit the lab slots;
+ *  - jobs of a kind may have a length cap (reactions ≤ 2 days): longer ones run as parallel jobs.
  */
+import { splitRuns } from "./stages";
 import type { Activity } from "./types";
 
 export type SlotKind = "manufacturing" | "reaction" | "science";
@@ -100,6 +102,8 @@ export interface Plan {
   /** Share of slot-days within the horizon that are busy (products + prep), per kind. */
   utilization: Record<SlotKind, number>;
   skipped: { name: string; reason: string }[];
+  /** Things the plan cannot do as asked (e.g. more parallel jobs than free slots before the end). */
+  warnings: string[];
 }
 
 /** Round a day up to the next login. */
@@ -171,6 +175,8 @@ export function planWeek(input: {
   unitCap: (typeId: number) => number;
   /** Max share of the budget one item may take (all its batches together); default 1 = no cap. */
   maxItemShare?: number;
+  /** Longest single job per slot kind, days (e.g. reactions: 2); longer ones are split into parallel jobs. */
+  maxJobDays?: Partial<Record<SlotKind, number>>;
 }): Plan {
   const { cadenceDays: cad, horizonDays: horizon } = input;
   const slots = input.slots.map((s) => ({ ...s, freeAt: nextLogin(s.freeAt, cad) }));
@@ -205,24 +211,38 @@ export function planWeek(input: {
       if ((unitsPlanned.get(c.typeId) ?? 0) + c.units > input.unitCap(c.typeId)) return "рынок не возьмёт больше";
     }
     const intermediates = c.jobs.filter((j) => j.depth > 0 && slotKind(j.activity));
-    // The product job: earliest free slot of its kind, at a login inside the period.
+    // The product job: earliest free slot of its kind, at a login inside the period. A job over the
+    // length cap of its kind runs as several parallel jobs, each on its own slot.
     const kind: SlotKind = slotKind(product.activity) ?? "manufacturing";
-    let best = -1;
-    for (let i = 0; i < slots.length; i++) {
-      if (slots[i].kind !== kind) continue;
-      if (best === -1 || slots[i].freeAt < slots[best].freeAt) best = i;
+    const cap = input.maxJobDays?.[kind];
+    const parts = splitRuns(product.runs, product.seconds / product.runs, cap ? cap * DAY : undefined);
+    const free = slots.map((x) => x.freeAt);
+    const placed: { slot: number; runs: number; start: number; end: number }[] = [];
+    let productDays = 0;
+    for (const runs of parts) {
+      let best = -1;
+      for (let i = 0; i < slots.length; i++) {
+        if (slots[i].kind !== kind) continue;
+        if (best === -1 || free[i] < free[best]) best = i;
+      }
+      if (best === -1 || free[best] >= horizon) return "нет свободных слотов в пределах недели";
+      const start = free[best];
+      const end = start + (product.seconds * runs) / product.runs / DAY;
+      productDays += Math.min(nextLogin(end, cad) - start || cad, horizon - start);
+      placed.push({ slot: best, runs, start, end });
+      free[best] = nextLogin(end, cad);
     }
-    if (best === -1 || slots[best].freeAt >= horizon) return "нет свободных слотов в пределах недели";
-    const productDays = (nextLogin(slots[best].freeAt + product.seconds / DAY, cad) - slots[best].freeAt) || cad;
     const after = { ...used };
     for (const j of intermediates) after[slotKind(j.activity)!] += j.seconds / DAY;
-    after[kind] += Math.min(productDays, horizon - slots[best].freeAt);
+    after[kind] += productDays;
     if (after.manufacturing > capacity.manufacturing || after.reaction > capacity.reaction) return "не хватит слотов на компоненты и реакции";
     if (after.science > capacity.science) return "не хватит лабораторных слотов на инвент";
-    const start = slots[best].freeAt;
-    const end = start + product.seconds / DAY;
-    jobs.push({ ...product, batchTypeId: c.typeId, slot: best, owner: slots[best].owner, start, end });
-    slots[best].freeAt = nextLogin(end, cad);
+    for (const x of placed) {
+      jobs.push({ ...product, runs: x.runs, seconds: (product.seconds * x.runs) / product.runs, batchTypeId: c.typeId, slot: x.slot, owner: slots[x.slot].owner, start: x.start, end: x.end });
+      slots[x.slot].freeAt = free[x.slot];
+    }
+    const start = Math.min(...placed.map((x) => x.start));
+    const end = Math.max(...placed.map((x) => x.end));
     Object.assign(used, after);
     for (const j of intermediates) {
       const k = `${j.typeId}:${j.activity}`;
@@ -280,7 +300,9 @@ export function planWeek(input: {
     p.start = p.activity === "invention" ? 0 : (maxDepth - p.depth) * cad;
     // A 22-day pooled job does not fit a week, and a blueprint caps runs per job: run it on as many
     // parallel slots as needed (components may finish next week: the limit is the horizon).
-    const byTime = Math.ceil(p.seconds / DAY / Math.max(cad, horizon) - 1e-9);
+    const kind = slotKind(p.activity);
+    const cap = kind ? input.maxJobDays?.[kind] : undefined;
+    const byTime = Math.ceil(p.seconds / DAY / (cap ? Math.min(cap, Math.max(cad, horizon)) : Math.max(cad, horizon)) - 1e-9);
     const byRuns = p.maxRunsPerJob ? Math.ceil(p.runs / p.maxRunsPerJob) : 1;
     p.jobs = Math.min(p.runs, Math.max(1, byTime, byRuns));
     // Invention attempts are an expectation per batch: round up once over the pool.
@@ -302,7 +324,8 @@ export function planWeek(input: {
     at(j.start).start.push(j);
     at(nextLogin(j.end, cad)).finish.push(j);
   }
-  for (const p of prepJobs) at(p.start).prep.push(p);
+  const { prep: placedPrep, warnings } = schedulePrep(prepJobs, slots, cad, horizon);
+  for (const p of placedPrep) at(p.start).prep.push(p);
 
   const utilization: Record<SlotKind, number> = { manufacturing: 0, reaction: 0, science: 0 };
   for (const kind of KINDS) {
@@ -313,11 +336,58 @@ export function planWeek(input: {
   return {
     batches,
     jobs,
-    prep: prepJobs.sort((a, b) => a.start - b.start || b.depth - a.depth || b.seconds - a.seconds),
+    prep: placedPrep,
+    warnings,
     logins: [...days.values()].sort((a, b) => a.day - b.day),
     profit: batches.reduce((s, b) => s + b.profit, 0),
     capital: batches.reduce((s, b) => s + b.capital, 0),
     utilization,
     skipped,
   };
+}
+
+const KIND_NAME: Record<SlotKind, string> = { manufacturing: "производственных", reaction: "реакционных", science: "лабораторных" };
+
+/**
+ * Puts the parallel jobs of every pooled intermediate on real free slots (after the product jobs),
+ * at logins: a level starts no earlier than its login and one login after the deeper level started;
+ * what does not fit a login moves to the next one. Entries are split by start day.
+ */
+function schedulePrep(pool: PrepJob[], slots: SlotState[], cad: number, horizon: number): { prep: PrepJob[]; warnings: string[] } {
+  const free = slots.map((s) => s.freeAt);
+  const out: PrepJob[] = [];
+  const warnings: string[] = [];
+  const latestStart = new Map<number, number>();
+  const order = [...pool].sort((a, b) => b.depth - a.depth || b.seconds - a.seconds);
+  for (const p of order) {
+    const kind = slotKind(p.activity) ?? "manufacturing";
+    let earliest = p.start;
+    if (p.activity !== "invention") for (const [d, st] of latestStart) if (d > p.depth) earliest = Math.max(earliest, nextLogin(st + cad, cad));
+    const runs = splitRuns(p.runs, p.runs ? p.seconds / p.runs : 0, undefined, Math.ceil(p.runs / p.jobs));
+    const byDay = new Map<number, PrepJob>();
+    let late = 0;
+    for (const r of runs) {
+      const seconds = p.runs ? (p.seconds * r) / p.runs : 0;
+      let best = -1;
+      for (let i = 0; i < slots.length; i++) {
+        if (slots[i].kind !== kind) continue;
+        if (best === -1 || Math.max(free[i], earliest) < Math.max(free[best], earliest)) best = i;
+      }
+      const start = nextLogin(best === -1 ? earliest : Math.max(free[best], earliest), cad);
+      if (best !== -1) free[best] = nextLogin(start + seconds / DAY, cad);
+      if (best === -1 || start >= horizon) late++;
+      const e = byDay.get(start) ?? { ...p, runs: 0, seconds: 0, jobs: 0, start };
+      e.runs += r;
+      e.seconds += seconds;
+      e.jobs++;
+      byDay.set(start, e);
+      if (p.activity !== "invention") latestStart.set(p.depth, Math.max(latestStart.get(p.depth) ?? 0, start));
+    }
+    out.push(...byDay.values());
+    if (late) {
+      const where = slots.some((s) => s.kind === kind) ? `не хватает свободных ${KIND_NAME[kind]} слотов до конца плана` : `нет ${KIND_NAME[kind]} слотов`;
+      warnings.push(`${p.name}: ${late} из ${runs.length} джоб — ${where}, начнутся позже`);
+    }
+  }
+  return { prep: out.sort((a, b) => a.start - b.start || b.depth - a.depth || b.seconds - a.seconds), warnings };
 }

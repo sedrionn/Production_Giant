@@ -16,12 +16,14 @@ interface Form {
   minBatchProfit: number;
   caldariShipsFirst: boolean;
   maxItemShare: number;
+  /** Longest reaction job, days; 0 = no cap. */
+  maxReactionJobDays: number;
   categories: string[];
   /** Always in the plan, before everything else. */
   pins: { typeId: number; name: string; batches: number }[];
 }
 
-const DEFAULT: Form = { budget: 10e9, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, caldariShipsFirst: true, maxItemShare: 0.2, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions"], pins: [] };
+const DEFAULT: Form = { budget: 10e9, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, caldariShipsFirst: true, maxItemShare: 0.2, maxReactionJobDays: 2, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions"], pins: [] };
 const STORAGE = "pg.plan.v3";
 
 export function Planner({ categories }: { categories: { key: string; label: string }[] }) {
@@ -117,18 +119,19 @@ export function Planner({ categories }: { categories: { key: string; label: stri
         </p>
       </div>
 
-      <section className="grid gap-4 rounded border border-line bg-sheet/60 px-4 py-4 sm:grid-cols-2 lg:grid-cols-6">
+      <section className="grid gap-4 rounded border border-line bg-sheet/60 px-4 py-4 sm:grid-cols-2 lg:grid-cols-7">
         <Num label="Бюджет, млрд ISK" value={form.budget / 1e9} step={0.5} onChange={(v) => set({ budget: v * 1e9 })} />
         <Num label="Захожу раз в, дней" value={form.cadenceDays} step={1} min={1} max={7} onChange={(v) => set({ cadenceDays: v })} />
         <Num label="План на, дней" value={form.horizonDays} step={1} min={1} max={28} onChange={(v) => set({ horizonDays: v })} />
         <Num label="Не больше, % рынка за период" value={Math.round(form.marketShare * 100)} step={5} min={5} max={100} onChange={(v) => set({ marketShare: v / 100 })} />
         <Num label="Партия от, млн ISK прибыли" value={form.minBatchProfit / 1e6} step={5} min={0} onChange={(v) => set({ minBatchProfit: v * 1e6 })} />
         <Num label="Одна позиция, не больше % бюджета" value={Math.round(form.maxItemShare * 100)} step={5} min={5} max={100} onChange={(v) => set({ maxItemShare: v / 100 })} />
-        <label className="flex items-center gap-2 sm:col-span-2 lg:col-span-6">
+        <Num label="Реакция: джоба не длиннее, дней (0 — без лимита)" value={form.maxReactionJobDays} step={0.5} min={0} max={28} onChange={(v) => set({ maxReactionJobDays: v })} />
+        <label className="flex items-center gap-2 sm:col-span-2 lg:col-span-7">
           <input type="checkbox" className="accent-[var(--marker)]" checked={form.caldariShipsFirst} onChange={(e) => set({ caldariShipsFirst: e.target.checked })} />
           Сначала калдарские корабли, остальное — заполнить свободные слоты и бюджет
         </label>
-        <fieldset className="flex flex-wrap gap-x-4 gap-y-1 sm:col-span-2 lg:col-span-6">
+        <fieldset className="flex flex-wrap gap-x-4 gap-y-1 sm:col-span-2 lg:col-span-7">
           <legend className="mb-1 text-sm text-graphite">Что рассматривать</legend>
           {categories.map((c) => (
             <label key={c.key} className="flex items-center gap-1.5">
@@ -143,7 +146,7 @@ export function Planner({ categories }: { categories: { key: string; label: stri
           ))}
         </fieldset>
         <Pins pins={form.pins} onChange={(pins) => set({ pins })} />
-        <div className="flex flex-wrap items-center gap-3 sm:col-span-2 lg:col-span-6">
+        <div className="flex flex-wrap items-center gap-3 sm:col-span-2 lg:col-span-7">
           <button onClick={run} disabled={busy || !form.categories.length} className="rounded bg-marker px-4 py-1.5 font-medium text-ink hover:bg-marker/90 disabled:opacity-50">
             {busy ? "Считаю…" : "Составить план"}
           </button>
@@ -199,6 +202,13 @@ export function Planner({ categories }: { categories: { key: string; label: stri
 
           <section className="space-y-3">
             <h2 className="font-display text-2xl font-semibold">По заходам</h2>
+            {plan.warnings?.length > 0 && (
+              <ul className="space-y-0.5 rounded border border-loss/50 bg-loss/10 px-4 py-2 text-sm text-loss">
+                {plan.warnings.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+            )}
             {plan.logins.map((l) => (
               <div key={l.day} className="rounded border border-line bg-sheet/40 px-4 py-3">
                 <p className="font-medium">{dayLabel(l.day)}</p>
@@ -337,7 +347,7 @@ function Pins({ pins, onChange }: { pins: Form["pins"]; onChange: (p: Form["pins
   // A new key clears the search box after each pick.
   const [searchKey, setSearchKey] = useState(0);
   return (
-    <div className="space-y-2 sm:col-span-2 lg:col-span-6">
+    <div className="space-y-2 sm:col-span-2 lg:col-span-7">
       <p className="text-sm text-graphite">
         Закрепить: эти предметы попадают в план первыми, даже если по прибыли на слот-день проигрывают. Лимиты рынка и доли бюджета на них не действуют,
         бюджет и слоты действуют.
@@ -413,9 +423,14 @@ const dayLabel = (d: number) => {
 };
 
 function summarize(jobs: ScheduledJob[]): string {
-  const m = new Map<string, number>();
-  for (const j of jobs) m.set(j.name, (m.get(j.name) ?? 0) + j.runs);
-  return [...m.entries()].map(([n, r]) => `${n} × ${r}`).join(", ");
+  const m = new Map<string, { runs: number; jobs: number }>();
+  for (const j of jobs) {
+    const x = m.get(j.name) ?? { runs: 0, jobs: 0 };
+    x.runs += j.runs;
+    x.jobs++;
+    m.set(j.name, x);
+  }
+  return [...m.entries()].map(([n, x]) => `${n} × ${x.runs}${x.jobs > 1 ? ` (${x.jobs} джоб)` : ""}`).join(", ");
 }
 
 function byOwner(jobs: ScheduledJob[]): [string, ScheduledJob[]][] {
