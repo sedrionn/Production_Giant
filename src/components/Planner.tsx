@@ -6,6 +6,7 @@ import type { ScheduledJob } from "@/engine/planner";
 import { full, isk, pct, qty } from "@/lib/format";
 import { stageName } from "@/lib/stages";
 import { BuyList, StockPicker } from "./BuyList";
+import { Search } from "./ItemSearch";
 
 interface Form {
   budget: number;
@@ -16,9 +17,11 @@ interface Form {
   caldariShipsFirst: boolean;
   maxItemShare: number;
   categories: string[];
+  /** Always in the plan, before everything else. */
+  pins: { typeId: number; name: string; batches: number }[];
 }
 
-const DEFAULT: Form = { budget: 10e9, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, caldariShipsFirst: true, maxItemShare: 0.2, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions"] };
+const DEFAULT: Form = { budget: 10e9, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, caldariShipsFirst: true, maxItemShare: 0.2, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions"], pins: [] };
 const STORAGE = "pg.plan.v3";
 
 export function Planner({ categories }: { categories: { key: string; label: string }[] }) {
@@ -139,6 +142,7 @@ export function Planner({ categories }: { categories: { key: string; label: stri
             </label>
           ))}
         </fieldset>
+        <Pins pins={form.pins} onChange={(pins) => set({ pins })} />
         <div className="flex flex-wrap items-center gap-3 sm:col-span-2 lg:col-span-6">
           <button onClick={run} disabled={busy || !form.categories.length} className="rounded bg-marker px-4 py-1.5 font-medium text-ink hover:bg-marker/90 disabled:opacity-50">
             {busy ? "Считаю…" : "Составить план"}
@@ -176,8 +180,8 @@ export function Planner({ categories }: { categories: { key: string; label: stri
             <Stat label="Заходов" value={String(plan.logins.length)} title="Дни, когда нужно что-то забрать или поставить" />
             <Stat
               label="Загрузка слотов"
-              value={`${pct(plan.utilization.manufacturing, 0)} / ${pct(plan.utilization.reaction, 0)}`}
-              title="Производство / реакции: доля времени слотов за период, занятая корпусами и компонентами"
+              value={`${pct(plan.utilization.manufacturing, 0)} / ${pct(plan.utilization.reaction, 0)} / ${pct(plan.utilization.science ?? 0, 0)}`}
+              title="Производство / реакции / лаборатории: доля времени слотов за период, занятая корпусами, компонентами и инвентом"
             />
           </section>
 
@@ -185,7 +189,10 @@ export function Planner({ categories }: { categories: { key: string; label: stri
             <h2 className="font-display text-2xl font-semibold">Слоты</h2>
             <p className="text-graphite">
               {plan.slots
-                .map((s) => `${s.owner}: производство ${s.manufacturing.total - s.manufacturing.busy} свободно из ${s.manufacturing.total}, реакции ${s.reaction.total - s.reaction.busy} из ${s.reaction.total}`)
+                .map(
+                  (s) =>
+                    `${s.owner}: производство ${s.manufacturing.total - s.manufacturing.busy} свободно из ${s.manufacturing.total}, реакции ${s.reaction.total - s.reaction.busy} из ${s.reaction.total}, лаборатории ${s.science.total - s.science.busy} из ${s.science.total}`,
+                )
                 .join(" · ")}
             </p>
           </section>
@@ -196,10 +203,25 @@ export function Planner({ categories }: { categories: { key: string; label: stri
               <div key={l.day} className="rounded border border-line bg-sheet/40 px-4 py-3">
                 <p className="font-medium">{dayLabel(l.day)}</p>
                 {l.finish.length > 0 && <p className="text-sm text-graphite">Забрать: {summarize(l.finish)}</p>}
-                {l.prep.length > 0 && (
+                {l.prep.some((p) => p.activity === "invention") && (
+                  <p className="text-sm">
+                    <span className="text-job">Инвент в лаборатории на следующий круг:</span>{" "}
+                    {l.prep
+                      .filter((p) => p.activity === "invention")
+                      .map(
+                        (p) =>
+                          `${p.name.replace(" (инвент)", "")} — ${qty(p.runs)} попыток, ${p.jobs > 1 ? `${p.jobs} джобы параллельно по ~${hours(p.seconds / p.jobs)}` : `одна джоба на ${hours(p.seconds)}`}`,
+                      )
+                      .join(", ")}
+                  </p>
+                )}
+                {l.prep.some((p) => p.activity !== "invention") && (
                   <p className="text-sm">
                     <span className="text-job">Компоненты и реакции на следующий круг:</span>{" "}
-                    {l.prep.map((p) => `${p.name} × ${qty(p.runs)}${p.jobs > 1 ? ` (${p.jobs} джоб параллельно)` : ""}`).join(", ")}
+                    {l.prep
+                      .filter((p) => p.activity !== "invention")
+                      .map((p) => `${p.name} × ${qty(p.runs)}${p.jobs > 1 ? ` (${p.jobs} джоб параллельно)` : ""}`)
+                      .join(", ")}
                   </p>
                 )}
                 {l.start.length > 0 && (
@@ -215,10 +237,14 @@ export function Planner({ categories }: { categories: { key: string; label: stri
             ))}
             {plan.invention.length > 0 && (
               <p className="max-w-[90ch] text-sm text-graphite">
-                Инвент заранее (лабораторные слоты пока не планируются):{" "}
+                Инвент:{" "}
                 {plan.invention
-                  .map((i) => `${i.name} — ${i.batches} BPC по ${i.runsPerBpc} ран.${i.decryptor ? `, ${i.decryptor.replace(" Decryptor", "")}` : ""}, ~${i.attemptsPerBatch} попыток на каждый (${i.source})`)
-                  .join("; ")}.
+                  .map(
+                    (i) =>
+                      `${i.name} — ${i.batches} BPC по ${i.runsPerBpc} ран.${i.decryptor ? `, ${i.decryptor.replace(" Decryptor", "")}` : ""}, ~${i.attempts ?? i.attemptsPerBatch * i.batches} попыток${i.secondsPerAttempt ? ` по ${hours(i.secondsPerAttempt)}` : ""} (${i.source})`,
+                  )
+                  .join("; ")}
+                . T1-копии для инвента в лаборатории пока не планируются.
               </p>
             )}
           </section>
@@ -239,7 +265,10 @@ export function Planner({ categories }: { categories: { key: string; label: stri
                 <tbody>
                   {groupBatches(plan.batches).map((g) => (
                     <tr key={g.name} className="border-b border-line/40">
-                      <td className="py-1.5 pr-4">{g.name}</td>
+                      <td className="py-1.5 pr-4">
+                        {g.name}
+                        {g.pinned && <span className="ml-2 rounded border border-marker/60 px-1 text-xs text-marker">закреплено</span>}
+                      </td>
                       <td className="py-1.5 pr-4 text-right">
                         {g.count} × {g.runs}
                       </td>
@@ -303,6 +332,54 @@ function StagesPreview({ stages }: { stages: PlanResponse["stages"] }) {
   );
 }
 
+/** Items that always go into the plan first, with a batch count. */
+function Pins({ pins, onChange }: { pins: Form["pins"]; onChange: (p: Form["pins"]) => void }) {
+  // A new key clears the search box after each pick.
+  const [searchKey, setSearchKey] = useState(0);
+  return (
+    <div className="space-y-2 sm:col-span-2 lg:col-span-6">
+      <p className="text-sm text-graphite">
+        Закрепить: эти предметы попадают в план первыми, даже если по прибыли на слот-день проигрывают. Лимиты рынка и доли бюджета на них не действуют,
+        бюджет и слоты действуют.
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        {pins.map((p) => (
+          <span key={p.typeId} className="flex items-center gap-1.5 rounded border border-marker/60 px-2 py-1 text-sm">
+            {p.name} ×
+            <input
+              type="number"
+              min={1}
+              max={10}
+              value={p.batches}
+              title="Партий за план"
+              onChange={(e) => onChange(pins.map((x) => (x.typeId === p.typeId ? { ...x, batches: Math.min(10, Math.max(1, Number(e.target.value) || 1)) } : x)))}
+              className="w-12 rounded border border-line bg-ink px-1 py-0.5"
+            />
+            <button onClick={() => onChange(pins.filter((x) => x.typeId !== p.typeId))} className="text-graphite hover:text-loss" title="Открепить">
+              ✕
+            </button>
+          </span>
+        ))}
+        <Search
+          key={searchKey}
+          endpoint="/api/search"
+          idKey="typeId"
+          placeholder="Добавить, например Flycatcher"
+          value={null}
+          onPick={(it) => {
+            if (!pins.some((x) => x.typeId === it.id)) onChange([...pins, { typeId: it.id, name: it.name, batches: 1 }]);
+            setSearchKey((k) => k + 1);
+          }}
+          className="w-64"
+        />
+      </div>
+    </div>
+  );
+}
+
+const hours = (sec: number) =>
+  sec >= 86_400 ? `${(sec / 86_400).toFixed(1)} дн.` : sec >= 3600 ? `${(sec / 3600).toFixed(sec < 36_000 ? 1 : 0)} ч` : `${Math.max(1, Math.round(sec / 60))} мин`;
+
 function Num({ label, value, onChange, step, min, max }: { label: string; value: number; onChange: (v: number) => void; step: number; min?: number; max?: number }) {
   return (
     <label className="block space-y-1">
@@ -348,9 +425,10 @@ function byOwner(jobs: ScheduledJob[]): [string, ScheduledJob[]][] {
 }
 
 function groupBatches(b: PlanResponse["batches"]) {
-  const m = new Map<string, { name: string; count: number; runs: number; profit: number; capital: number; end: number }>();
+  const m = new Map<string, { name: string; count: number; runs: number; profit: number; capital: number; end: number; pinned: boolean }>();
   for (const x of b) {
-    const g = m.get(x.name) ?? { name: x.name, count: 0, runs: x.runs, profit: 0, capital: 0, end: 0 };
+    const g = m.get(x.name) ?? { name: x.name, count: 0, runs: x.runs, profit: 0, capital: 0, end: 0, pinned: false };
+    g.pinned ||= !!x.pinned;
     g.count++;
     g.profit += x.profit;
     g.capital += x.capital;

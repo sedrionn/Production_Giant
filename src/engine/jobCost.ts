@@ -78,10 +78,11 @@ export interface IndustrySkills {
  * Skills time multiplier. Manufacturing: Industry 4%/lvl × Advanced Industry 3%/lvl ×
  * the bonus of every other required skill that has one — 1%/lvl for science skills
  * (confirmed in game: Jackdaw with all V = −41.7%; EVE Guru: Shield Rigging on T2 rigs gives nothing).
+ * Science jobs (invention, copying, research): Advanced Industry only.
  */
 export function skillTimeMultiplier(activity: Activity, s: IndustrySkills, required: SkillRequirement[] = []): number {
   if (activity === "reaction") return 1 - SKILL_TIME.reactionsPerLevel * (s.reactions ?? 0);
-  if (activity !== "manufacturing") return 1;
+  if (activity !== "manufacturing") return SKILL_TIME.advancedIndustryScience ? 1 - SKILL_TIME.advancedIndustryPerLevel * (s.advancedIndustry ?? 0) : 1;
   let m =
     (1 - SKILL_TIME.industryPerLevel * (s.industry ?? 0)) *
     (1 - SKILL_TIME.advancedIndustryPerLevel * (s.advancedIndustry ?? 0));

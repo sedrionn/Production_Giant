@@ -16,7 +16,7 @@ import path from "node:path";
 import { stockIndex } from "./assets";
 import { planStages, type StageBuyInfo, type StageRecipe, type Stages } from "@/engine/stages";
 import { quotePrice } from "@/engine/pricing";
-import { computeOverview, type OverviewRow } from "./overview";
+import { computeOverview, overviewRows, type OverviewRow } from "./overview";
 
 export interface PlanRequest {
   budget: number;
@@ -33,6 +33,8 @@ export interface PlanRequest {
   caldariShipsFirst: boolean;
   /** Max share of the budget one item may take (0..1). */
   maxItemShare: number;
+  /** Items Nick always wants in the plan, with how many batches; planned before everything else. */
+  pins?: { typeId: number; batches: number }[];
 }
 
 export interface SlotSummary {
@@ -46,8 +48,18 @@ export interface PlanResponse extends Plan {
   request: PlanRequest;
   slots: SlotSummary[];
   shopping: { typeId: number; name: string; quantity: number; cost: number | null; volume: number }[];
-  /** Invention needed for invented batches (lab slots are not scheduled yet). */
-  invention: { name: string; batches: number; attemptsPerBatch: number; source: string; decryptor: string | null; runsPerBpc: number }[];
+  /** Invention needed for invented batches (the lab jobs themselves are in `prep`). */
+  invention: {
+    name: string;
+    batches: number;
+    attemptsPerBatch: number;
+    source: string;
+    decryptor: string | null;
+    runsPerBpc: number;
+    /** Expected attempts for all BPCs of the route together, and the lab time of one. */
+    attempts?: number;
+    secondsPerAttempt?: number;
+  }[];
   /** The plan split into stages (deepest first) with stock taken off, and the purchase list. */
   stages: Stages;
   /** Where the stock came from. */
@@ -70,7 +82,7 @@ export interface PlanResponse extends Plan {
 }
 
 const DAY = 86_400_000;
-const slotOf = (activityId: number): SlotKind | "science" =>
+const slotOf = (activityId: number): SlotKind =>
   activityId === JOB_ACTIVITY_IDS.manufacturing ? "manufacturing" : (JOB_ACTIVITY_IDS.reactions as readonly number[]).includes(activityId) ? "reaction" : "science";
 
 function characterSlots(now: number): { slots: SlotState[]; summary: SlotSummary[] } {
@@ -89,7 +101,7 @@ function characterSlots(now: number): { slots: SlotState[]; summary: SlotSummary
       .filter((j) => j.status === "active");
     const busyEnds: Record<string, number[]> = { manufacturing: [], reaction: [], science: [] };
     for (const j of active) busyEnds[slotOf(j.activityId)].push(Math.max(0, (Date.parse(j.endDate) - now) / DAY));
-    for (const kind of ["manufacturing", "reaction"] as SlotKind[]) {
+    for (const kind of ["manufacturing", "reaction", "science"] as SlotKind[]) {
       const ends = busyEnds[kind].sort((a, b) => a - b);
       for (let i = 0; i < total[kind]; i++) slots.push({ kind, owner: c.name, freeAt: ends[i] ?? 0 });
     }
@@ -136,6 +148,18 @@ export function toBatch(r: CalcResponse): PlanBatch {
       depth: depth.get(j.typeId) ?? 1,
       maxRunsPerJob: sde.getBlueprint(j.blueprintTypeId)?.maxProductionLimit || undefined,
     }));
+  // Invention for the next round's BPC: expected attempts on a lab slot, before everything else.
+  const inv = r.request.blueprintSource === "invention" ? r.invention.chosen : null;
+  if (inv && inv.chance > 0 && inv.secondsPerAttempt > 0) {
+    jobs.push({
+      typeId: r.product.typeId,
+      name: `${r.product.name} (инвент)`,
+      activity: "invention",
+      runs: 1 / inv.chance,
+      seconds: inv.secondsPerAttempt / inv.chance,
+      depth: Math.max(0, ...jobs.map((j) => j.depth)) + 1,
+    });
+  }
   return {
     typeId: r.product.typeId,
     name: r.product.name,
@@ -226,20 +250,31 @@ export function buildPlan(req: PlanRequest): PlanResponse {
   const cad = Math.max(1, req.cadenceDays);
   const horizon = Math.max(cad, req.horizonDays);
 
+  const pins = new Map((req.pins ?? []).filter((p) => p.batches > 0).map((p) => [p.typeId, Math.round(p.batches)]));
+  const { source: sde } = getSde();
+
   // Candidates: best overview rows across the chosen categories (one row per item).
   const rows = new Map<number, Row>();
+  const pinErrors = new Map<number, { name: string; reason: string }>();
+  const addRow = (r: OverviewRow, category: string, categoryKey: CategoryKey) => {
+    const pinned = pins.has(r.typeId);
+    if (r.error || r.profit === null || !r.jobSeconds || !r.runs) {
+      if (pinned) pinErrors.set(r.typeId, { name: r.name, reason: `закреплено, но не считается: ${r.error ?? "нет цены"}` });
+      return;
+    }
+    // Invented rows stay even if unprofitable at the default decryptor: another one may fix that.
+    if (r.profit <= 0 && r.blueprintSource !== "invention" && !pinned) return;
+    if (!rows.has(r.typeId)) rows.set(r.typeId, { ...r, category, categoryKey });
+  };
   for (const key of req.categories) {
     const label = CATEGORIES.find((c) => c.key === key)?.label ?? key;
-    for (const r of computeOverview(key).rows) {
-      // Invented rows stay even if unprofitable at the default decryptor: another one may fix that.
-      if (r.error || r.profit === null || !r.jobSeconds || !r.runs) continue;
-      if (r.profit <= 0 && r.blueprintSource !== "invention") continue;
-      if (!rows.has(r.typeId)) rows.set(r.typeId, { ...r, category: label, categoryKey: key });
-    }
+    for (const r of computeOverview(key).rows) addRow(r, label, key);
   }
+  // Pinned items outside the chosen categories (or hidden by the blacklist) are evaluated on their own.
+  const pinTypes = [...pins.keys()].filter((id) => !rows.has(id) && !pinErrors.has(id)).flatMap((id) => sde.getType(id) ?? []);
+  for (const r of overviewRows(pinTypes).rows) addRow(r, "Закреплено", "mine");
   // Size each row for the login rhythm. Invented items also pick the decryptor that gives the best
   // profit per occupied slot-day: +runs decryptors turn 1-run BPCs into multi-day jobs (Flycatcher).
-  const { source: sde } = getSde();
   const caldariInputs = shipInputs(sde, new Set([RACE_CALDARI]));
   const recipe = recipeLookup(sde);
   const ownedIdx = ownedBlueprintIndex();
@@ -257,17 +292,23 @@ export function buildPlan(req: PlanRequest): PlanResponse {
       return [];
     }
   });
+  // A pinned item is pinned on every route (own BPCs, then invention): the planner takes the best
+  // one first and adds the rest from the next when it runs out.
+  const pinnedRoute = new Set(sized.filter((x) => pins.has(x.r.typeId)).map((x) => x.r.typeId));
+  const isPinned = (x: (typeof sized)[number]) => pinnedRoute.has(x.r.typeId);
   const top = sized
-    .filter((x) => x.profit >= req.minBatchProfit)
-    .sort((a, b) => a.tier - b.tier || b.score * b.weight - a.score * a.weight)
-    .slice(0, req.candidates ?? 150);
+    .filter((x) => x.profit >= req.minBatchProfit || isPinned(x))
+    .sort((a, b) => Number(isPinned(b)) - Number(isPinned(a)) || a.tier - b.tier || b.score * b.weight - a.score * a.weight)
+    .slice(0, (req.candidates ?? 150) + sized.filter(isPinned).length);
 
   const calcs = new Map<string, CalcResponse>();
   const unpriced: string[] = [];
   const noBlueprint: string[] = [];
   const candidates: PlanBatch[] = [];
   const unitCap = new Map<number, number>();
-  for (const { r, route, runs, decryptorId, weight, tier, maxBatches } of top) {
+  for (const x of top) {
+    const { r, route, runs, decryptorId, weight, tier, maxBatches } = x;
+    const pinned = isPinned(x) ? pins.get(r.typeId) : undefined;
     const key = `${r.typeId}:${route}${maxBatches !== undefined ? `:${runs}` : ""}`;
     try {
       const c = calculate({
@@ -290,8 +331,8 @@ export function buildPlan(req: PlanRequest): PlanResponse {
       calcs.set(key, c);
       // Own BPCs: one batch per copy. BPO or invention: limited by market and slots only.
       const batch = toBatch(c);
-      if (batch.profit < req.minBatchProfit) continue;
-      candidates.push({ ...batch, key, weight, tier, maxBatches: maxBatches ?? (owned && !owned.isBpo ? owned.copies : undefined) });
+      if (batch.profit < req.minBatchProfit && !pinned) continue;
+      candidates.push({ ...batch, key, weight, tier, pinned, maxBatches: maxBatches ?? (owned && !owned.isBpo ? owned.copies : undefined) });
       // Market cap: a share of what sells over the horizon. No history = one batch at most.
       unitCap.set(r.typeId, r.avgDailyVolume30d ? r.avgDailyVolume30d * horizon * req.marketShare : c.summary.output);
     } catch {
@@ -332,8 +373,10 @@ export function buildPlan(req: PlanRequest): PlanResponse {
         source: ch.sourceName,
         decryptor: c.invention.decryptor?.name ?? null,
         runsPerBpc: ch.runsPerSuccess,
+        secondsPerAttempt: ch.secondsPerAttempt,
       };
       cur.batches++;
+      cur.attempts = Math.ceil(cur.batches / Math.max(ch.chance, 0.01) - 1e-9);
       inv.set(b.key ?? String(b.typeId), cur);
     }
   }
@@ -363,6 +406,11 @@ export function buildPlan(req: PlanRequest): PlanResponse {
 
   for (const name of unpriced) plan.skipped.push({ name, reason: "нет цены на часть материалов" });
   for (const name of noBlueprint) plan.skipped.push({ name, reason: "нет чертежа и нельзя заинвентить" });
+  plan.skipped.push(...pinErrors.values());
+  for (const id of pins.keys()) {
+    if (!sde.getType(id)) plan.skipped.push({ name: `#${id}`, reason: "закреплено, но нет в SDE" });
+    else if (rows.has(id) && !pinnedRoute.has(id)) plan.skipped.push({ name: rows.get(id)!.name, reason: "закреплено, но нет своего чертежа в плюс и нельзя заинвентить" });
+  }
 
   return {
     ...plan,
@@ -463,12 +511,15 @@ function stagesFor(plan: Plan, calcs: Map<string, CalcResponse>, horizonDays: nu
 /** SDE category of blueprints (and nothing else): a T1 invention source, not a relic. */
 const CATEGORY_BLUEPRINT = 9;
 
+const sheetName = (id: number) => getSde().source.getType(id)?.name ?? `#${id}`;
+
 /** Plain-text sheet for pasting into a chat with Claude. */
 export function sheetText(p: PlanResponse): string {
   const r = p.request;
   const lines = [
     `Бюджет ${r.budget.toLocaleString("ru-RU")} ISK, заход раз в ${r.cadenceDays} дн., горизонт ${r.horizonDays} дн., рынок до ${Math.round(r.marketShare * 100)}% недельного объёма, партии от ${r.minBatchProfit.toLocaleString("ru-RU")} ISK прибыли.`,
-    `Слоты: ${p.slots.map((s) => `${s.owner} — производство ${s.manufacturing.total} (занято ${s.manufacturing.busy}), реакции ${s.reaction.total} (занято ${s.reaction.busy})`).join("; ")}.`,
+    `Слоты: ${p.slots.map((s) => `${s.owner} — производство ${s.manufacturing.total} (занято ${s.manufacturing.busy}), реакции ${s.reaction.total} (занято ${s.reaction.busy}), лаборатории ${s.science.total} (занято ${s.science.busy})`).join("; ")}.`,
+    ...(r.pins?.length ? [`Закреплено: ${r.pins.map((x) => `${sheetName(x.typeId)} × ${x.batches}`).join(", ")}.`] : []),
     "",
     "Предмет | категория | раны | декриптор | прибыль | капитал | слото-дней | прибыль/слото-день | джоб | дней рынка | риски",
     ...p.sheet.map((s) =>

@@ -47,8 +47,8 @@ export function BuyList({ stages, stockNote }: { stages: Stages; stockNote?: Rea
             Склад сэкономил <span className="text-gain">{isk(stages.savedByStock)}</span> из {isk(stages.costWithoutStock)}; готовые компоненты со склада не строятся, и под них ничего не закупается.
           </>
         )}
-        {stockNote && <> {stockNote}</>}
       </p>
+      {stockNote && <div className="text-sm text-graphite">{stockNote}</div>}
       <div className="max-h-[480px] overflow-auto">
         <table className="w-full min-w-[640px] whitespace-nowrap text-left">
           <thead className="sticky top-0 border-b border-line bg-ink text-sm text-graphite">

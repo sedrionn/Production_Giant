@@ -53,7 +53,7 @@ A personal, local, single-user EVE Online industry planner, a replacement for EV
 ## Known gaps / open questions (good places for ideas)
 
 1. **Build vs buy for intermediates.** Today it is "build if cheaper per unit". Should it consider slot time and logins? EVE Guru buys some components that we build.
-2. **Invention is not scheduled.** Lab slots are not planned. Spare lab slots could make BPCs to sell.
+2. **Invention on lab slots** is scheduled (attempts pooled per item); T1 copying for invention is not. Spare lab slots could make BPCs to sell.
 3. **Missing blueprints for intermediates** (T1 hulls, T1 rig BPCs for invention) are not flagged or added to the purchase list.
 4. **Planner:**
    - **Greedy algorithm:** greedy by tier and profit per slot-day; would an ILP or knapsack be meaningfully better?

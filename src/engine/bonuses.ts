@@ -173,6 +173,8 @@ export const SKILL_TIME = {
   /** Every skill the blueprint requires (except Industry / Advanced Industry): 1% per level, multiplicative. ✓ in game */
   requiredSkillPerLevel: 0.01,
   reactionsPerLevel: 0.04, // verify — Reactions
+  /** Advanced Industry also speeds up science jobs (invention, copying, research). */
+  advancedIndustryScience: true, // verify
 } as const;
 
 /** Market fee bases. */
