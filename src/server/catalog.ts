@@ -5,7 +5,7 @@
 import { recipeLookup } from "@/sde/recipes";
 import type { SdeSource, SdeType } from "@/sde/types";
 
-export type CategoryKey = "mine" | "caldari_t1" | "caldari_t2" | "t3" | "components" | "other" | "reactions" | "rigs_t1" | "rigs_t2";
+export type CategoryKey = "mine" | "caldari_t1" | "caldari_t2" | "t3" | "components" | "other" | "reactions" | "rigs_t1" | "rigs_t2" | "warp_disruptors";
 
 export const RACE_CALDARI = 1;
 /** Caldari, Minmatar, Amarr, Gallente — "empire shipbuilding". */
@@ -26,7 +26,11 @@ export const CATEGORIES: { key: CategoryKey; label: string }[] = [
   { key: "reactions", label: "Реакции" },
   { key: "rigs_t1", label: "Риги T1" },
   { key: "rigs_t2", label: "Риги T2" },
+  { key: "warp_disruptors", label: "Mobile Warp Disruptor" },
 ];
+
+/** SDE group of the six deployable warp disruption bubbles (Small/Medium/Large, I and II). */
+export const MOBILE_WARP_DISRUPTOR_GROUP = "Mobile Warp Disruptor";
 
 /**
  * Not Caldari, but Nick builds them too: shown in the Caldari tabs and planned with the Caldari
@@ -89,6 +93,9 @@ export function listCategory(sde: SdeSource, key: CategoryKey, ownedBlueprintIds
       return made.filter((t) => isRig(t) && isMeta(t, META.t1));
     case "rigs_t2":
       return made.filter((t) => isRig(t) && isMeta(t, META.t2));
+    case "warp_disruptors":
+      // T1 and T2 only: the Syndicate versions are LP-store BPCs, not something Nick can build in bulk.
+      return made.filter((t) => groupName(t) === MOBILE_WARP_DISRUPTOR_GROUP && (isMeta(t, META.t1) || isMeta(t, META.t2)));
   }
 }
 

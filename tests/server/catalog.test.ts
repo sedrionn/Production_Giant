@@ -20,12 +20,18 @@ const types: SdeType[] = [
   t(9, "Heavy Missile Launcher II", 510, 7, 2),
   t(10, "Graviton Reactor Unit", 334, 17, null, 1),
   t(11, "Exigent Sentry Drone Firepower Mutaplasmid", 1964, 17, null),
+  t(12, "Mobile Small Warp Disruptor I", 361, 22, 1),
+  t(13, "Mobile Large Warp Disruptor II", 361, 22, 2),
+  t(14, "Mobile Cyno Inhibitor", 1012, 22, null),
+  t(15, "Syndicate Mobile Large Warp Disruptor", 361, 22, 4),
 ];
 const groups = [
   { groupId: 26, categoryId: 6, name: "Cruiser" },
   { groupId: 774, categoryId: 7, name: "Rig Shield" },
   { groupId: 510, categoryId: 7, name: "Missile Launcher Heavy" },
   { groupId: 334, categoryId: 17, name: "Construction Components" },
+  { groupId: 361, categoryId: 22, name: "Mobile Warp Disruptor" },
+  { groupId: 1012, categoryId: 22, name: "Mobile Cyno Inhibitor" },
 ];
 const blueprints: Blueprint[] = types.map((x) => ({
   blueprintTypeId: 1000 + x.typeId,
@@ -71,6 +77,10 @@ describe("overview categories", () => {
 
   it("reactions = reaction products", () => {
     expect(names("reactions")).toEqual(["Fulleroferrocene"]);
+  });
+
+  it("Mobile Warp Disruptor: T1 and T2 bubbles by group, no Syndicate, no other deployables", () => {
+    expect(names("warp_disruptors")).toEqual(["Mobile Large Warp Disruptor II", "Mobile Small Warp Disruptor I"]);
   });
 });
 
