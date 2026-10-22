@@ -39,3 +39,27 @@ describe("buildPlan: pins and lab slots (real fixtures)", () => {
     expect(plan.buildPlan(req).batches).toEqual([]);
   });
 });
+
+describe("buildPlan: T1 copies for invention", () => {
+  it("own T1 BPO → a copying job on a lab slot before invention; without it → buy BPCs", async () => {
+    const without = plan.buildPlan({ ...req, pins: [{ typeId: 2185, batches: 1 }] });
+    expect(without.prep.some((x) => x.activity === "copying")).toBe(false);
+    expect(without.stages.blueprints?.[0]).toMatchObject({ name: "Hammerhead I Blueprint", how: "buy" });
+
+    // SYNTHETIC: the character owns the Hammerhead I BPO.
+    const { getDb } = await import("@/server/data");
+    const { ownedBlueprints } = await import("@/db/schema");
+    getDb()
+      .insert(ownedBlueprints)
+      .values({ itemId: 900, ownerType: "character", ownerId: 1, viaCharacterId: 1, typeId: 2184, me: 10, te: 20, runs: -1, quantity: -1, locationId: 1, locationFlag: "Hangar" })
+      .run();
+    (await import("@/server/characters")).forgetCharacterLookups();
+    const withBpo = plan.buildPlan({ ...req, pins: [{ typeId: 2185, batches: 1 }] });
+    const copy = withBpo.prep.find((x) => x.activity === "copying")!;
+    const inv = withBpo.prep.find((x) => x.activity === "invention")!;
+    expect(copy).toMatchObject({ name: "Hammerhead I Blueprint (копии для Hammerhead II)", start: 0 });
+    expect(copy.runs).toBe(inv.runs);
+    expect(inv.start).toBe(2);
+    expect(withBpo.stages.blueprints?.[0].how).toBe("copy");
+  });
+});

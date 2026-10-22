@@ -153,14 +153,19 @@ export function toBatch(r: CalcResponse): PlanBatch {
   // Invention for the next round's BPC: expected attempts on a lab slot, before everything else.
   const inv = r.request.blueprintSource === "invention" ? r.invention.chosen : null;
   if (inv && inv.chance > 0 && inv.secondsPerAttempt > 0) {
-    jobs.push({
-      typeId: r.product.typeId,
-      name: `${r.product.name} (инвент)`,
-      activity: "invention",
-      runs: 1 / inv.chance,
-      seconds: inv.secondsPerAttempt / inv.chance,
-      depth: Math.max(0, ...jobs.map((j) => j.depth)) + 1,
-    });
+    const depth = Math.max(0, ...jobs.map((j) => j.depth)) + 1;
+    jobs.push({ typeId: r.product.typeId, name: `${r.product.name} (инвент)`, activity: "invention", runs: 1 / inv.chance, seconds: inv.secondsPerAttempt / inv.chance, depth });
+    // Each attempt eats one run of a T1 copy: copied from your own BPO on a lab slot first.
+    if (inv.copySecondsPerRun && ownedBlueprintIndex().get(inv.sourceId)?.isBpo) {
+      jobs.push({
+        typeId: r.product.typeId,
+        name: `${inv.sourceName} (копии для ${r.product.name})`,
+        activity: "copying",
+        runs: 1 / inv.chance,
+        seconds: inv.copySecondsPerRun / inv.chance,
+        depth: depth + 1,
+      });
+    }
   }
   return {
     typeId: r.product.typeId,
