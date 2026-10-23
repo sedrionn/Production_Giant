@@ -114,6 +114,8 @@ export interface BuyLine {
   volume: number;
   note?: string;
   flags?: string[];
+  /** Cheaper with a buy order (filled by the server from the order book). */
+  order?: { price: number; saving: number; days: number | null };
 }
 
 export interface Stages {
@@ -130,6 +132,8 @@ export interface Stages {
   volume?: number;
   freightPerM3?: number;
   freightCost?: number;
+  /** ISK saved if every line with `order` is bought with a buy order. Filled by the server. */
+  orderSaving?: number;
   /** T1 blueprint copies for invention (one per attempt): copy from your BPO or buy BPCs. Filled by the server. */
   blueprints?: { typeId: number; name: string; copies: number; forItem: string; how: "copy" | "buy" }[];
 }

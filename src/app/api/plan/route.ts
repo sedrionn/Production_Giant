@@ -4,7 +4,7 @@ import { fail, ok } from "../_util";
 
 export async function POST(req: Request) {
   try {
-    const b = (await req.json()) as Partial<{ budget: number; cadenceDays: number; horizonDays: number; categories: CategoryKey[]; marketShare: number; minBatchProfit: number; caldariShipsFirst: boolean; maxItemShare: number; pins: { typeId: number; batches: number }[]; maxReactionJobDays: number; maxManufacturingJobDays: number; buyWeeks: number; stockFirst: boolean }>;
+    const b = (await req.json()) as Partial<{ budget: number; cadenceDays: number; horizonDays: number; categories: CategoryKey[]; marketShare: number; minBatchProfit: number; caldariShipsFirst: boolean; maxItemShare: number; pins: { typeId: number; batches: number }[]; maxReactionJobDays: number; maxManufacturingJobDays: number; buyWeeks: number; stockFirst: boolean; fillIdleReactions: boolean }>;
     const plan = buildPlan({
       budget: Math.max(0, Number(b.budget) || 10e9),
       cadenceDays: Math.min(7, Math.max(1, Number(b.cadenceDays) || 2)),
@@ -15,6 +15,7 @@ export async function POST(req: Request) {
       caldariShipsFirst: b.caldariShipsFirst !== false,
       maxItemShare: Math.min(1, Math.max(0.05, Number(b.maxItemShare ?? 0.2))),
       stockFirst: b.stockFirst !== false,
+      fillIdleReactions: b.fillIdleReactions !== false,
       buyWeeks: Math.min(8, Math.max(1, Math.round(Number(b.buyWeeks) || 1))),
       maxReactionJobDays: Math.min(28, Math.max(0, Number(b.maxReactionJobDays ?? 2) || 0)),
       maxManufacturingJobDays: Math.min(28, Math.max(0, Number(b.maxManufacturingJobDays ?? 7) || 0)),

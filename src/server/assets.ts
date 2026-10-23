@@ -6,6 +6,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { assets, characters, industryJobs, locationNames } from "@/db/schema";
 import { EsiError, esiGet, esiGetAllPages, mapLimit } from "@/esi/client";
 import { getDb, getSde, getSettings } from "./data";
+import { JOB_ACTIVITY_IDS } from "@/engine/bonuses";
 
 export const ASSET_SCOPES = { character: "esi-assets.read_assets.v1", corporation: "esi-assets.read_corporation_assets.v1" } as const;
 
@@ -189,6 +190,25 @@ export function stockIndex(): { stock: Map<number, number>; locations: number[];
         .sort()[0] ?? null
     : null;
   return { stock, locations: [...locs], syncedAt: synced, owners: new Set(rows.map((r) => `${r.ownerType}:${r.ownerId}`)).size };
+}
+
+/**
+ * What running factory and reaction jobs in the stock locations will deliver within `days`: it
+ * counts as stock for the plan (not in the hangar yet, so not in the assets). Finished but not
+ * delivered jobs are still "active" in ESI and count too.
+ */
+export function jobOutputs(days: number, now = Date.now()): Map<number, number> {
+  const { source: sde } = getSde();
+  const locs = selectedLocations();
+  const out = new Map<number, number>();
+  for (const j of getDb().select().from(industryJobs).all()) {
+    if (j.status !== "active" || !j.productTypeId || !locs.has(j.facilityId)) continue;
+    const activity = j.activityId === JOB_ACTIVITY_IDS.manufacturing ? "manufacturing" : (JOB_ACTIVITY_IDS.reactions as readonly number[]).includes(j.activityId) ? "reaction" : null;
+    if (!activity || Date.parse(j.endDate) > now + days * 86_400_000) continue;
+    const perRun = sde.getBlueprint(j.blueprintTypeId)?.activities[activity]?.products.find((p) => p.typeId === j.productTypeId)?.quantity ?? 1;
+    out.set(j.productTypeId, (out.get(j.productTypeId) ?? 0) + j.runs * perRun);
+  }
+  return out;
 }
 
 export function removeCharacterAssets(characterId: number): void {

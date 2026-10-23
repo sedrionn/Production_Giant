@@ -53,7 +53,7 @@ A personal, local, single-user EVE Online industry planner, a replacement for EV
 ## Known gaps / open questions (good places for ideas)
 
 1. **Build vs buy for intermediates.** Build if cheaper per unit and the saving per hour of the job clears both the ISK/h floor and, in the plan, the value of a slot-hour (marginal profit of one more slot, 2026-10-23). Logins are not counted yet.
-2. **Invention on lab slots** is scheduled (attempts pooled per item); T1 copying for invention is not. Spare lab slots could make BPCs to sell.
+2. **Invention on lab slots** is scheduled (attempts pooled per item); T1 copying for invention is not. Spare lab slots could make BPCs to sell (no ESI prices for BPC contracts). Idle reaction slots are filled with small reactions for sale (2026-10-23).
 3. **Missing blueprints for intermediates** (T1 hulls, T1 rig BPCs for invention) are not flagged or added to the purchase list.
 4. **Planner:**
    - **Greedy algorithm:** greedy by tier and profit per slot-day; would an ILP or knapsack be meaningfully better?
@@ -63,7 +63,7 @@ A personal, local, single-user EVE Online industry planner, a replacement for EV
    - **Depth:** only Jita, by order count, freshness and price trend.
    - **Other hubs:** not compared.
    - **Sale speed:** not fed back from real sales (the ledger has the data).
-6. **Stock snapshot:** the saved plan freezes stock at save time; jobs started later consume it. Stock already lowers the cash a batch needs and can put stock-made batches first (2026-10-22); output of running jobs is not counted as stock yet.
+6. **Stock snapshot:** the saved plan freezes stock at save time; jobs started later consume it. Stock already lowers the cash a batch needs and can put stock-made batches first (2026-10-22); output of running factory/reaction jobs that end inside the plan counts as stock (2026-10-23).
 7. **UI:** no active-page highlight in the top menu (planned).
 
 ## What feedback is wanted

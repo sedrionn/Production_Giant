@@ -61,6 +61,8 @@ export interface PlanBatch {
   key?: string;
   /** Pinned by Nick: this many batches are planned first, whatever the ranking. */
   pinned?: number;
+  /** Small batch that only fills slots left idle (set with the last tier); shown as such. */
+  filler?: boolean;
 }
 
 export interface SlotState {

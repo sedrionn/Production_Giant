@@ -10,13 +10,13 @@ import { eq } from "drizzle-orm";
 import { calculate, type CalcResponse } from "./calculate";
 import { CATEGORIES, isCaldariBranchShip, isCapitalRig, RACE_CALDARI, shipInputs, type CategoryKey } from "./catalog";
 import { ownedBlueprintIndex, skillLevels } from "./characters";
-import { getDb, getSde, getSettings, priceBook } from "./data";
+import { getDb, getSde, getSettings, priceBook, volumesFor } from "./data";
 import { recipeLookup } from "@/sde/recipes";
 import fs from "node:fs";
 import path from "node:path";
-import { stockIndex } from "./assets";
+import { jobOutputs, stockIndex } from "./assets";
 import { planStages, type StageBuyInfo, type StageRecipe, type Stages } from "@/engine/stages";
-import { quotePrice } from "@/engine/pricing";
+import { buyOrderAdvice, quotePrice } from "@/engine/pricing";
 import { materialQuantity } from "@/engine/materials";
 import { computeOverview, overviewRows, type OverviewRow } from "./overview";
 
@@ -43,6 +43,8 @@ export interface PlanRequest {
   maxReactionJobDays?: number;
   /** Longest manufacturing job, days: a longer blueprint runs as sequential jobs. 0 = no cap. */
   maxManufacturingJobDays?: number;
+  /** Fill reaction slots left idle with reactions for sale below the minimum batch profit (default on). */
+  fillIdleReactions?: boolean;
   /** Items Nick always wants in the plan, with how many batches; planned before everything else. */
   pins?: { typeId: number; batches: number }[];
 }
@@ -73,7 +75,14 @@ export interface PlanResponse extends Plan {
   /** The plan split into stages (deepest first) with stock taken off, and the purchase list. */
   stages: Stages;
   /** Where the stock came from. */
-  stock: { locations: number[]; syncedAt: string | null; owners: number; types: number };
+  stock: {
+    locations: number[];
+    syncedAt: string | null;
+    owners: number;
+    types: number;
+    /** What running jobs deliver inside the plan: counted as stock (missing in plans saved before). */
+    inJobs?: { typeId: number; name: string; quantity: number }[];
+  };
   /** All evaluated candidates, best first — the "sheet" for planning by hand or with Claude. */
   sheet: {
     name: string;
@@ -214,6 +223,13 @@ interface Sized {
   maxBatches?: number;
 }
 
+/** A reaction for sale that earns something, but less than a batch must: only fills idle reaction slots. */
+export const isFillerRoute = (categoryKey: CategoryKey, profit: number, minBatchProfit: number) => categoryKey === "reactions" && profit > 0 && profit < minBatchProfit;
+
+/** Fillers go after every other tier; at most this many reactions are tried. */
+const FILLER_TIER = 99;
+const MAX_FILLERS = 30;
+
 /** Own BPC lengths planned separately (longest groups first); shorter leftovers are ignored. */
 const MAX_BPC_GROUPS = 3;
 
@@ -348,10 +364,20 @@ export function buildPlan(req: PlanRequest): PlanResponse {
   // one first and adds the rest from the next when it runs out.
   const pinnedRoute = new Set(sized.filter((x) => pins.has(x.r.typeId)).map((x) => x.r.typeId));
   const isPinned = (x: (typeof sized)[number]) => pinnedRoute.has(x.r.typeId);
-  const top = sized
-    .filter((x) => x.profit >= req.minBatchProfit || isPinned(x))
-    .sort((a, b) => Number(isPinned(b)) - Number(isPinned(a)) || a.tier - b.tier || b.score * b.weight - a.score * a.weight)
-    .slice(0, (req.candidates ?? 150) + sized.filter(isPinned).length);
+  // Reactions for sale below the minimum batch profit: not worth a job of their own, but better
+  // than an idle reaction slot. Planned last, on whatever slots and budget are left.
+  const isFiller = (x: (typeof sized)[number]) => req.fillIdleReactions !== false && !isPinned(x) && isFillerRoute(x.r.categoryKey, x.profit, req.minBatchProfit);
+  const top = [
+    ...sized
+      .filter((x) => x.profit >= req.minBatchProfit || isPinned(x))
+      .sort((a, b) => Number(isPinned(b)) - Number(isPinned(a)) || a.tier - b.tier || b.score * b.weight - a.score * a.weight)
+      .slice(0, (req.candidates ?? 150) + sized.filter(isPinned).length),
+    ...sized
+      .filter(isFiller)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, MAX_FILLERS)
+      .map((x) => ({ ...x, tier: FILLER_TIER, filler: true })),
+  ];
 
   interface Evaluated {
     calcs: Map<string, CalcResponse>;
@@ -368,6 +394,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     const out: Evaluated = { calcs: new Map(), candidates: [], unitCap: new Map(), unpriced: [], noBlueprint: [] };
     for (const x of top) {
       const { r, route, runs, decryptorId, inventionSourceId, weight, tier, maxBatches } = x;
+      const filler = "filler" in x && x.filler === true;
       const pinned = isPinned(x) ? pins.get(r.typeId) : undefined;
       const key = `${r.typeId}:${route}${maxBatches !== undefined ? `:${runs}` : ""}`;
       try {
@@ -397,8 +424,8 @@ export function buildPlan(req: PlanRequest): PlanResponse {
         out.calcs.set(key, c);
         // Own BPCs: one batch per copy. BPO or invention: limited by market and slots only.
         const batch = splitProduct(toBatch(c), c, cad, mfgCap);
-        if (batch.profit < req.minBatchProfit && !pinned) continue;
-        out.candidates.push({ ...batch, key, weight, tier, pinned, maxBatches: maxBatches ?? (owned && !owned.isBpo ? owned.copies : undefined) });
+        if (batch.profit < req.minBatchProfit && !pinned && !(filler && batch.profit > 0)) continue;
+        out.candidates.push({ ...batch, key, weight, tier, pinned, ...(filler ? { filler } : {}), maxBatches: maxBatches ?? (owned && !owned.isBpo ? owned.copies : undefined) });
         // Market cap: a share of what sells over the horizon. No history = one batch at most.
         out.unitCap.set(r.typeId, r.avgDailyVolume30d ? r.avgDailyVolume30d * horizon * req.marketShare : c.summary.output);
       } catch {
@@ -409,7 +436,11 @@ export function buildPlan(req: PlanRequest): PlanResponse {
   };
 
   const { slots, summary } = characterSlots(now);
-  const stock = stockIndex().stock;
+  // Stock = hangars + what running factory/reaction jobs deliver inside the plan.
+  const stockInfo = stockIndex();
+  const inJobs = jobOutputs(horizon, now);
+  const stock = new Map(stockInfo.stock);
+  for (const [id, q] of inJobs) stock.set(id, (stock.get(id) ?? 0) + q);
   const inputFor = (e: Evaluated): PlanInput => ({
     candidates: e.candidates,
     slots,
@@ -474,7 +505,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     }
   }
 
-  const stages = stagesFor(plan, calcs, horizon, req.maxReactionJobDays, req.buyWeeks);
+  const stages = stagesFor(plan, calcs, horizon, { info: stockInfo, stock, inJobs }, req.maxReactionJobDays, req.buyWeeks);
 
   const sheet = candidates
     .map((b) => {
@@ -583,7 +614,14 @@ function boughtForSlots(plan: Plan, calcs: Map<string, CalcResponse>): NonNullab
  * Stages of the plan: all batches merged, what is in the stock hangars taken off (built
  * components and bought materials), plus datacores and decryptors for invention.
  */
-function stagesFor(plan: Plan, calcs: Map<string, CalcResponse>, horizonDays: number, maxReactionDays?: number, buyWeeks = 1): { stages: Stages; stock: PlanResponse["stock"] } {
+function stagesFor(
+  plan: Plan,
+  calcs: Map<string, CalcResponse>,
+  horizonDays: number,
+  st: { info: ReturnType<typeof stockIndex>; stock: Map<number, number>; inJobs: Map<number, number> },
+  maxReactionDays?: number,
+  buyWeeks = 1,
+): { stages: Stages; stock: PlanResponse["stock"] } {
   const { source: sde } = getSde();
   const s = getSettings();
   const recipes = new Map<number, StageRecipe>();
@@ -631,7 +669,6 @@ function stagesFor(plan: Plan, calcs: Map<string, CalcResponse>, horizonDays: nu
     const t = sde.getType(id);
     buy.set(id, { typeId: id, name: t?.name ?? `#${id}`, unitPrice: quotePrice(prices.quote(id), s.materialPriceMode), volume: t ? t.packagedVolume ?? t.volume : 0 });
   }
-  const st = stockIndex();
   const stages = planStages({
     products: plan.jobs.filter((j) => j.depth === 0).map((j) => ({ typeId: j.typeId, runs: j.runs })),
     recipes,
@@ -643,7 +680,22 @@ function stagesFor(plan: Plan, calcs: Map<string, CalcResponse>, horizonDays: nu
     freightPerM3: s.freightInPerM3,
   });
   stages.blueprints = copies.sort((a, b) => a.how.localeCompare(b.how) || b.copies - a.copies);
-  return { stages, stock: { locations: st.locations, syncedAt: st.syncedAt, owners: st.owners, types: st.stock.size } };
+  // Materials priced at sell orders: where a buy order saves enough and fills within days, say so.
+  if (s.materialPriceMode === "sell") {
+    const ids = stages.buy.filter((l) => l.toBuy > 0).map((l) => l.typeId);
+    const book = priceBook(ids, s.priceLocationId);
+    const volume = volumesFor(ids, s.priceRegionId);
+    stages.orderSaving = 0;
+    for (const l of stages.buy) {
+      if (l.toBuy <= 0) continue;
+      const advice = buyOrderAdvice(book.quote(l.typeId), l.toBuy, { salesTax: s.salesTax, brokerFee: s.brokerFee }, volume.get(l.typeId)?.avgDailyVolume30d);
+      if (!advice) continue;
+      l.order = advice;
+      stages.orderSaving += advice.saving;
+    }
+  }
+  const inJobs = [...st.inJobs].map(([typeId, quantity]) => ({ typeId, name: sde.getType(typeId)?.name ?? `#${typeId}`, quantity })).sort((a, b) => a.name.localeCompare(b.name));
+  return { stages, stock: { locations: st.info.locations, syncedAt: st.info.syncedAt, owners: st.info.owners, types: st.stock.size, inJobs } };
 }
 
 /** Recipes and bought items of one calculation, in the shape planStages reads. */
