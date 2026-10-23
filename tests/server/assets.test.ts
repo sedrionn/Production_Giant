@@ -84,3 +84,29 @@ describe("assets → stock (SYNTHETIC ESI)", () => {
     expect(assets.stockIndex().stock.get(34)).toBe(6999);
   });
 });
+
+describe("running jobs count as stock (SYNTHETIC jobs, real blueprints)", () => {
+  it("factory and reaction jobs in the stock structures that end inside the plan; output per run from the SDE", async () => {
+    const { industryJobs } = await import("@/db/schema");
+    const now = Date.parse("2026-10-23T00:00:00Z");
+    const job = { ownerType: "character" as const, installerId: NICK, viaCharacterId: NICK, runs: 2, status: "active", facilityId: SOTIYO, startDate: "2026-10-22T00:00:00Z" };
+    data.getDb()
+      .insert(industryJobs)
+      .values([
+        // Fulleroferrocene: 1000 per run, ends in 1 day.
+        { ...job, jobId: 11, activityId: 11, blueprintTypeId: 46158, productTypeId: 30303, endDate: "2026-10-24T00:00:00Z" },
+        // Same, but ends after the plan.
+        { ...job, jobId: 12, activityId: 11, blueprintTypeId: 46158, productTypeId: 30303, endDate: "2026-11-05T00:00:00Z" },
+        // Delivered: already in the assets.
+        { ...job, jobId: 13, activityId: 11, blueprintTypeId: 46158, productTypeId: 30303, endDate: "2026-10-22T12:00:00Z", status: "delivered" },
+        // Somewhere else.
+        { ...job, jobId: 14, activityId: 11, blueprintTypeId: 46158, productTypeId: 30303, endDate: "2026-10-24T00:00:00Z", facilityId: 42 },
+        // Invention is not a stock.
+        { ...job, jobId: 15, activityId: 8, blueprintTypeId: 34412, productTypeId: 34829, endDate: "2026-10-24T00:00:00Z" },
+      ])
+      .run();
+    const out = assets.jobOutputs(7, now);
+    expect(out.get(30303)).toBe(2000);
+    expect(out.has(34829)).toBe(false);
+  });
+});

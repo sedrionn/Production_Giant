@@ -13,16 +13,17 @@ export const multibuy = (lines: BuyLine[]) =>
     .join("\n");
 
 export function BuyList({ stages, stockNote }: { stages: Stages; stockNote?: React.ReactNode }) {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"all" | "now" | null>(null);
   const [showAll, setShowAll] = useState(false);
   const lines = showAll ? stages.buy : stages.buy.filter((l) => l.toBuy > 0);
   const toBuy = stages.buy.filter((l) => l.toBuy > 0);
   const covered = stages.buy.length - toBuy.length;
-  const copy = async () => {
+  const byOrder = toBuy.filter((l) => l.order);
+  const copy = async (which: "all" | "now") => {
     try {
-      await navigator.clipboard.writeText(multibuy(stages.buy));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(multibuy(which === "all" ? stages.buy : stages.buy.filter((l) => !l.order)));
+      setCopied(which);
+      setTimeout(() => setCopied(null), 2000);
     } catch {}
   };
   return (
@@ -34,9 +35,18 @@ export function BuyList({ stages, stockNote }: { stages: Stages; stockNote?: Rea
             <input type="checkbox" className="accent-[var(--marker)]" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
             показать и то, что есть на складе ({covered})
           </label>
-          <button onClick={copy} disabled={!toBuy.length} className="rounded border border-line px-3 py-1 hover:border-marker hover:text-marker disabled:opacity-50" title="Формат multibuy: вставь в окно маркета в игре">
-            {copied ? "Скопировано" : "Скопировать для multibuy"}
+          <button onClick={() => copy("all")} disabled={!toBuy.length} className="rounded border border-line px-3 py-1 hover:border-marker hover:text-marker disabled:opacity-50" title="Формат multibuy: вставь в окно маркета в игре">
+            {copied === "all" ? "Скопировано" : "Скопировать для multibuy"}
           </button>
+          {byOrder.length > 0 && (
+            <button
+              onClick={() => copy("now")}
+              className="rounded border border-line px-3 py-1 hover:border-marker hover:text-marker"
+              title="Multibuy без позиций, которые выгоднее взять buy-ордером"
+            >
+              {copied === "now" ? "Скопировано" : "…без ордерных"}
+            </button>
+          )}
         </div>
       </div>
       <p className="text-sm text-graphite">
@@ -55,6 +65,12 @@ export function BuyList({ stages, stockNote }: { stages: Stages; stockNote?: Rea
           </>
         )}
       </p>
+      {byOrder.length > 0 && (
+        <p className="text-sm text-graphite">
+          <span className="text-job">Buy-ордером дешевле:</span> {qty(byOrder.length)} позиций, экономия <span className="text-gain">{isk(stages.orderSaving ?? 0)}</span> с учётом брокерской
+          комиссии. Ставь, если до нужного этапа есть пара дней; остальное — multibuy «…без ордерных».
+        </p>
+      )}
       {stockNote && <div className="text-sm text-graphite">{stockNote}</div>}
       <div className="max-h-[480px] overflow-auto">
         <table className="w-full min-w-[640px] whitespace-nowrap text-left">
@@ -74,6 +90,14 @@ export function BuyList({ stages, stockNote }: { stages: Stages; stockNote?: Rea
                 <td className="py-1 pr-4">
                   {l.name}
                   {l.note && <span className="ml-2 rounded bg-sheet-2 px-1.5 text-xs text-graphite">{l.note}</span>}
+                  {l.order && (
+                    <span
+                      className="ml-2 rounded border border-gain/60 px-1 text-xs text-gain"
+                      title={`Buy-ордер по ${full(l.order.price)} вместо покупки сейчас${l.order.days !== null ? `; при обычном объёме наберётся за ~${Math.max(1, Math.ceil(l.order.days))} дн.` : "; объём торгов неизвестен"}`}
+                    >
+                      ордер −{isk(l.order.saving)}
+                    </span>
+                  )}
                   {l.flags?.map((f) => (
                     <span key={f} className="ml-2 rounded border border-loss/60 px-1 text-xs text-loss" title="Цена не подменяется: проверь стакан перед покупкой">
                       {f}

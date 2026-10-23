@@ -12,6 +12,8 @@ interface Form {
   budget: number;
   /** Batches made largely from stock go first within their tier. */
   stockFirst: boolean;
+  /** Fill idle reaction slots with small reactions for sale. */
+  fillIdleReactions: boolean;
   cadenceDays: number;
   horizonDays: number;
   marketShare: number;
@@ -29,7 +31,7 @@ interface Form {
   pins: { typeId: number; name: string; batches: number }[];
 }
 
-const DEFAULT: Form = { budget: 10e9, stockFirst: true, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, caldariShipsFirst: true, maxItemShare: 0.2, maxReactionJobDays: 2, maxManufacturingJobDays: 7, buyWeeks: 1, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions"], pins: [] };
+const DEFAULT: Form = { budget: 10e9, stockFirst: true, fillIdleReactions: true, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, caldariShipsFirst: true, maxItemShare: 0.2, maxReactionJobDays: 2, maxManufacturingJobDays: 7, buyWeeks: 1, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions"], pins: [] };
 const STORAGE = "pg.plan.v3";
 
 export function Planner({ categories }: { categories: { key: string; label: string }[] }) {
@@ -149,6 +151,13 @@ export function Planner({ categories }: { categories: { key: string; label: stri
         <label className="flex items-center gap-2 sm:col-span-2 lg:col-span-8" title="Партия, у которой треть стоимости и больше лежит на складе, идёт первой в своём ярусе (только прибыльные). Склад в любом случае не тратит бюджет">
           <input type="checkbox" className="accent-[var(--marker)]" checked={form.stockFirst} onChange={(e) => set({ stockFirst: e.target.checked })} />
           Сначала то, что делается из склада (компоненты и материалы в твоих структурах)
+        </label>
+        <label
+          className="flex items-center gap-2 sm:col-span-2 lg:col-span-8"
+          title="Реакции на продажу с прибылью ниже порога партии ставятся в самом конце: только на реакционные слоты и бюджет, которые остались"
+        >
+          <input type="checkbox" className="accent-[var(--marker)]" checked={form.fillIdleReactions} onChange={(e) => set({ fillIdleReactions: e.target.checked })} />
+          Заполнять пустые реакционные слоты мелкими реакциями на продажу
         </label>
         <fieldset className="flex flex-wrap gap-x-4 gap-y-1 sm:col-span-2 lg:col-span-8">
           <legend className="mb-1 text-sm text-graphite">Что рассматривать</legend>
@@ -313,6 +322,11 @@ export function Planner({ categories }: { categories: { key: string; label: stri
                       <td className="py-1.5 pr-4">
                         {g.name}
                         {g.pinned && <span className="ml-2 rounded border border-marker/60 px-1 text-xs text-marker">закреплено</span>}
+                        {g.filler && (
+                          <span className="ml-2 rounded bg-sheet-2 px-1.5 text-xs text-graphite" title="Партия меньше порога прибыли: ставится только на реакционные слоты, которые иначе простаивают">
+                            заполняет пустой слот
+                          </span>
+                        )}
                       </td>
                       <td className="py-1.5 pr-4 text-right">
                         {g.count} × {g.runs}
@@ -336,7 +350,19 @@ export function Planner({ categories }: { categories: { key: string; label: stri
 
           <StagesPreview stages={plan.stages} />
 
-          <BuyList stages={plan.stages} stockNote={<StockPicker syncedAt={plan.stock.syncedAt} />} />
+          <BuyList
+            stages={plan.stages}
+            stockNote={
+              <>
+                <StockPicker syncedAt={plan.stock.syncedAt} />
+                {plan.stock.inJobs && plan.stock.inJobs.length > 0 && (
+                  <p className="mt-1" title="Идущие джобы в складских структурах, которые закончатся в пределах плана: их выход считается складом">
+                    Плюс выход идущих джоб: {plan.stock.inJobs.map((j) => `${j.name} × ${qty(j.quantity)}`).join(", ")}.
+                  </p>
+                )}
+              </>
+            }
+          />
 
           {plan.skipped.length > 0 && (
             <details className="text-sm text-graphite">
@@ -523,11 +549,12 @@ function byOwner(jobs: ScheduledJob[]): [string, ScheduledJob[]][] {
 }
 
 function groupBatches(b: PlanResponse["batches"]) {
-  const m = new Map<string, { name: string; count: number; runs: number; profit: number; capital: number; fromStock: number; end: number; pinned: boolean }>();
+  const m = new Map<string, { name: string; count: number; runs: number; profit: number; capital: number; fromStock: number; end: number; pinned: boolean; filler: boolean }>();
   for (const x of b) {
-    const g = m.get(x.name) ?? { name: x.name, count: 0, runs: x.runs, profit: 0, capital: 0, fromStock: 0, end: 0, pinned: false };
+    const g = m.get(x.name) ?? { name: x.name, count: 0, runs: x.runs, profit: 0, capital: 0, fromStock: 0, end: 0, pinned: false, filler: false };
     g.fromStock += x.fromStock ?? 0;
     g.pinned ||= !!x.pinned;
+    g.filler ||= !!x.filler;
     g.count++;
     g.profit += x.profit;
     g.capital += x.capital - (x.fromStock ?? 0);

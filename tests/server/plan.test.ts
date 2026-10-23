@@ -139,3 +139,22 @@ describe("buildPlan: manufacturing job cap (Jackdaw, real fixtures)", () => {
     expect(hull[0].part).toBeUndefined();
   });
 });
+
+describe("buildPlan: purchase by buy orders, fillers", () => {
+  it("lines where a buy order saves enough are marked; the total is their sum; «…без ордерных» leaves them out", async () => {
+    const { multibuy } = await import("@/components/BuyList");
+    const p = plan.buildPlan({ ...req, categories: ["t3"], maxItemShare: 1, pins: [{ typeId: 34828, batches: 1 }] });
+    const orders = p.stages.buy.filter((l) => l.order);
+    expect(orders.length).toBeGreaterThan(0);
+    for (const l of orders) expect(l.order!.saving).toBeGreaterThanOrEqual(1e6);
+    expect(p.stages.orderSaving).toBeCloseTo(orders.reduce((s, l) => s + l.order!.saving, 0));
+    expect(multibuy(p.stages.buy.filter((l) => !l.order))).not.toContain(orders[0].name + " ");
+  });
+
+  it("a filler is a reaction for sale that earns, but less than a batch must", () => {
+    expect(plan.isFillerRoute("reactions", 5e6, 30e6)).toBe(true);
+    expect(plan.isFillerRoute("reactions", 40e6, 30e6)).toBe(false); // a normal batch
+    expect(plan.isFillerRoute("reactions", -1, 30e6)).toBe(false);
+    expect(plan.isFillerRoute("rigs_t1", 5e6, 30e6)).toBe(false);
+  });
+});
