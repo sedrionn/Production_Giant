@@ -41,6 +41,12 @@ export interface TreeContext {
    */
   minBuildIskPerHour?: number;
   /**
+   * What an hour of a slot earns elsewhere in the plan (the hulls it could build instead), per
+   * activity. An intermediate that saves less per hour of its own job is bought: the slot is worth
+   * more. Reason "slot value". Root and manual decisions are not affected.
+   */
+  slotIskPerHour?: Partial<Record<Activity, number>>;
+  /**
    * Freight for bought materials (market → factory): ISK per m³ × the item's (packaged) volume,
    * added to the buy price of every purchased unit. Omitted = no freight.
    */
@@ -58,7 +64,7 @@ export interface TreeEdge {
 export interface TreeNode {
   typeId: number;
   decision: Decision;
-  /** Why: "override", "cheaper", "no recipe", "no market price", "root", "cycle". */
+  /** Why: "override", "cheaper", "below threshold", "slot value", "no recipe", "no market price", "root", "cycle". */
   reason: string;
   /** Total units needed across the tree. */
   demand: number;
@@ -195,6 +201,7 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
     const buildSavingsPerHour =
       buildUnitCost !== null && buyUnitCost !== null && hoursPerUnit ? (buyUnitCost - buildUnitCost) / hoursPerUnit : null;
     const minPerHour = ctx.minBuildIskPerHour ?? 0;
+    const slotPerHour = d.recipe ? ctx.slotIskPerHour?.[d.recipe.activity] ?? 0 : 0;
 
     const override = ctx.decisions?.[typeId];
     let decision: Decision;
@@ -205,7 +212,8 @@ export function buildTree(rootTypeId: number, rootRuns: number, ctx: TreeContext
     else if (override) [decision, reason] = [override, "override"];
     else if (buyUnitCost === null && buildUnitCost !== null) [decision, reason] = ["build", "no market price"];
     else if (buildUnitCost !== null && buyUnitCost !== null && buildUnitCost < buyUnitCost) {
-      [decision, reason] = (buildSavingsPerHour ?? Infinity) >= minPerHour ? ["build", "cheaper"] : ["buy", "below threshold"];
+      const saves = buildSavingsPerHour ?? Infinity;
+      [decision, reason] = saves < minPerHour ? ["buy", "below threshold"] : saves < slotPerHour ? ["buy", "slot value"] : ["build", "cheaper"];
     }
     else [decision, reason] = ["buy", buildUnitCost === null ? "build unpriced" : "cheaper"];
 

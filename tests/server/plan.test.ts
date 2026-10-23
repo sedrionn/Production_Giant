@@ -104,3 +104,14 @@ describe("buildPlan: stock", () => {
     expect(after.stages.buy.find((l) => l.typeId === morphite.typeId)).toMatchObject({ toBuy: 0 });
   });
 });
+
+describe("buildPlan: what one more slot, character or billion adds", () => {
+  it("a small plan that fits everywhere: nothing more to gain, no second pass", () => {
+    const p = plan.buildPlan({ ...req, pins: [{ typeId: 2185, batches: 1 }] });
+    expect(p.marginal.slot).toEqual({ manufacturing: 0, reaction: 0, science: 0 });
+    expect(p.marginal.character).toEqual({ like: "Тест", gain: 0 });
+    expect(p.marginal.budget).toEqual({ step: 1e9, gain: 0 });
+    expect(p.slotPass).toBeNull();
+    expect(plan.sheetText(p)).toContain("Что даст ещё");
+  });
+});

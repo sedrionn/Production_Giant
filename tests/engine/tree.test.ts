@@ -153,6 +153,23 @@ describe("buildTree — ISK/h threshold for intermediates", () => {
     expect(r.nodes.get(2)!.reason).toBe("below threshold");
   });
 
+  it("slot value: savings/h above the floor but below what the slot earns on hulls → buy, with its own reason", () => {
+    const r = buildTree(1, 1, ctx({ minBuildIskPerHour: 1000, slotIskPerHour: { manufacturing: 5000 } }));
+    expect(r.nodes.get(2)!.decision).toBe("buy");
+    expect(r.nodes.get(2)!.reason).toBe("slot value");
+    expect(buildTree(1, 1, ctx({ minBuildIskPerHour: 1000, slotIskPerHour: { manufacturing: 4000 } })).nodes.get(2)!.decision).toBe("build");
+    // The bar is per activity: a busy reaction slot does not stop a factory job.
+    expect(buildTree(1, 1, ctx({ slotIskPerHour: { reaction: 1e12 } })).nodes.get(2)!.decision).toBe("build");
+    // Below the floor the old reason stays.
+    expect(buildTree(1, 1, ctx({ minBuildIskPerHour: 1e6, slotIskPerHour: { manufacturing: 5000 } })).nodes.get(2)!.reason).toBe("below threshold");
+  });
+
+  it("slot value never applies to the root or a manual decision", () => {
+    const r = buildTree(1, 1, ctx({ slotIskPerHour: { manufacturing: 1e12, reaction: 1e12 }, decisions: { 2: "build" } }));
+    expect(r.nodes.get(1)!.decision).toBe("build");
+    expect(r.nodes.get(2)!.decision).toBe("build");
+  });
+
   it("never applies to the root, and manual override still wins", () => {
     const r = buildTree(1, 1, ctx({ minBuildIskPerHour: 1e12, decisions: { 2: "build" } }));
     expect(r.nodes.get(1)!.decision).toBe("build");

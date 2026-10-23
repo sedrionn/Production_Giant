@@ -32,6 +32,8 @@ export interface CalcRequest {
   manufacturingProfileId?: number;
   reactionProfileId?: number;
   minBuildIskPerHour?: number;
+  /** Plan only: what an hour of a factory/reaction slot earns on hulls; cheaper-to-build intermediates that save less are bought. */
+  slotIskPerHour?: Partial<Record<Activity, number>>;
   /** Invention decryptor type id; null = none; undefined = from settings. */
   decryptorId?: number | null;
   /** Also compute profit for every decryptor (calculator only — costs one tree per decryptor). */
@@ -245,6 +247,7 @@ export function calculate(req: CalcRequest): CalcResponse {
     skills,
     decisions: req.decisions,
     minBuildIskPerHour: req.minBuildIskPerHour ?? s.minBuildIskPerHour,
+    slotIskPerHour: req.slotIskPerHour,
   });
   const tree = treeFor(me, te);
   warnings.push(...tree.warnings.map((w) => localizeWarning(w, name)));

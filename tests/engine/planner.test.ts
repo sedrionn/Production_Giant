@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { batchRunsForCadence, nextLogin, planWeek, slotDays, type PlanBatch, type SlotState } from "@/engine/planner";
+import { BUDGET_STEP, batchRunsForCadence, marginalValues, nextLogin, planWeek, slotDays, type PlanBatch, type SlotState } from "@/engine/planner";
 
 const H = 3600;
 
@@ -346,5 +346,33 @@ describe("planWeek: stock", () => {
     expect(planWeek({ ...base, candidates: [better, fromStock] }).batches.map((b) => b.typeId)).toEqual([2]);
     expect(planWeek({ ...base, candidates: [better, fromStock], stockFirst: true }).batches.map((b) => b.typeId)).toEqual([1]);
     expect(planWeek({ ...base, candidates: [{ ...better, tier: 0 }, { ...fromStock, tier: 1 }], stockFirst: true }).batches.map((b) => b.typeId)).toEqual([2]);
+  });
+});
+
+describe("marginalValues: what one more slot, character or billion adds", () => {
+  const many = Array.from({ length: 10 }, (_, i) => ({ ...ship(i + 1, 100, 10), key: String(i) }));
+  const base = { cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 99 };
+
+  it("slots are the bottleneck: a factory slot adds profit, more ISK adds nothing", () => {
+    const m = marginalValues({ ...base, candidates: many, slots: slots(1), budget: 1e12 });
+    expect(m.slot.manufacturing).toBeGreaterThan(0);
+    expect(m.slotDay.manufacturing).toBeCloseTo(m.slot.manufacturing / 7);
+    expect(m.slot.reaction).toBe(0);
+    expect(m.budget).toEqual({ step: BUDGET_STEP, gain: 0 });
+  });
+
+  it("budget is the bottleneck: more ISK adds profit, a slot adds nothing", () => {
+    // SYNTHETIC: each batch costs half the step; the budget fits one.
+    const costly = many.map((b) => ({ ...b, capital: BUDGET_STEP / 2 }));
+    const m = marginalValues({ ...base, candidates: costly, slots: slots(10), budget: BUDGET_STEP / 2 });
+    expect(m.slot.manufacturing).toBe(0);
+    expect(m.budget.gain).toBe(200);
+  });
+
+  it("one more character copies the slots of the biggest one", () => {
+    const s: SlotState[] = [...slots(1), { kind: "manufacturing", owner: "Big", freeAt: 0 }, { kind: "manufacturing", owner: "Big", freeAt: 5 }];
+    const m = marginalValues({ ...base, candidates: many, slots: s, budget: 1e12 });
+    expect(m.character?.like).toBe("Big");
+    expect(m.character!.gain).toBeGreaterThan(m.slot.manufacturing);
   });
 });

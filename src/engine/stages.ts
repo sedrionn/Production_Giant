@@ -57,6 +57,8 @@ export interface StageBuyInfo {
   volume: number;
   /** Market warnings on the price (not on sale, far above history). */
   flags?: string[];
+  /** Why it is bought (e.g. a buildable component bought because the slot earns more on hulls). */
+  note?: string;
 }
 
 export interface StageInput {
@@ -203,12 +205,13 @@ export function planStages(input: StageInput): Stages {
     const short = need - fromStock;
     const toBuy = short > 0 ? Math.ceil(short * (1 + Math.max(0, input.buffer ?? 0)) - 1e-9) : 0;
     const price = b?.unitPrice ?? null;
+    const why = note ?? b?.note;
     if (price !== null) {
       costWithout += need * price;
       costWith += toBuy * price;
       saved += fromStock * price;
     }
-    return { typeId: id, name: b?.name ?? `#${id}`, need, fromStock, toBuy, buffer: toBuy - short, unitPrice: price, cost: price === null ? null : toBuy * price, volume: toBuy * (b?.volume ?? 0), ...(note ? { note } : {}), ...(b?.flags?.length ? { flags: b.flags } : {}) };
+    return { typeId: id, name: b?.name ?? `#${id}`, need, fromStock, toBuy, buffer: toBuy - short, unitPrice: price, cost: price === null ? null : toBuy * price, volume: toBuy * (b?.volume ?? 0), ...(why ? { note: why } : {}), ...(b?.flags?.length ? { flags: b.flags } : {}) };
   };
   for (const [id, need] of demand) {
     if (recipes.has(id) || need <= 0) continue;

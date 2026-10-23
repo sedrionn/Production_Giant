@@ -210,6 +210,8 @@ export function Planner({ categories }: { categories: { key: string; label: stri
             </p>
           </section>
 
+          {plan.marginal && <WhatMore plan={plan} />}
+
           <section className="space-y-3">
             <h2 className="font-display text-2xl font-semibold">По заходам</h2>
             {plan.warnings?.length > 0 && (
@@ -430,6 +432,49 @@ function Num({ label, value, onChange, step, min, max }: { label: string; value:
         className="w-full rounded border border-line bg-ink px-2 py-1.5 focus:border-marker focus:outline-none"
       />
     </label>
+  );
+}
+
+/** What one more slot, character or billion would add; and what the plan buys because a slot is worth more. */
+function WhatMore({ plan }: { plan: PlanResponse }) {
+  const m = plan.marginal;
+  const days = plan.request.horizonDays;
+  const perDay = (x: number) => `${isk(x / days)} в день`;
+  const bestSlot = Math.max(m.slot.manufacturing, m.slot.reaction, m.slot.science);
+  const neck =
+    bestSlot === 0 && m.budget.gain === 0
+      ? "Ни слоты, ни бюджет план не ограничивают: упираешься в рынок или в выбор предметов."
+      : m.budget.gain > bestSlot
+        ? `Сейчас ограничивает бюджет: ещё ${isk(m.budget.step)} дают больше, чем лишний слот.`
+        : "Сейчас ограничивают слоты: лишний слот даёт больше, чем ещё миллиард.";
+  const pass = plan.slotPass;
+  return (
+    <section className="space-y-3">
+      <h2 className="font-display text-2xl font-semibold">Что даст ещё</h2>
+      <p className="text-graphite">
+        План пересчитан с одним лишним слотом, персонажем или миллиардом, всё свободно с сегодня. Прибыль за план ({days} дн.). {neck}
+      </p>
+      <section className="grid gap-4 sm:grid-cols-5">
+        <Stat label="+1 производственный слот" value={isk(m.slot.manufacturing, true)} title={perDay(m.slot.manufacturing)} />
+        <Stat label="+1 реакционный слот" value={isk(m.slot.reaction, true)} title={perDay(m.slot.reaction)} />
+        <Stat label="+1 лабораторный слот" value={isk(m.slot.science, true)} title={perDay(m.slot.science)} />
+        <Stat
+          label={m.character ? `+персонаж как ${m.character.like}` : "+персонаж"}
+          value={isk(m.character?.gain ?? 0, true)}
+          title="Такие же слоты, как у самого большого персонажа: сравни с ценой подписки или PLEX"
+        />
+        <Stat label={`+${isk(m.budget.step)} бюджета`} value={isk(m.budget.gain, true)} />
+      </section>
+      {pass && pass.bought.length > 0 && (
+        <p className="text-sm">
+          <span className="text-job">Покупаем, хотя дешевле построить:</span> слот на корпусах приносит {isk(pass.bar.manufacturing * 24)} в день (
+          {isk(pass.bar.manufacturing)}/ч), а постройка этих компонентов экономит меньше. Прибыль плана от этого {isk(pass.gain, true)}.{" "}
+          <span className="text-graphite">
+            {pass.bought.map((b) => `${b.name} (${isk(b.savesPerHour)}/ч${b.activity === "reaction" ? `, реакция: слот ${isk(pass.bar.reaction)}/ч` : ""})`).join(", ")}
+          </span>
+        </p>
+      )}
+    </section>
   );
 }
 

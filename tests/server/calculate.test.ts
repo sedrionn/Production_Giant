@@ -79,3 +79,20 @@ describe("calculate (server) on fixtures", () => {
     expect(r.facilities.costIndexSource).toBe("fixtures");
   });
 });
+
+describe("calculate: slot value (plan's second pass)", () => {
+  it("Jackdaw: reactions that save less than a reaction slot earns are bought; the rest and factory jobs are not touched", () => {
+    const n = (c: CalcResponse, name: string) => c.nodes.find((x) => x.name === name)!;
+    const plain = calculate({ typeId: 34828, runs: 20 });
+    const busy = calculate({ typeId: 34828, runs: 20, slotIskPerHour: { reaction: 200_000 } });
+    for (const name of ["Lanthanum Metallofullerene", "Methanofullerene"]) {
+      expect(n(plain, name).decision).toBe("build");
+      expect(n(plain, name).buildSavingsPerHour!).toBeLessThan(200_000);
+      expect(n(busy, name)).toMatchObject({ decision: "buy", reason: "slot value" });
+    }
+    expect(n(busy, "Fullerene Intercalated Graphite").decision).toBe("build");
+    expect(n(busy, "Self-Assembling Nanolattice").decision).toBe("build");
+    // Buying costs more than building: the batch earns less, the slot time goes to other hulls.
+    expect(busy.summary.totalCost).toBeGreaterThan(plain.summary.totalCost);
+  });
+});
