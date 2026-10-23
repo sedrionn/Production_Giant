@@ -9,6 +9,7 @@ const REASON: Record<string, string> = {
   root: "",
   cheaper: "дешевле",
   "below threshold": "выгода ниже порога",
+  "slot value": "слот выгоднее под корпуса",
   override: "вручную",
   "no recipe": "нет чертежа",
   "no market price": "нет на рынке",

@@ -177,7 +177,7 @@ export function slotDays(b: PlanBatch, cadence: number): number {
   );
 }
 
-export function planWeek(input: {
+export interface PlanInput {
   candidates: PlanBatch[];
   slots: SlotState[];
   budget: number;
@@ -196,7 +196,9 @@ export function planWeek(input: {
   stockUse?: StockUse;
   /** Batches made largely from stock go first within their tier (profitable ones only). */
   stockFirst?: boolean;
-}): Plan {
+}
+
+export function planWeek(input: PlanInput): Plan {
   const { cadenceDays: cad, horizonDays: horizon } = input;
   const stockLeft = new Map(input.stock ?? []);
   const stockTakenBy = (c: PlanBatch) => (input.stockUse && stockLeft.size ? input.stockUse(c, stockLeft) : { take: new Map<number, number>(), value: 0 });
@@ -371,6 +373,45 @@ export function planWeek(input: {
     fromStock: batches.reduce((s, b) => s + b.fromStock, 0),
     utilization,
     skipped,
+  };
+}
+
+/** Extra budget the "what one more billion gives" figure is computed for. UX choice. */
+export const BUDGET_STEP = 1e9;
+
+export interface MarginalValues {
+  /** Extra profit over the plan from one more free slot of a kind. */
+  slot: Record<SlotKind, number>;
+  /** The same per slot-day: what a day of that slot earns on the next batch that did not fit. */
+  slotDay: Record<SlotKind, number>;
+  /** Extra profit from one more character with the slots of the biggest one (all free). */
+  character: { like: string; gain: number } | null;
+  /** Extra profit from BUDGET_STEP more ISK. */
+  budget: { step: number; gain: number };
+}
+
+/**
+ * What one more slot, character or billion would add to the plan: the same plan is made again
+ * with it. Shows the bottleneck (slots or ISK) and is the bar an intermediate must clear to take
+ * a slot from the hulls. The planner is greedy, so a gain can be lumpy; it is never below 0.
+ */
+export function marginalValues(input: PlanInput, base: Plan = planWeek(input)): MarginalValues {
+  const gain = (more: Partial<PlanInput>) => Math.max(0, planWeek({ ...input, ...more }).profit - base.profit);
+  const horizon = Math.max(input.cadenceDays, input.horizonDays);
+  const slot = { manufacturing: 0, reaction: 0, science: 0 };
+  const slotDay = { ...slot };
+  for (const kind of KINDS) {
+    slot[kind] = gain({ slots: [...input.slots, { kind, owner: "+1 слот", freeAt: 0 }] });
+    slotDay[kind] = slot[kind] / horizon;
+  }
+  const owners = [...new Set(input.slots.map((s) => s.owner))];
+  const biggest = owners.sort((a, b) => input.slots.filter((s) => s.owner === b).length - input.slots.filter((s) => s.owner === a).length)[0];
+  const twin = input.slots.filter((s) => s.owner === biggest).map((s) => ({ ...s, owner: `+${biggest}`, freeAt: 0 }));
+  return {
+    slot,
+    slotDay,
+    character: biggest === undefined ? null : { like: biggest, gain: gain({ slots: [...input.slots, ...twin] }) },
+    budget: { step: BUDGET_STEP, gain: gain({ budget: input.budget + BUDGET_STEP }) },
   };
 }
 

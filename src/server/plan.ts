@@ -2,7 +2,8 @@
  * Weekly plan: candidates from the overview, batches sized to Nick's login rhythm, scheduled on
  * the real free slots of the characters (skills − running jobs), within a budget.
  */
-import { batchRunsForCadence, planWeek, slotDays, type StockUse, type Plan, type PlanBatch, type PlanJob, type SlotKind, type SlotState } from "@/engine/planner";
+import { batchRunsForCadence, marginalValues, planWeek, slotDays, type MarginalValues, type PlanInput, type StockUse, type Plan, type PlanBatch, type PlanJob, type SlotKind, type SlotState } from "@/engine/planner";
+import type { Activity } from "@/engine/types";
 import { JOB_ACTIVITY_IDS, SLOT_SKILLS } from "@/engine/bonuses";
 import { characters, industryJobs } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -84,6 +85,16 @@ export interface PlanResponse extends Plan {
     marketDays: number | null;
     risks: string[];
   }[];
+  /** What one more slot, character or billion would add (the plan is made again with it). */
+  marginal: MarginalValues;
+  /** Set when buying some intermediates (the slot earns more on hulls) gave a better plan. */
+  slotPass: {
+    /** ISK per slot-hour an intermediate had to save to be built. */
+    bar: { manufacturing: number; reaction: number };
+    /** Extra profit against building everything that is cheaper. */
+    gain: number;
+    bought: { typeId: number; name: string; activity: Activity; savesPerHour: number }[];
+  } | null;
   computedMs: number;
 }
 
@@ -323,48 +334,64 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     .sort((a, b) => Number(isPinned(b)) - Number(isPinned(a)) || a.tier - b.tier || b.score * b.weight - a.score * a.weight)
     .slice(0, (req.candidates ?? 150) + sized.filter(isPinned).length);
 
-  const calcs = new Map<string, CalcResponse>();
-  const unpriced: string[] = [];
-  const noBlueprint: string[] = [];
-  const candidates: PlanBatch[] = [];
-  const unitCap = new Map<number, number>();
-  for (const x of top) {
-    const { r, route, runs, decryptorId, weight, tier, maxBatches } = x;
-    const pinned = isPinned(x) ? pins.get(r.typeId) : undefined;
-    const key = `${r.typeId}:${route}${maxBatches !== undefined ? `:${runs}` : ""}`;
-    try {
-      const c = calculate({
-        typeId: r.typeId,
-        runs,
-        blueprintSource: route,
-        ...(route === "invention" && decryptorId !== undefined ? { decryptorId } : {}),
-      });
-      // A missing price understates the cost: such a "profit" is not real.
-      if (c.warnings.some((w) => w.includes("нет рыночной цены"))) {
-        unpriced.push(r.name);
-        continue;
-      }
-      const owned = c.request.blueprintSource === "owned" ? c.ownedBlueprint : null;
-      // Only what you can actually start: your own blueprint, or one you can invent.
-      if (!owned && c.request.blueprintSource !== "invention") {
-        noBlueprint.push(r.name);
-        continue;
-      }
-      calcs.set(key, c);
-      // Own BPCs: one batch per copy. BPO or invention: limited by market and slots only.
-      const batch = toBatch(c);
-      if (batch.profit < req.minBatchProfit && !pinned) continue;
-      candidates.push({ ...batch, key, weight, tier, pinned, maxBatches: maxBatches ?? (owned && !owned.isBpo ? owned.copies : undefined) });
-      // Market cap: a share of what sells over the horizon. No history = one batch at most.
-      unitCap.set(r.typeId, r.avgDailyVolume30d ? r.avgDailyVolume30d * horizon * req.marketShare : c.summary.output);
-    } catch {
-      /* not calculable at this size — skip */
-    }
+  interface Evaluated {
+    calcs: Map<string, CalcResponse>;
+    candidates: PlanBatch[];
+    unitCap: Map<number, number>;
+    unpriced: string[];
+    noBlueprint: string[];
   }
+  /**
+   * Full calculation of the top rows. With `slotBar` (ISK per slot-hour), intermediates that save
+   * less than that are bought; calculations from `prev` where that changes nothing are reused.
+   */
+  const evaluate = (slotBar?: SlotBar, prev?: Evaluated): Evaluated => {
+    const out: Evaluated = { calcs: new Map(), candidates: [], unitCap: new Map(), unpriced: [], noBlueprint: [] };
+    for (const x of top) {
+      const { r, route, runs, decryptorId, weight, tier, maxBatches } = x;
+      const pinned = isPinned(x) ? pins.get(r.typeId) : undefined;
+      const key = `${r.typeId}:${route}${maxBatches !== undefined ? `:${runs}` : ""}`;
+      try {
+        const old = prev?.calcs.get(key);
+        const c =
+          old && !(slotBar && buildsBelowBar(old, slotBar))
+            ? old
+            : calculate({
+                typeId: r.typeId,
+                runs,
+                blueprintSource: route,
+                ...(route === "invention" && decryptorId !== undefined ? { decryptorId } : {}),
+                ...(slotBar ? { slotIskPerHour: slotBar } : {}),
+              });
+        // A missing price understates the cost: such a "profit" is not real.
+        if (c.warnings.some((w) => w.includes("нет рыночной цены"))) {
+          out.unpriced.push(r.name);
+          continue;
+        }
+        const owned = c.request.blueprintSource === "owned" ? c.ownedBlueprint : null;
+        // Only what you can actually start: your own blueprint, or one you can invent.
+        if (!owned && c.request.blueprintSource !== "invention") {
+          out.noBlueprint.push(r.name);
+          continue;
+        }
+        out.calcs.set(key, c);
+        // Own BPCs: one batch per copy. BPO or invention: limited by market and slots only.
+        const batch = toBatch(c);
+        if (batch.profit < req.minBatchProfit && !pinned) continue;
+        out.candidates.push({ ...batch, key, weight, tier, pinned, maxBatches: maxBatches ?? (owned && !owned.isBpo ? owned.copies : undefined) });
+        // Market cap: a share of what sells over the horizon. No history = one batch at most.
+        out.unitCap.set(r.typeId, r.avgDailyVolume30d ? r.avgDailyVolume30d * horizon * req.marketShare : c.summary.output);
+      } catch {
+        /* not calculable at this size — skip */
+      }
+    }
+    return out;
+  };
 
   const { slots, summary } = characterSlots(now);
-  const plan = planWeek({
-    candidates,
+  const stock = stockIndex().stock;
+  const inputFor = (e: Evaluated): PlanInput => ({
+    candidates: e.candidates,
     slots,
     budget: req.budget,
     cadenceDays: cad,
@@ -372,12 +399,31 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     maxBatchesPerItem: 10,
     maxItemShare: req.maxItemShare,
     maxJobDays: req.maxReactionJobDays ? { reaction: req.maxReactionJobDays } : undefined,
-    unitCap: (id) => unitCap.get(id) ?? 0,
+    unitCap: (id) => e.unitCap.get(id) ?? 0,
     // Stock is used up batch by batch and is not paid from the budget.
-    stock: stockIndex().stock,
-    stockUse: stockUseFor(calcs, horizon, req.maxReactionJobDays),
+    stock,
+    stockUse: stockUseFor(e.calcs, horizon, req.maxReactionJobDays),
     stockFirst: req.stockFirst !== false,
   });
+  let ev = evaluate();
+  let input = inputFor(ev);
+  let plan = planWeek(input);
+  let marginal = marginalValues(input, plan);
+  // Second pass: a slot-hour on hulls earns more than some intermediates save per hour → buy those,
+  // the freed slot time goes to more hulls. Kept only if the plan really earns more.
+  const bar: SlotBar = { manufacturing: marginal.slotDay.manufacturing / 24, reaction: marginal.slotDay.reaction / 24 };
+  let slotPass: PlanResponse["slotPass"] = null;
+  if (Math.max(bar.manufacturing, bar.reaction) > getSettings().minBuildIskPerHour) {
+    const ev2 = evaluate(bar, ev);
+    const input2 = inputFor(ev2);
+    const plan2 = planWeek(input2);
+    if (plan2.profit > plan.profit) {
+      slotPass = { bar, gain: plan2.profit - plan.profit, bought: boughtForSlots(plan2, ev2.calcs) };
+      [ev, input, plan] = [ev2, input2, plan2];
+      marginal = marginalValues(input, plan);
+    }
+  }
+  const { calcs, candidates, unpriced, noBlueprint } = ev;
 
   // One shopping list for everything in the plan.
   const shop = new Map<number, PlanResponse["shopping"][number]>();
@@ -449,8 +495,38 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     stages: stages.stages,
     stock: stages.stock,
     sheet,
+    marginal,
+    slotPass,
     computedMs: Date.now() - t0,
   };
+}
+
+/** ISK an hour of a factory / reaction slot earns on hulls in this plan. */
+type SlotBar = { manufacturing: number; reaction: number };
+
+/** Built intermediates (not the product, not a manual or no-market decision) that save less per hour than a slot earns. */
+const belowBar = (c: CalcResponse, bar: SlotBar) =>
+  c.nodes.filter(
+    (n) =>
+      n.typeId !== c.product.typeId &&
+      n.decision === "build" &&
+      n.reason === "cheaper" &&
+      (n.activity === "manufacturing" || n.activity === "reaction") &&
+      n.buildSavingsPerHour !== null &&
+      n.buildSavingsPerHour < bar[n.activity],
+  );
+const buildsBelowBar = (c: CalcResponse, bar: SlotBar) => belowBar(c, bar).length > 0;
+
+/** What the plan buys because the slot is worth more, one line per type. */
+function boughtForSlots(plan: Plan, calcs: Map<string, CalcResponse>): NonNullable<PlanResponse["slotPass"]>["bought"] {
+  const out = new Map<number, NonNullable<PlanResponse["slotPass"]>["bought"][number]>();
+  for (const b of plan.batches) {
+    for (const n of calcs.get(b.key ?? String(b.typeId))?.nodes ?? []) {
+      if (n.reason !== "slot value" || out.has(n.typeId) || n.activity === null) continue;
+      out.set(n.typeId, { typeId: n.typeId, name: n.name, activity: n.activity, savesPerHour: n.buildSavingsPerHour ?? 0 });
+    }
+  }
+  return [...out.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**
@@ -548,9 +624,17 @@ function stageModel(c: CalcResponse, horizonDays: number, maxReactionDays?: numb
       maxRunsPerJob: isProduct ? undefined : sde.getBlueprint(n.job.blueprintTypeId)?.maxProductionLimit || undefined,
     });
   }
+  const forSlot = new Set(c.nodes.filter((n) => n.reason === "slot value").map((n) => n.typeId));
   for (const l of c.shopping) {
     if (buy.has(l.typeId)) continue;
-    buy.set(l.typeId, { typeId: l.typeId, name: l.name, unitPrice: l.cost === null || !l.quantity ? null : l.cost / l.quantity, volume: l.quantity ? l.volume / l.quantity : 0, flags: l.priceFlags?.map((f) => f.label) });
+    buy.set(l.typeId, {
+      typeId: l.typeId,
+      name: l.name,
+      unitPrice: l.cost === null || !l.quantity ? null : l.cost / l.quantity,
+      volume: l.quantity ? l.volume / l.quantity : 0,
+      flags: l.priceFlags?.map((f) => f.label),
+      ...(forSlot.has(l.typeId) ? { note: SLOT_NOTE } : {}),
+    });
   }
   return { recipes, buy };
 }
@@ -587,6 +671,9 @@ function stockUseFor(calcs: Map<string, CalcResponse>, horizonDays: number, maxR
   };
 }
 
+/** Why a buildable intermediate is in the purchase list. */
+export const SLOT_NOTE = "покупаем: слот выгоднее под корпуса";
+
 /** SDE category of blueprints (and nothing else): a T1 invention source, not a relic. */
 const CATEGORY_BLUEPRINT = 9;
 
@@ -600,6 +687,15 @@ export function sheetText(p: PlanResponse): string {
     `Слоты: ${p.slots.map((s) => `${s.owner} — производство ${s.manufacturing.total} (занято ${s.manufacturing.busy}), реакции ${s.reaction.total} (занято ${s.reaction.busy}), лаборатории ${s.science.total} (занято ${s.science.busy})`).join("; ")}.`,
     ...(r.pins?.length ? [`Закреплено: ${r.pins.map((x) => `${sheetName(x.typeId)} × ${x.batches}`).join(", ")}.`] : []),
     ...(p.warnings.length ? ["", "Предупреждения плана:", ...p.warnings.map((w) => `- ${w}`)] : []),
+    ...(p.marginal
+      ? [
+          "",
+          `Что даст ещё (прибыль за план): +1 производственный слот ${Math.round(p.marginal.slot.manufacturing)}, +1 реакционный ${Math.round(p.marginal.slot.reaction)}, +1 лабораторный ${Math.round(p.marginal.slot.science)}` +
+            (p.marginal.character ? `, +персонаж как ${p.marginal.character.like} ${Math.round(p.marginal.character.gain)}` : "") +
+            `, +${p.marginal.budget.step.toLocaleString("ru-RU")} ISK бюджета ${Math.round(p.marginal.budget.gain)}.`,
+        ]
+      : []),
+    ...(p.slotPass?.bought.length ? [`Покупаем, хотя дешевле построить (слот дороже): ${p.slotPass.bought.map((b) => b.name).join(", ")}; прибыль плана +${Math.round(p.slotPass.gain)}.`] : []),
     "",
     "Предмет | категория | раны | декриптор | прибыль | капитал | слото-дней | прибыль/слото-день | джоб | дней рынка | риски",
     ...p.sheet.map((s) =>
