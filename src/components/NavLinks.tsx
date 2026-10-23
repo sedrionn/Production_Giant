@@ -8,6 +8,7 @@ const LINKS = [
   { href: "/overview", label: "Что выгодно" },
   { href: "/plan", label: "План недели" },
   { href: "/plan/stages", label: "Этапы" },
+  { href: "/plan/login", label: "Заход" },
   { href: "/ledger", label: "Учёт" },
   { href: "/characters", label: "Персонажи" },
   { href: "/presets", label: "Структуры и настройки" },
