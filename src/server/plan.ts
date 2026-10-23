@@ -2,7 +2,7 @@
  * Weekly plan: candidates from the overview, batches sized to Nick's login rhythm, scheduled on
  * the real free slots of the characters (skills − running jobs), within a budget.
  */
-import { batchRunsForCadence, marginalValues, planWeek, slotDays, type MarginalValues, type PlanInput, type StockUse, type Plan, type PlanBatch, type PlanJob, type SlotKind, type SlotState } from "@/engine/planner";
+import { batchRunsForCadence, marginalValues, planWeek, slotDays, splitSequential, type MarginalValues, type PlanInput, type StockUse, type Plan, type PlanBatch, type PlanJob, type SlotKind, type SlotState } from "@/engine/planner";
 import type { Activity } from "@/engine/types";
 import { JOB_ACTIVITY_IDS, SLOT_SKILLS } from "@/engine/bonuses";
 import { characters, industryJobs } from "@/db/schema";
@@ -17,6 +17,7 @@ import path from "node:path";
 import { stockIndex } from "./assets";
 import { planStages, type StageBuyInfo, type StageRecipe, type Stages } from "@/engine/stages";
 import { quotePrice } from "@/engine/pricing";
+import { materialQuantity } from "@/engine/materials";
 import { computeOverview, overviewRows, type OverviewRow } from "./overview";
 
 export interface PlanRequest {
@@ -40,6 +41,8 @@ export interface PlanRequest {
   buyWeeks?: number;
   /** Longest reaction job, days: longer ones run as parallel jobs. 0 = no cap. */
   maxReactionJobDays?: number;
+  /** Longest manufacturing job, days: a longer blueprint runs as sequential jobs. 0 = no cap. */
+  maxManufacturingJobDays?: number;
   /** Items Nick always wants in the plan, with how many batches; planned before everything else. */
   pins?: { typeId: number; batches: number }[];
 }
@@ -203,6 +206,8 @@ interface Sized {
   runs: number;
   /** undefined = settings default; null = no decryptor. */
   decryptorId?: number | null;
+  /** Relic / T1 blueprint the runs were sized for (another source gives a BPC of another length). */
+  inventionSourceId?: number;
   profit: number;
   score: number;
   /** Own BPCs of exactly this length: one batch each. */
@@ -214,14 +219,19 @@ const MAX_BPC_GROUPS = 3;
 
 /**
  * Batch size per way of getting the blueprint, with the best profit per occupied product slot-day.
- * Own BPO/BPC: its runs. Invention (also when you still have a few BPCs left): every decryptor is
- * tried — +runs decryptors turn 1-run BPCs into multi-day jobs (Flycatcher with Augmentation).
+ * Own BPO/BPC: its runs. Invention (also when you still have a few BPCs left): every source and
+ * decryptor is tried — +runs decryptors turn 1-run BPCs into multi-day jobs (Flycatcher with
+ * Augmentation). Over the manufacturing cap a BPC runs as sequential jobs (`splitSequential`).
  */
-export function sizeRoutes(r: Row, cad: number, horizon: number, minProfit = 0, bpcRuns: number[] = [], allowLoss = false): Sized[] {
+export function sizeRoutes(r: Row, cad: number, horizon: number, minProfit = 0, bpcRuns: number[] = [], allowLoss = false, capDays?: number): Sized[] {
   // Pinned items are sized even at a loss (Nick decided to build them anyway).
   const ok = (profit: number) => profit > 0 || allowLoss;
+  // A fixed-length blueprint (own BPC, invented BPC) over the cap runs as sequential jobs.
+  const occupiedBy = (runs: number, secondsPerRun: number, partCost?: (runs: number) => number) =>
+    splitSequential({ runs, secondsPerRun, capDays, cadenceDays: cad, partCost });
   const pick = (secondsPerRun: number, profitPerRun: number, maxRuns: number) => {
-    const runs = batchRunsForCadence({ secondsPerRun, profitPerRun, maxRuns, cadenceDays: cad, horizonDays: horizon, minProfit });
+    // A BPO is sized to fit the cap in one job.
+    const runs = batchRunsForCadence({ secondsPerRun, profitPerRun, maxRuns, cadenceDays: cad, horizonDays: capDays ? Math.min(horizon, Math.max(cad, capDays)) : horizon, minProfit });
     const occupied = Math.max(cad, Math.ceil((runs * secondsPerRun) / 86_400 / cad) * cad);
     return { runs, profit: profitPerRun * runs, score: (profitPerRun * runs) / occupied };
   };
@@ -233,34 +243,42 @@ export function sizeRoutes(r: Row, cad: number, horizon: number, minProfit = 0, 
       const groups = new Map<number, number>();
       for (const n of bpcRuns.length ? bpcRuns : [r.maxRuns]) groups.set(n, (groups.get(n) ?? 0) + 1);
       for (const [runs, count] of [...groups.entries()].sort((a, b) => b[0] - a[0]).slice(0, MAX_BPC_GROUPS)) {
-        const secs = (r.jobSeconds / r.runs) * runs;
-        const occupied = Math.max(cad, Math.ceil(secs / 86_400 / cad) * cad);
+        // The material cost of splitting is not known here (no tree yet): it is taken off in the batch.
+        const occupied = occupiedBy(runs, r.jobSeconds / r.runs).slotDays;
         out.push({ route: "owned", runs, profit: perRun * runs, score: (perRun * runs) / occupied, maxBatches: count });
       }
     } else if (ok(perRun)) out.push({ route: "owned", ...pick(r.jobSeconds / r.runs, perRun, r.maxRuns) });
     if (r.blueprintSource === "bpo") return out;
   }
-  const c = calculate({ typeId: r.typeId, runs: r.runs, blueprintSource: "invention", compareDecryptors: true });
-  if (c.request.blueprintSource !== "invention") return out;
-  const base = (c.jobs.at(-1)?.timeSeconds ?? r.jobSeconds) / r.runs;
-  const te0 = c.request.te;
+  const first = calculate({ typeId: r.typeId, runs: r.runs, blueprintSource: "invention", compareDecryptors: true });
+  if (first.request.blueprintSource !== "invention") return out;
+  // Every source × every decryptor: a relic that is dearer per run may give the BPC length that fits
+  // the logins (T3: three relics; T2: one T1 blueprint).
+  const others = first.invention.options.filter((o) => o.sourceId !== first.invention.chosen?.sourceId);
+  const bySource = [first, ...others.map((o) => calculate({ typeId: r.typeId, runs: r.runs, blueprintSource: "invention", inventionSourceId: o.sourceId, compareDecryptors: true }))];
   let best: Sized | null = null;
-  for (const d of c.invention.comparison) {
-    if (d.profit === null) continue;
-    const secondsPerRun = (base * (1 - d.te / 100)) / (1 - te0 / 100);
-    // An invented BPC is used up whole: its cost per run assumes every run gets built.
-    const perRun = d.profit / r.runs;
-    const occupied = Math.max(cad, Math.ceil((d.runsPerSuccess * secondsPerRun) / 86_400 / cad) * cad);
-    const s = { runs: d.runsPerSuccess, profit: perRun * d.runsPerSuccess, score: (perRun * d.runsPerSuccess) / occupied };
-    // Batches above the minimum first; then score; ties → the longer batch (fewer logins).
-    const big = (x: { profit: number }) => x.profit >= minProfit;
-    if (
-      ok(s.profit) &&
-      (!best ||
-        (big(s) && !big(best)) ||
-        (big(s) === big(best) && (s.score > best.score * 1.0001 || (s.score >= best.score * 0.9999 && s.runs > best.runs))))
-    ) {
-      best = { route: "invention", ...s, decryptorId: d.decryptorId };
+  for (const c of bySource) {
+    const base = (c.jobs.at(-1)?.timeSeconds ?? r.jobSeconds) / r.runs;
+    const te0 = c.request.te;
+    for (const d of c.invention.comparison) {
+      if (d.profit === null) continue;
+      const secondsPerRun = (base * (1 - d.te / 100)) / (1 - te0 / 100);
+      // An invented BPC is used up whole: its cost per run assumes every run gets built. Split into
+      // sequential jobs over the cap, it pays for materials rounded per job (with this decryptor's ME).
+      const perRun = d.profit / r.runs;
+      const split = occupiedBy(d.runsPerSuccess, secondsPerRun, partCostFor(c, d.me));
+      const profit = perRun * d.runsPerSuccess - split.extraCost;
+      const s = { runs: d.runsPerSuccess, profit, score: profit / split.slotDays };
+      // Batches above the minimum first; then score; ties → the longer batch (fewer logins).
+      const big = (x: { profit: number }) => x.profit >= minProfit;
+      if (
+        ok(s.profit) &&
+        (!best ||
+          (big(s) && !big(best)) ||
+          (big(s) === big(best) && (s.score > best.score * 1.0001 || (s.score >= best.score * 0.9999 && s.runs > best.runs))))
+      ) {
+        best = { route: "invention", ...s, decryptorId: d.decryptorId, inventionSourceId: c.invention.chosen?.sourceId };
+      }
     }
   }
   if (best) out.push(best);
@@ -274,6 +292,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
   const cad = Math.max(1, req.cadenceDays);
   const horizon = Math.max(cad, req.horizonDays);
 
+  const mfgCap = req.maxManufacturingJobDays || undefined;
   const pins = new Map((req.pins ?? []).filter((p) => p.batches > 0).map((p) => [p.typeId, Math.round(p.batches)]));
   const { source: sde } = getSde();
 
@@ -320,7 +339,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
       const filler = r.categoryKey.startsWith("rigs") || r.categoryKey === "reactions" || t?.raceId === RACE_CALDARI;
       const tier = !req.caldariShipsFirst ? 0 : caldariShip ? 0 : filler ? 1 : 2;
       const bp = recipe(r.typeId)?.blueprintTypeId;
-      return sizeRoutes(r, cad, horizon, req.minBatchProfit, bp ? ownedIdx.get(bp)?.bpcRuns : undefined, pins.has(r.typeId)).map((s) => ({ r, ...s, weight, tier }));
+      return sizeRoutes(r, cad, horizon, req.minBatchProfit, bp ? ownedIdx.get(bp)?.bpcRuns : undefined, pins.has(r.typeId), mfgCap).map((s) => ({ r, ...s, weight, tier }));
     } catch {
       return [];
     }
@@ -348,7 +367,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
   const evaluate = (slotBar?: SlotBar, prev?: Evaluated): Evaluated => {
     const out: Evaluated = { calcs: new Map(), candidates: [], unitCap: new Map(), unpriced: [], noBlueprint: [] };
     for (const x of top) {
-      const { r, route, runs, decryptorId, weight, tier, maxBatches } = x;
+      const { r, route, runs, decryptorId, inventionSourceId, weight, tier, maxBatches } = x;
       const pinned = isPinned(x) ? pins.get(r.typeId) : undefined;
       const key = `${r.typeId}:${route}${maxBatches !== undefined ? `:${runs}` : ""}`;
       try {
@@ -361,6 +380,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
                 runs,
                 blueprintSource: route,
                 ...(route === "invention" && decryptorId !== undefined ? { decryptorId } : {}),
+                ...(route === "invention" && inventionSourceId !== undefined ? { inventionSourceId } : {}),
                 ...(slotBar ? { slotIskPerHour: slotBar } : {}),
               });
         // A missing price understates the cost: such a "profit" is not real.
@@ -376,7 +396,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
         }
         out.calcs.set(key, c);
         // Own BPCs: one batch per copy. BPO or invention: limited by market and slots only.
-        const batch = toBatch(c);
+        const batch = splitProduct(toBatch(c), c, cad, mfgCap);
         if (batch.profit < req.minBatchProfit && !pinned) continue;
         out.candidates.push({ ...batch, key, weight, tier, pinned, maxBatches: maxBatches ?? (owned && !owned.isBpo ? owned.copies : undefined) });
         // Market cap: a share of what sells over the horizon. No history = one batch at most.
@@ -498,6 +518,36 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     marginal,
     slotPass,
     computedMs: Date.now() - t0,
+  };
+}
+
+/**
+ * Cost of what one product job of `runs` runs consumes, at this ME (materials rounded per job as
+ * in game), valued like the tree values them (build or buy). Undefined when the product is not built.
+ */
+export function partCostFor(c: CalcResponse, me: number): ((runs: number) => number) | undefined {
+  const root = c.nodes.find((n) => n.typeId === c.product.typeId);
+  const job = root?.job;
+  if (!root || !job || job.runs <= 0) return undefined;
+  const unit = new Map(c.nodes.map((n) => [n.typeId, (n.decision === "build" ? n.buildUnitCost : n.buyUnitCost) ?? 0]));
+  return (runs) =>
+    root.children.reduce((s, ch) => {
+      const q = ch.baseQuantity === undefined ? Math.ceil((ch.quantity / job.runs) * runs - 1e-9) : materialQuantity(ch.baseQuantity, runs, me, job.materialMultiplier);
+      return s + q * (unit.get(ch.typeId) ?? 0);
+    }, 0);
+}
+
+/** A manufactured product over the cap: sequential jobs of the same blueprint; extra materials come off the profit. */
+function splitProduct(b: PlanBatch, c: CalcResponse, cad: number, capDays?: number): PlanBatch {
+  const product = b.jobs.find((j) => j.depth === 0);
+  if (!capDays || !product || product.activity !== "manufacturing" || product.runs <= 0) return b;
+  const split = splitSequential({ runs: product.runs, secondsPerRun: product.seconds / product.runs, capDays, cadenceDays: cad, partCost: partCostFor(c, c.request.me) });
+  if (split.parts.length < 2) return b;
+  return {
+    ...b,
+    profit: b.profit - split.extraCost,
+    capital: b.capital + split.extraCost,
+    jobs: b.jobs.map((j) => (j === product ? { ...j, parts: split.parts } : j)),
   };
 }
 
