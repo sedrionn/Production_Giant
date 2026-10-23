@@ -35,6 +35,11 @@ export interface PlanJob {
   depth: number;
   /** Blueprint production limit: most runs one job may have. */
   maxRunsPerJob?: number;
+  /**
+   * Product only: the runs as sequential jobs of the same blueprint (one blueprint runs one job at
+   * a time), from `splitSequential`. Each starts at the login after the previous one ends.
+   */
+  parts?: number[];
 }
 
 export interface PlanBatch {
@@ -73,6 +78,8 @@ export interface ScheduledJob extends PlanJob {
   /** Login day the job starts, and the day it ends (fractional). */
   start: number;
   end: number;
+  /** One of several sequential jobs of the same blueprint (1-based). */
+  part?: { index: number; of: number };
 }
 
 /** An intermediate pooled over all batches of the plan. */
@@ -171,10 +178,51 @@ const isLab = (a: Activity) => a === "invention" || a === "copying";
  * slots). Lab time is a separate resource and does not count here.
  */
 export function slotDays(b: PlanBatch, cadence: number): number {
-  return b.jobs.reduce(
-    (s, j) => s + (slotKind(j.activity) === "science" ? 0 : j.depth === 0 ? nextLogin(j.seconds / DAY, cadence) || cadence : j.seconds / DAY),
-    0,
-  );
+  const snapped = (j: PlanJob) => (j.parts ?? [j.runs]).reduce((s, r) => s + (nextLogin((j.seconds * r) / j.runs / DAY, cadence) || cadence), 0);
+  return b.jobs.reduce((s, j) => s + (slotKind(j.activity) === "science" ? 0 : j.depth === 0 ? snapped(j) : j.seconds / DAY), 0);
+}
+
+/**
+ * Splits one blueprint's runs into sequential jobs no longer than `capDays` each (a single run may
+ * be longer). Best split: fewest slot-days snapped to logins, then the lowest material cost (the
+ * game rounds materials per job, so short jobs lose the ME saving), then fewer jobs. Longest first.
+ * Without a cap, or when it fits, it is one job.
+ */
+export function splitSequential(p: {
+  runs: number;
+  secondsPerRun: number;
+  capDays?: number;
+  cadenceDays: number;
+  /** Cost of what one job of `runs` runs consumes; omitted = only slot-days count. */
+  partCost?: (runs: number) => number;
+}): { parts: number[]; slotDays: number; extraCost: number } {
+  const { runs, secondsPerRun, cadenceDays: cad } = p;
+  const days = (k: number) => nextLogin((k * secondsPerRun) / DAY, cad) || cad;
+  const memo = new Map<number, number>();
+  const cost = (k: number) => {
+    if (!p.partCost) return 0;
+    if (!memo.has(k)) memo.set(k, p.partCost(k));
+    return memo.get(k)!;
+  };
+  const maxRuns = p.capDays && secondsPerRun > 0 ? Math.max(1, Math.floor((p.capDays * DAY) / secondsPerRun + 1e-9)) : runs;
+  if (runs <= maxRuns) return { parts: [runs], slotDays: days(runs), extraCost: 0 };
+  type Best = { days: number; cost: number; n: number; first: number };
+  const best: Best[] = [{ days: 0, cost: 0, n: 0, first: 0 }];
+  const better = (a: Best, b: Best) =>
+    a.days < b.days - 1e-9 || (Math.abs(a.days - b.days) <= 1e-9 && (a.cost < b.cost - 1e-6 || (Math.abs(a.cost - b.cost) <= 1e-6 && a.n < b.n)));
+  for (let r = 1; r <= runs; r++) {
+    let b: Best | null = null;
+    for (let k = 1; k <= Math.min(r, maxRuns); k++) {
+      const rest = best[r - k];
+      const c = { days: rest.days + days(k), cost: rest.cost + cost(k), n: rest.n + 1, first: k };
+      if (!b || better(c, b)) b = c;
+    }
+    best.push(b!);
+  }
+  const parts: number[] = [];
+  for (let r = runs; r > 0; r -= best[r].first) parts.push(best[r].first);
+  parts.sort((a, b) => b - a);
+  return { parts, slotDays: best[runs].days, extraCost: p.partCost ? best[runs].cost - cost(runs) : 0 };
 }
 
 export interface PlanInput {
@@ -243,20 +291,25 @@ export function planWeek(input: PlanInput): Plan {
     // length cap of its kind runs as several parallel jobs, each on its own slot.
     const kind: SlotKind = slotKind(product.activity) ?? "manufacturing";
     const cap = input.maxJobDays?.[kind];
-    const parts = splitRuns(product.runs, product.seconds / product.runs, cap ? cap * DAY : undefined);
+    // Sequential parts of one blueprint stay on one slot, back to back; the first must start inside
+    // the plan, the last may end next week. Otherwise: parallel jobs, each on its own slot.
+    const sequential = (product.parts?.length ?? 0) > 1;
+    const parts = product.parts ?? splitRuns(product.runs, product.seconds / product.runs, cap ? cap * DAY : undefined);
     const free = slots.map((x) => x.freeAt);
     const placed: { slot: number; runs: number; start: number; end: number }[] = [];
     let productDays = 0;
     for (const runs of parts) {
       let best = -1;
-      for (let i = 0; i < slots.length; i++) {
-        if (slots[i].kind !== kind) continue;
-        if (best === -1 || free[i] < free[best]) best = i;
-      }
-      if (best === -1 || free[best] >= horizon) return "нет свободных слотов в пределах недели";
+      if (sequential && placed.length) best = placed[0].slot;
+      else
+        for (let i = 0; i < slots.length; i++) {
+          if (slots[i].kind !== kind) continue;
+          if (best === -1 || free[i] < free[best]) best = i;
+        }
+      if (best === -1 || (free[best] >= horizon && !(sequential && placed.length))) return "нет свободных слотов в пределах недели";
       const start = free[best];
       const end = start + (product.seconds * runs) / product.runs / DAY;
-      productDays += Math.min(nextLogin(end, cad) - start || cad, horizon - start);
+      productDays += Math.max(0, Math.min(nextLogin(end, cad) - start || cad, horizon - start));
       placed.push({ slot: best, runs, start, end });
       free[best] = nextLogin(end, cad);
     }
@@ -265,8 +318,18 @@ export function planWeek(input: PlanInput): Plan {
     after[kind] += productDays;
     if (after.manufacturing > capacity.manufacturing || after.reaction > capacity.reaction) return "не хватит слотов на компоненты и реакции";
     if (after.science > capacity.science) return "не хватит лабораторных слотов на инвент";
-    for (const x of placed) {
-      jobs.push({ ...product, runs: x.runs, seconds: (product.seconds * x.runs) / product.runs, batchTypeId: c.typeId, slot: x.slot, owner: slots[x.slot].owner, start: x.start, end: x.end });
+    for (const [i, x] of placed.entries()) {
+      jobs.push({
+        ...product,
+        runs: x.runs,
+        seconds: (product.seconds * x.runs) / product.runs,
+        batchTypeId: c.typeId,
+        slot: x.slot,
+        owner: slots[x.slot].owner,
+        start: x.start,
+        end: x.end,
+        ...(sequential ? { part: { index: i + 1, of: placed.length } } : {}),
+      });
       slots[x.slot].freeAt = free[x.slot];
     }
     const start = Math.min(...placed.map((x) => x.start));

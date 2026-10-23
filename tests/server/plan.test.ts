@@ -115,3 +115,27 @@ describe("buildPlan: what one more slot, character or billion adds", () => {
     expect(plan.sheetText(p)).toContain("Что даст ещё");
   });
 });
+
+describe("buildPlan: manufacturing job cap (Jackdaw, real fixtures)", () => {
+  it("an invented BPC longer than the cap runs as sequential jobs of ≤ 7 days; the BPC length matches the batch", () => {
+    const p = plan.buildPlan({ ...req, categories: ["t3"], maxItemShare: 1, maxManufacturingJobDays: 7, pins: [{ typeId: 34828, batches: 1 }] });
+    const hull = p.jobs.filter((j) => j.typeId === 34828);
+    expect(hull.length).toBeGreaterThan(1);
+    for (const j of hull) expect(j.end - j.start).toBeLessThanOrEqual(7);
+    expect(hull.map((j) => j.part?.index)).toEqual(hull.map((_, i) => i + 1));
+    expect(new Set(hull.map((j) => j.slot)).size).toBe(1);
+    const batch = p.batches.find((b) => b.typeId === 34828)!;
+    expect(hull.reduce((s, j) => s + j.runs, 0)).toBe(batch.runs);
+    // Sized and calculated from the same relic: one BPC = one batch.
+    expect(p.invention.find((i) => i.name === "Jackdaw")!.runsPerBpc).toBe(batch.runs);
+    // Each part is its own job in the stages (materials rounded per job).
+    expect(p.stages.stages.flatMap((s) => s.lines).find((l) => l.typeId === 34828)!.jobs).toEqual(hull.map((j) => j.runs));
+  });
+
+  it("without the cap the same BPC is one long job", () => {
+    const p = plan.buildPlan({ ...req, categories: ["t3"], maxItemShare: 1, pins: [{ typeId: 34828, batches: 1 }] });
+    const hull = p.jobs.filter((j) => j.typeId === 34828);
+    expect(hull).toHaveLength(1);
+    expect(hull[0].part).toBeUndefined();
+  });
+});

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BUDGET_STEP, batchRunsForCadence, marginalValues, nextLogin, planWeek, slotDays, type PlanBatch, type SlotState } from "@/engine/planner";
+import { BUDGET_STEP, batchRunsForCadence, marginalValues, nextLogin, planWeek, slotDays, splitSequential, type PlanBatch, type SlotState } from "@/engine/planner";
 
 const H = 3600;
 
@@ -374,5 +374,69 @@ describe("marginalValues: what one more slot, character or billion adds", () => 
     const m = marginalValues({ ...base, candidates: many, slots: s, budget: 1e12 });
     expect(m.character?.like).toBe("Big");
     expect(m.character!.gain).toBeGreaterThan(m.slot.manufacturing);
+  });
+});
+
+describe("splitSequential: one blueprint as back-to-back jobs under a length cap", () => {
+  // SYNTHETIC: 21 runs ≈ 9 days (Nick's Jackdaw), login every 2 days.
+  const run = (216 / 21) * H;
+
+  it("no cap or it fits: one job", () => {
+    expect(splitSequential({ runs: 21, secondsPerRun: run, cadenceDays: 2 })).toEqual({ parts: [21], slotDays: 10, extraCost: 0 });
+    expect(splitSequential({ runs: 4, secondsPerRun: run, capDays: 2, cadenceDays: 2 }).parts).toEqual([4]);
+  });
+
+  it("cap 7 days: jobs of ≤ 16 runs, still 10 slot-days (the 9-day job waited for day 10 anyway)", () => {
+    const s = splitSequential({ runs: 21, secondsPerRun: run, capDays: 7, cadenceDays: 2 });
+    expect(s.parts.reduce((a, b) => a + b, 0)).toBe(21);
+    expect(Math.max(...s.parts)).toBeLessThanOrEqual(16);
+    expect(s.parts).toHaveLength(2);
+    expect(s.slotDays).toBe(10);
+  });
+
+  it("2-day jobs lose slot time: the 1-run tail takes a whole window", () => {
+    const s = splitSequential({ runs: 21, secondsPerRun: run, capDays: 2, cadenceDays: 2 });
+    expect(s.parts).toEqual([4, 4, 4, 4, 4, 1]);
+    expect(s.slotDays).toBe(12);
+  });
+
+  it("material rounding per job is the extra cost; among equal slot-days the cheapest split wins", () => {
+    // SYNTHETIC: 2 units per run at ME 4 and 1% structure → 1.9 per run, rounded up per job.
+    const partCost = (k: number) => Math.ceil(1.9 * k);
+    const s = splitSequential({ runs: 21, secondsPerRun: run, capDays: 7, cadenceDays: 2, partCost });
+    expect(s.extraCost).toBe(s.parts.reduce((a, k) => a + partCost(k), 0) - partCost(21));
+    expect(s.extraCost).toBe(1);
+  });
+
+  it("a single run longer than the cap is still one run per job", () => {
+    expect(splitSequential({ runs: 2, secondsPerRun: 10 * 24 * H, capDays: 7, cadenceDays: 2 }).parts).toEqual([1, 1]);
+  });
+});
+
+describe("planWeek: sequential parts of one blueprint", () => {
+  // SYNTHETIC: 6 runs of 32 h as 4 + 2 (≤ 7 days each).
+  const bpc = (): PlanBatch => ({
+    typeId: 7,
+    name: "Hull",
+    runs: 6,
+    units: 6,
+    profit: 100,
+    capital: 10,
+    jobs: [{ typeId: 7, name: "Hull", activity: "manufacturing", runs: 6, seconds: 6 * 32 * H, depth: 0, parts: [4, 2] }],
+  });
+
+  it("parts go back to back on one slot, the next at the login after the previous ends; it may end next week", () => {
+    const p = planWeek({ candidates: [bpc()], slots: slots(2), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 99 });
+    expect(p.jobs.map((j) => ({ runs: j.runs, slot: j.slot, start: j.start, part: j.part }))).toEqual([
+      { runs: 4, slot: 0, start: 0, part: { index: 1, of: 2 } },
+      { runs: 2, slot: 0, start: 6, part: { index: 2, of: 2 } },
+    ]);
+    expect(p.jobs[1].end).toBeCloseTo(6 + 64 / 24);
+    expect(slotDays(bpc(), 2)).toBe(10);
+  });
+
+  it("the first part must start inside the plan", () => {
+    const p = planWeek({ candidates: [bpc()], slots: slots(1, 7), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 99 });
+    expect(p.jobs).toEqual([]);
   });
 });

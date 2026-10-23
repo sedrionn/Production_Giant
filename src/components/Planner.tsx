@@ -20,6 +20,8 @@ interface Form {
   maxItemShare: number;
   /** Longest reaction job, days; 0 = no cap. */
   maxReactionJobDays: number;
+  /** Longest manufacturing job, days; a longer BPC runs as sequential jobs. 0 = no cap. */
+  maxManufacturingJobDays: number;
   /** Purchase list: materials for this many weeks. */
   buyWeeks: number;
   categories: string[];
@@ -27,7 +29,7 @@ interface Form {
   pins: { typeId: number; name: string; batches: number }[];
 }
 
-const DEFAULT: Form = { budget: 10e9, stockFirst: true, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, caldariShipsFirst: true, maxItemShare: 0.2, maxReactionJobDays: 2, buyWeeks: 1, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions"], pins: [] };
+const DEFAULT: Form = { budget: 10e9, stockFirst: true, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, caldariShipsFirst: true, maxItemShare: 0.2, maxReactionJobDays: 2, maxManufacturingJobDays: 7, buyWeeks: 1, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions"], pins: [] };
 const STORAGE = "pg.plan.v3";
 
 export function Planner({ categories }: { categories: { key: string; label: string }[] }) {
@@ -131,6 +133,14 @@ export function Planner({ categories }: { categories: { key: string; label: stri
         <Num label="Партия от, млн ISK прибыли" value={form.minBatchProfit / 1e6} step={5} min={0} onChange={(v) => set({ minBatchProfit: v * 1e6 })} />
         <Num label="Одна позиция, не больше % бюджета" value={Math.round(form.maxItemShare * 100)} step={5} min={5} max={100} onChange={(v) => set({ maxItemShare: v / 100 })} />
         <Num label="Реакция: джоба не длиннее, дней (0 — без лимита)" value={form.maxReactionJobDays} step={0.5} min={0} max={28} onChange={(v) => set({ maxReactionJobDays: v })} />
+        <Num
+          label="Производство: джоба не длиннее, дней (0 — без лимита)"
+          value={form.maxManufacturingJobDays}
+          step={1}
+          min={0}
+          max={28}
+          onChange={(v) => set({ maxManufacturingJobDays: v })}
+        />
         <Num label="Закупка: запас на, недель" value={form.buyWeeks} step={1} min={1} max={8} onChange={(v) => set({ buyWeeks: Math.min(8, Math.max(1, Math.round(v))) })} />
         <label className="flex items-center gap-2 sm:col-span-2 lg:col-span-8">
           <input type="checkbox" className="accent-[var(--marker)]" checked={form.caldariShipsFirst} onChange={(e) => set({ caldariShipsFirst: e.target.checked })} />
@@ -496,10 +506,12 @@ const dayLabel = (d: number) => {
 function summarize(jobs: ScheduledJob[]): string {
   const m = new Map<string, { runs: number; jobs: number }>();
   for (const j of jobs) {
-    const x = m.get(j.name) ?? { runs: 0, jobs: 0 };
+    // A part of a longer BPC: same blueprint, the rest goes on at the next login after it ends.
+    const name = j.part ? `${j.name} (часть ${j.part.index} из ${j.part.of}, тот же чертёж)` : j.name;
+    const x = m.get(name) ?? { runs: 0, jobs: 0 };
     x.runs += j.runs;
     x.jobs++;
-    m.set(j.name, x);
+    m.set(name, x);
   }
   return [...m.entries()].map(([n, x]) => `${n} × ${x.runs}${x.jobs > 1 ? ` (${x.jobs} джоб)` : ""}`).join(", ");
 }
