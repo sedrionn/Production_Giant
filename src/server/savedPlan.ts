@@ -21,6 +21,16 @@ export interface SavedPlanData {
   stages: Stages;
   stock: PlanResponse["stock"];
   invention: PlanResponse["invention"];
+  /** What to do at each login (missing in plans saved before 2026-10-23: rebuilt from `jobs`). */
+  logins?: SavedLogin[];
+}
+
+export interface SavedLogin {
+  day: number;
+  start: { name: string; runs: number; owner: string; part?: { index: number; of: number } }[];
+  finish: { name: string; runs: number; owner: string }[];
+  /** Components, reactions, invention and copies to start (merged per type). */
+  prep: { name: string; activity: Activity; runs: number; jobs: number; seconds: number }[];
 }
 
 export interface SavedPlanView {
@@ -53,12 +63,31 @@ export function savePlan(p: PlanResponse, title?: string): number {
     stages: p.stages,
     stock: p.stock,
     invention: p.invention,
+    logins: p.logins?.map((l) => ({
+      day: l.day,
+      start: l.start.map((j) => ({ name: j.name, runs: j.runs, owner: j.owner, ...(j.part ? { part: j.part } : {}) })),
+      finish: l.finish.map((j) => ({ name: j.name, runs: j.runs, owner: j.owner })),
+      prep: l.prep.map((x) => ({ name: x.name, activity: x.activity, runs: x.runs, jobs: x.jobs, seconds: x.seconds })),
+    })),
   };
   if (!data.stages?.stages || !Array.isArray(data.batches)) throw new Error("План без этапов — пересоставь его и сохрани ещё раз");
   const createdAt = new Date().toISOString();
   const label = title?.trim() || `План от ${new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}`;
   const r = getDb().insert(savedPlans).values({ createdAt, title: label, data }).returning({ id: savedPlans.id }).get();
   return r.id;
+}
+
+/** Logins of a saved plan; older plans only have the product jobs, so prep is empty there. */
+export function loginsOf(data: SavedPlanData): SavedLogin[] {
+  if (data.logins) return data.logins;
+  const cad = data.request.cadenceDays;
+  const days = new Map<number, SavedLogin>();
+  const at = (d: number) => days.get(d) ?? (days.set(d, { day: d, start: [], finish: [], prep: [] }), days.get(d)!);
+  for (const j of data.jobs) {
+    at(j.start).start.push({ name: j.name, runs: j.runs, owner: j.owner });
+    at(Math.ceil(j.end / cad - 1e-9) * cad).finish.push({ name: j.name, runs: j.runs, owner: j.owner });
+  }
+  return [...days.values()].sort((a, b) => a.day - b.day);
 }
 
 export function deleteSavedPlan(id: number): void {

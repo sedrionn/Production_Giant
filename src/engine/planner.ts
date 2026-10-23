@@ -121,13 +121,25 @@ export interface Plan {
   warnings: string[];
 }
 
-/** Round a day up to the next login. */
 /** What a batch takes from stock: units by type and their market value. Computed by the caller (it knows the recipe tree). */
 export type StockUse = (batch: PlanBatch, left: ReadonlyMap<number, number>) => { take: Map<number, number>; value: number };
 
 /** A batch with at least this share of its cost covered by stock counts as "made from stock" (goes first in its tier). UX choice. */
 export const STOCK_FIRST_SHARE = 0.3;
 
+/**
+ * Which login of a saved plan is "now": the last one whose day has come (half a cadence early
+ * counts: you rarely log in on the hour), else the first one.
+ */
+export function currentLogin(days: number[], planDay: number, cadenceDays: number): number {
+  let at = 0;
+  days.forEach((d, i) => {
+    if (d <= planDay + cadenceDays / 2 + 1e-9) at = i;
+  });
+  return at;
+}
+
+/** Round a day up to the next login. */
 export const nextLogin = (day: number, cadence: number) => Math.max(0, Math.ceil(day / cadence - 1e-9)) * cadence + 0;
 
 /**

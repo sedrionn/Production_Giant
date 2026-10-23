@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BUDGET_STEP, batchRunsForCadence, marginalValues, nextLogin, planWeek, slotDays, splitSequential, type PlanBatch, type SlotState } from "@/engine/planner";
+import { BUDGET_STEP, batchRunsForCadence, currentLogin, marginalValues, nextLogin, planWeek, slotDays, splitSequential, type PlanBatch, type SlotState } from "@/engine/planner";
 
 const H = 3600;
 
@@ -438,5 +438,15 @@ describe("planWeek: sequential parts of one blueprint", () => {
   it("the first part must start inside the plan", () => {
     const p = planWeek({ candidates: [bpc()], slots: slots(1, 7), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 99 });
     expect(p.jobs).toEqual([]);
+  });
+});
+
+describe("currentLogin", () => {
+  it("the last login whose day has come; half a cadence early counts; before the first → the first", () => {
+    expect(currentLogin([0, 2, 4, 6], 0.1, 2)).toBe(0);
+    expect(currentLogin([0, 2, 4, 6], 1.2, 2)).toBe(1);
+    expect(currentLogin([0, 2, 4, 6], 4.5, 2)).toBe(2);
+    expect(currentLogin([0, 2, 4, 6], 30, 2)).toBe(3);
+    expect(currentLogin([2, 4], 0, 2)).toBe(0);
   });
 });

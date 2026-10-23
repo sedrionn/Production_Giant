@@ -114,7 +114,7 @@ const DAY = 86_400_000;
 const slotOf = (activityId: number): SlotKind =>
   activityId === JOB_ACTIVITY_IDS.manufacturing ? "manufacturing" : (JOB_ACTIVITY_IDS.reactions as readonly number[]).includes(activityId) ? "reaction" : "science";
 
-function characterSlots(now: number): { slots: SlotState[]; summary: SlotSummary[] } {
+export function characterSlots(now: number): { slots: SlotState[]; summary: SlotSummary[] } {
   const db = getDb();
   const slots: SlotState[] = [];
   const summary: SlotSummary[] = [];
