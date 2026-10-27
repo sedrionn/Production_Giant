@@ -25,6 +25,9 @@ export type SlotKind = "manufacturing" | "reaction" | "science";
 const KINDS: SlotKind[] = ["manufacturing", "reaction", "science"];
 const DAY = 86_400;
 
+/** The plan is one week: jobs start inside it (they may end later). Nick's rule, not a game constant. */
+export const PLAN_HORIZON_DAYS = 7;
+
 export interface PlanJob {
   typeId: number;
   name: string;
@@ -59,7 +62,7 @@ export interface PlanBatch {
   tier?: number;
   /** Distinguishes routes of the same item (own BPC vs invention); defaults to typeId. */
   key?: string;
-  /** Pinned by Nick: this many batches are planned first, whatever the ranking. */
+  /** Pinned by Nick: this many units are planned first (whole batches, rounded up), whatever the ranking. */
   pinned?: number;
   /** Small batch that only fills slots left idle (set with the last tier); shown as such. */
   filler?: boolean;
@@ -119,6 +122,17 @@ export interface Plan {
   skipped: { name: string; reason: string }[];
   /** Things the plan cannot do as asked (e.g. more parallel jobs than free slots before the end). */
   warnings: string[];
+  /** Every pinned item: units asked and planned; short ones say why and how many slot-days are missing. */
+  pins: PinResult[];
+}
+
+export interface PinResult {
+  typeId: number;
+  name: string;
+  want: number;
+  planned: number;
+  reason?: string;
+  missingSlotDays?: number;
 }
 
 /** What a batch takes from stock: units by type and their market value. Computed by the caller (it knows the recipe tree). */
@@ -287,6 +301,7 @@ export function planWeek(input: PlanInput): Plan {
   const prep = new Map<string, PrepJob>();
   const made = new Map<PlanBatch, number>();
   const reported = new Set<string>();
+  const warnings: string[] = [];
 
   /** Places one batch of `c`, or returns why not. Pinned batches skip the market cap and the budget share. */
   const place = (c: PlanBatch, pinned: boolean): string | null => {
@@ -377,25 +392,40 @@ export function planWeek(input: PlanInput): Plan {
     }
   };
 
-  // Pinned first (they may lose money: Nick decided). The count is per item: when one route runs out
-  // (own BPCs used up), the next one (invention) adds the rest.
+  // Pinned first (they may lose money: Nick decided). The count is units per item, rounded up to whole
+  // batches; when one route runs out (own BPCs used up), the next one (invention) adds the rest.
+  // A pinned item gets exactly that: nothing is added on top by the ranking.
   const pinnedItems = new Map<number, PlanBatch[]>();
   for (const { c } of ranked) if (c.pinned && c.jobs.some((j) => j.depth === 0)) pinnedItems.set(c.typeId, [...(pinnedItems.get(c.typeId) ?? []), c]);
+  const pins: PinResult[] = [];
   for (const routes of pinnedItems.values()) {
     const want = Math.max(...routes.map((c) => c.pinned ?? 0));
-    const count = () => routes.reduce((n, c) => n + (made.get(c) ?? 0), 0);
+    const units = () => routes.reduce((n, c) => n + (made.get(c) ?? 0) * c.units, 0);
     let why: string | null = null;
+    let stuck: PlanBatch | null = null;
     for (const c of routes) {
-      while (count() < want && (made.get(c) ?? 0) < (c.maxBatches ?? Infinity)) {
+      while (units() < want && (made.get(c) ?? 0) < (c.maxBatches ?? Infinity)) {
         why = place(c, true);
-        if (why) break;
+        if (why) {
+          stuck = c;
+          break;
+        }
       }
-      if (count() >= want) break;
+      if (units() >= want) break;
     }
-    if (count() < want) skipped.push({ name: routes[0].name, reason: `закреплено ${want} шт., вошло ${count()}: ${why ?? "кончились свои BPC, инвента нет"}` });
+    const got = units();
+    const short = Math.max(0, want - got);
+    // Slot-days the rest would need, at the size of the batch that did not fit.
+    const missingSlotDays = short && stuck && why?.includes("слот") ? Math.ceil(short / Math.max(1, stuck.units)) * slotDays(stuck, cad) : 0;
+    pins.push({ typeId: routes[0].typeId, name: routes[0].name, want, planned: got, ...(short ? { reason: why ?? "кончились свои BPC, инвента нет", missingSlotDays } : {}) });
+    if (short) skipped.push({ name: routes[0].name, reason: `закреплено ${want} шт., влезло ${got}: ${why ?? "кончились свои BPC, инвента нет"}${missingSlotDays ? `, не хватает ~${Math.round(missingSlotDays * 10) / 10} слот-дней` : ""}` });
     for (const c of routes) reported.add(c.key ?? String(c.typeId));
+    // Past the limits the ranking keeps: shown, not blocked (Nick decided).
+    const cap = input.unitCap(routes[0].typeId);
+    if (got > cap + 1e-9) warnings.push(`${routes[0].name}: закреплено ${got} шт. — больше ${Math.round(cap)} шт., которые возьмёт рынок за неделю при заданной доле`);
+    if ((spentPerItem.get(routes[0].typeId) ?? 0) > itemCap + 1e-6) warnings.push(`${routes[0].name}: закреп берёт ${Math.round(((spentPerItem.get(routes[0].typeId) ?? 0) / Math.max(1, input.budget)) * 100)}% бюджета — больше лимита одной позиции`);
   }
-  for (const { c } of ranked) if (c.profit > 0) fill(c, input.maxBatchesPerItem);
+  for (const { c } of ranked) if (c.profit > 0 && !pinnedItems.has(c.typeId)) fill(c, input.maxBatchesPerItem);
 
   // Prep: deepest level at the first login, one level per login after that.
   const prepJobs = [...prep.values()];
@@ -430,7 +460,8 @@ export function planWeek(input: PlanInput): Plan {
     at(j.start).start.push(j);
     at(nextLogin(j.end, cad)).finish.push(j);
   }
-  const { prep: placedPrep, warnings } = schedulePrep(prepJobs, slots, cad, horizon);
+  const { prep: placedPrep, warnings: prepWarnings } = schedulePrep(prepJobs, slots, cad, horizon);
+  warnings.push(...prepWarnings);
   for (const p of placedPrep) at(p.start).prep.push(p);
 
   const utilization: Record<SlotKind, number> = { manufacturing: 0, reaction: 0, science: 0 };
@@ -450,6 +481,7 @@ export function planWeek(input: PlanInput): Plan {
     fromStock: batches.reduce((s, b) => s + b.fromStock, 0),
     utilization,
     skipped,
+    pins,
   };
 }
 

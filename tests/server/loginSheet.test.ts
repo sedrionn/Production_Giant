@@ -37,7 +37,7 @@ describe("loginSheet", () => {
   });
 
   it("with a saved plan: the logins are kept, today's is picked, any other can be shown", () => {
-    const p = plan.buildPlan({ budget: 10e9, cadenceDays: 2, horizonDays: 7, categories: [], marketShare: 0.3, minBatchProfit: 0, caldariShipsFirst: true, maxItemShare: 1, maxManufacturingJobDays: 7, pins: [{ typeId: 34828, batches: 1 }] });
+    const p = plan.buildPlan({ budget: 10e9, cadenceDays: 2, horizonDays: 7, categories: [], marketShare: 0.3, minBatchProfit: 0, caldariShipsFirst: true, maxItemShare: 1, maxManufacturingJobDays: 7, pins: [{ typeId: 34828, units: 1 }] });
     saved.savePlan(p);
     const view = saved.savedPlanView()!;
     const t0 = Date.parse(view.createdAt);

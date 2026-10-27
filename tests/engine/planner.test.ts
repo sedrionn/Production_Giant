@@ -165,9 +165,9 @@ describe("planWeek: pinned items", () => {
   });
 
   it("a pinned item that does not fit is reported with the reason", () => {
-    const p = planWeek({ candidates: [{ ...ship(1, 100, 80), pinned: 2 }], slots: slots(4), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 5, unitCap: () => 99 });
+    const p = planWeek({ candidates: [{ ...ship(1, 100, 80), pinned: 8 }], slots: slots(4), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 5, unitCap: () => 99 });
     expect(p.batches).toHaveLength(1);
-    expect(p.skipped).toEqual([{ name: "Ship 1", reason: "закреплено 2 шт., вошло 1: не хватает бюджета" }]);
+    expect(p.skipped).toEqual([{ name: "Ship 1", reason: "закреплено 8 шт., влезло 4: не хватает бюджета" }]);
   });
 
   it("a pinned item at a loss is still planned (Nick decided); an unpinned one is not", () => {
@@ -206,8 +206,8 @@ describe("planWeek: invention on lab slots", () => {
 
 describe("planWeek: a pin counts per item across routes", () => {
   // SYNTHETIC: own BPCs (2 copies, better) and invention (unlimited) for the same item.
-  const own = { ...ship(1, 200, 10), key: "1:owned", maxBatches: 2, pinned: 3 };
-  const inv = { ...ship(1, 100, 10), key: "1:invention", pinned: 3 };
+  const own = { ...ship(1, 200, 10), key: "1:owned", maxBatches: 2, pinned: 12 };
+  const inv = { ...ship(1, 100, 10), key: "1:invention", pinned: 12 };
 
   it("own BPCs run out → the rest comes from invention", () => {
     const p = planWeek({ candidates: [inv, own], slots: slots(6), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 0 });
@@ -218,7 +218,7 @@ describe("planWeek: a pin counts per item across routes", () => {
   it("not enough budget for all: one line with how many fit and why", () => {
     const p = planWeek({ candidates: [inv, own], slots: slots(6), budget: 25, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 0 });
     expect(p.batches).toHaveLength(2);
-    expect(p.skipped).toEqual([{ name: "Ship 1", reason: "закреплено 3 шт., вошло 2: не хватает бюджета" }]);
+    expect(p.skipped).toEqual([{ name: "Ship 1", reason: "закреплено 12 шт., влезло 8: не хватает бюджета" }]);
   });
 });
 
@@ -448,5 +448,20 @@ describe("currentLogin", () => {
     expect(currentLogin([0, 2, 4, 6], 4.5, 2)).toBe(2);
     expect(currentLogin([0, 2, 4, 6], 30, 2)).toBe(3);
     expect(currentLogin([2, 4], 0, 2)).toBe(0);
+  });
+});
+
+describe("planWeek: a pin is exactly N units", () => {
+  it("rounded up to whole batches; the ranking adds nothing on top; past the market cap → a warning", () => {
+    const p = planWeek({ candidates: [{ ...ship(1, 300, 10), pinned: 6 }], slots: slots(6), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 5, unitCap: () => 4 });
+    expect(p.batches).toHaveLength(2);
+    expect(p.pins).toEqual([{ typeId: 1, name: "Ship 1", want: 6, planned: 8 }]);
+    expect(p.warnings.some((w) => w.includes("рынок"))).toBe(true);
+  });
+
+  it("no slots for all of it: how many fit and how many slot-days are missing", () => {
+    const p = planWeek({ candidates: [{ ...ship(1, 300, 10), pinned: 8 }], slots: slots(1, 3), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 5, unitCap: () => 99 });
+    expect(p.pins[0]).toMatchObject({ want: 8, planned: 4 });
+    expect(p.pins[0].missingSlotDays).toBeGreaterThan(0);
   });
 });

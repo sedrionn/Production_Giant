@@ -50,6 +50,8 @@ export interface AppSettings {
   marketSanity: MarketSanityConfig;
   /** Weekly plan: leave out products flagged "no market". */
   planSkipNoMarket: boolean;
+  /** The weekly plan form with pins (parsed by server/planForm.ts); null = never set. */
+  planForm: Record<string, unknown> | null;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -79,6 +81,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   reactionProfileId: null,
   marketSanity: { ...MARKET_SANITY },
   planSkipNoMarket: true,
+  planForm: null,
 };
 
 /** Idempotent: only fills empty tables / missing keys. Rigs are left empty — Nick fills them in the UI. */
