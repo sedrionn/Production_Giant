@@ -31,7 +31,7 @@ interface Form {
   pins: { typeId: number; name: string; batches: number }[];
 }
 
-const DEFAULT: Form = { budget: 10e9, stockFirst: true, fillIdleReactions: true, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, caldariShipsFirst: true, maxItemShare: 0.2, maxReactionJobDays: 2, maxManufacturingJobDays: 7, buyWeeks: 1, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions"], pins: [] };
+const DEFAULT: Form = { budget: 10e9, stockFirst: true, fillIdleReactions: true, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, caldariShipsFirst: true, maxItemShare: 0.2, maxReactionJobDays: 2, maxManufacturingJobDays: 7, buyWeeks: 1, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions", "warp_disruptors"], pins: [] };
 const STORAGE = "pg.plan.v3";
 
 export function Planner({ categories }: { categories: { key: string; label: string }[] }) {
@@ -363,6 +363,12 @@ export function Planner({ categories }: { categories: { key: string; label: stri
               </>
             }
           />
+
+          {plan.categoryCounts && plan.categoryCounts.length > 0 && (
+            <p className="text-sm text-graphite" title="Сколько предметов в категории и сколько из них дошло до кандидатов плана (прибыльные, с чертежом и ценами)">
+              Рассмотрено: {plan.categoryCounts.map((c) => `${c.label} — ${c.candidates} из ${c.items}`).join(" · ")}
+            </p>
+          )}
 
           {plan.skipped.length > 0 && (
             <details className="text-sm text-graphite">

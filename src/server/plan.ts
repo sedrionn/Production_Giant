@@ -107,6 +107,8 @@ export interface PlanResponse extends Plan {
     gain: number;
     bought: { typeId: number; name: string; activity: Activity; savesPerHour: number }[];
   } | null;
+  /** Per chosen category: items in it and how many became candidates (a check that nothing is lost). */
+  categoryCounts?: { label: string; items: number; candidates: number }[];
   computedMs: number;
 }
 
@@ -334,9 +336,15 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     if (!pinned && isCapitalRig(sde, sde.getType(r.typeId))) return;
     if (!rows.has(r.typeId)) rows.set(r.typeId, { ...r, category, categoryKey });
   };
+  const listed = new Map<CategoryKey, { label: string; ids: Set<number> }>();
   for (const key of req.categories) {
     const label = CATEGORIES.find((c) => c.key === key)?.label ?? key;
-    for (const r of computeOverview(key).rows) addRow(r, label, key);
+    const ids = new Set<number>();
+    for (const r of computeOverview(key).rows) {
+      ids.add(r.typeId);
+      addRow(r, label, key);
+    }
+    listed.set(key, { label, ids });
   }
   // Pinned items outside the chosen categories (or hidden by the blacklist) are evaluated on their own.
   const pinTypes = [...pins.keys()].filter((id) => !rows.has(id) && !pinErrors.has(id)).flatMap((id) => sde.getType(id) ?? []);
@@ -537,8 +545,12 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     else if (rows.has(id) && !pinnedRoute.has(id)) plan.skipped.push({ name: rows.get(id)!.name, reason: "закреплено, но нет своего чертежа в плюс и нельзя заинвентить" });
   }
 
+  const evaluated = new Set(candidates.map((b) => b.typeId));
+  const categoryCounts = [...listed.values()].map(({ label, ids }) => ({ label, items: ids.size, candidates: [...ids].filter((id) => evaluated.has(id)).length }));
+
   return {
     ...plan,
+    categoryCounts,
     request: { ...req, cadenceDays: cad, horizonDays: horizon },
     slots: summary,
     shopping: [...shop.values()].sort((a, b) => (b.cost ?? 0) - (a.cost ?? 0)),
