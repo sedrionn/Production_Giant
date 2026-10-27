@@ -278,6 +278,12 @@ export function sizeRoutes(r: Row, cad: number, horizon: number, minProfit = 0, 
         const occupied = occupiedBy(runs, r.jobSeconds / r.runs).slotDays;
         out.push({ route: "owned", runs, profit: perRun * runs, score: (perRun * runs) / occupied, maxBatches: count });
       }
+    } else if (ok(perRun) && pin && r.blueprintSource === "bpo") {
+      // A pinned BPO: one blueprint, one batch of all N units (over the cap it runs as sequential jobs).
+      const all = Math.max(1, Math.ceil(pin.units / Math.max(1, r.output / r.runs) - 1e-9));
+      const runs = r.maxRuns > 0 ? Math.min(all, r.maxRuns) : all;
+      const occupied = occupiedBy(runs, r.jobSeconds / r.runs).slotDays;
+      out.push({ route: "owned", runs, profit: perRun * runs, score: (perRun * runs) / occupied });
     } else if (ok(perRun)) out.push({ route: "owned", ...pick(r.jobSeconds / r.runs, perRun, r.maxRuns) });
     if (r.blueprintSource === "bpo") return out;
   }
