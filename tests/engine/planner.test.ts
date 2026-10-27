@@ -39,14 +39,26 @@ const ship = (typeId: number, profit: number, capital: number): PlanBatch => ({
   ],
 });
 const slots = (n: number, freeAt = 0): SlotState[] => Array.from({ length: n }, (_, i) => ({ kind: "manufacturing", owner: `C${i}`, freeAt }));
+/** SYNTHETIC: every component is already in stock (nothing to build first). */
+const ready = { stock: new Map([[1, 1]]), stockUse: () => ({ take: new Map<number, number>(), value: 0, build: new Map<number, number>() }) };
 
-describe("planWeek (steady state: hulls from ready components, next components pooled)", () => {
-  it("hull starts at today's login; components for the next round are one merged job", () => {
-    const p = planWeek({ candidates: [ship(1, 100, 10)], slots: slots(3), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 2, unitCap: () => 99 });
+describe("planWeek (conveyor: hulls from what is there, components for next week)", () => {
+  it("components in stock: the hull starts at today's login, nothing to build", () => {
+    const p = planWeek({ candidates: [ship(1, 100, 10)], slots: slots(3), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 2, unitCap: () => 99, ...ready });
     expect(p.batches).toHaveLength(2);
     expect(p.jobs.map((j) => j.start)).toEqual([0, 0]);
-    expect(p.prep).toEqual([expect.objectContaining({ name: "Component", runs: 16, seconds: 20 * H, start: 0 })]);
+    expect(p.prep).toEqual([]);
+    expect(p.nextWeek).toEqual([]);
     expect(p.logins.map((l) => l.day)).toEqual([0, 2]);
+  });
+
+  it("nothing in stock: components today (one merged job), the hull at the login after they are done", () => {
+    const p = planWeek({ candidates: [ship(1, 100, 10)], slots: slots(3), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 2, unitCap: () => 99 });
+    expect(p.prep).toEqual([expect.objectContaining({ name: "Component", runs: 16, seconds: 20 * H, start: 0 })]);
+    expect(p.jobs.map((j) => j.start)).toEqual([2, 2]);
+    expect(p.batches).toHaveLength(2);
+    expect(p.nextWeek).toEqual([]);
+    expect(p.rampUp).toBe(false);
   });
 
   it("budget and market cap limit the plan; best profit per slot-day goes first", () => {
@@ -129,7 +141,7 @@ describe("planWeek (steady state: hulls from ready components, next components p
   });
 
   it("busy slots push the start to the login after they free up", () => {
-    const p = planWeek({ candidates: [ship(1, 100, 10)], slots: slots(1, 3.2), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 99 });
+    const p = planWeek({ candidates: [ship(1, 100, 10)], slots: slots(1, 3.2), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 99, ...ready });
     expect(p.jobs[0].start).toBe(4);
   });
 
@@ -240,18 +252,22 @@ describe("planWeek: reaction length cap", () => {
 
   it("a 5-day product reaction runs as 3 parallel jobs of ≤ 2 days; the pooled one is split too", () => {
     const p = planWeek({ candidates: [rx], slots: rxSlots(6), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 1e9, maxJobDays: { reaction: 2 } });
+    expect(p.prep[0]).toMatchObject({ name: "Sub reaction", jobs: 3, start: 0 });
+    // The sub reaction ends on day 2: the product starts at that login, as 3 parallel jobs.
     expect(p.jobs.map((j) => j.runs)).toEqual([4, 3, 3]);
     expect(new Set(p.jobs.map((j) => j.slot)).size).toBe(3);
     expect(Math.max(...p.jobs.map((j) => j.end - j.start))).toBeLessThanOrEqual(2);
-    expect(p.jobs.every((j) => j.start === 0)).toBe(true);
-    expect(p.batches[0]).toMatchObject({ start: 0, end: 2 });
-    expect(p.prep[0]).toMatchObject({ name: "Sub reaction", jobs: 3 });
+    expect(p.jobs.every((j) => j.start === 2)).toBe(true);
+    expect(p.batches[0]).toMatchObject({ start: 2, end: 4 });
   });
 
   it("without the cap it stays one job", () => {
     const p = planWeek({ candidates: [rx], slots: rxSlots(6), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 1e9 });
-    expect(p.jobs).toHaveLength(1);
     expect(p.prep[0].jobs).toBe(1);
+    // A 6-day sub reaction: the product starts at the day-6 login, as one job.
+    expect(p.jobs.map((j) => j.start)).toEqual([6]);
+    const now = planWeek({ candidates: [rx], slots: rxSlots(6), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 1e9, ...ready });
+    expect(now.jobs.map((j) => j.start)).toEqual([0]);
   });
 
   it("not enough slots for all parts inside the week → the batch is not taken", () => {
@@ -262,10 +278,24 @@ describe("planWeek: reaction length cap", () => {
 });
 
 describe("planWeek: pooled jobs go on real free slots", () => {
-  it("slots busy with hulls → components wait for the next login", () => {
-    const p = planWeek({ candidates: [ship(1, 100, 10)], slots: slots(2), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 2, unitCap: () => 99 });
-    expect(p.jobs.map((j) => j.start)).toEqual([0, 0]);
-    expect(p.prep).toEqual([expect.objectContaining({ name: "Component", start: 2 })]);
+  it("slots busy with hulls from stock → next week's components wait for the next login", () => {
+    // SYNTHETIC: Ship 1 has its components in stock, Ship 2 has to build them.
+    const stockUse = (b: PlanBatch) => ({ take: new Map<number, number>(), value: 0, ...(b.typeId === 1 ? { build: new Map<number, number>() } : {}) });
+    const p = planWeek({
+      candidates: [ship(1, 300, 10), ship(2, 100, 10)],
+      slots: slots(2),
+      budget: 100,
+      cadenceDays: 2,
+      horizonDays: 7,
+      maxBatchesPerItem: 1,
+      unitCap: () => 4,
+      stock: new Map([[1, 1]]),
+      stockUse,
+    });
+    expect(p.jobs.filter((j) => j.typeId === 1).map((j) => j.start)).toEqual([0]);
+    expect(p.prep).toEqual([expect.objectContaining({ name: "Component", start: 0 })]);
+    // Ship 2's component ends early on the free slot: the hull starts this week after all.
+    expect(p.jobs.filter((j) => j.typeId === 2).map((j) => j.start)).toEqual([2]);
     expect(p.warnings).toEqual([]);
   });
 
@@ -282,8 +312,12 @@ describe("planWeek: pooled jobs go on real free slots", () => {
     const rxSlots: SlotState[] = [0, 1].map((i) => ({ kind: "reaction", owner: `R${i}`, freeAt: 0 }));
     const p = planWeek({ candidates: [rx], slots: [...slots(1), ...rxSlots], budget: 100, cadenceDays: 2, horizonDays: 28, maxBatchesPerItem: 1, unitCap: () => 99, maxJobDays: { reaction: 1.5 } });
     const sub = p.prep.filter((j) => j.typeId === 7);
-    expect(sub.map((j) => [j.start, j.jobs])).toEqual([[0, 2], [2, 2], [4, 2], [6, 2], [8, 2], [10, 2], [12, 2], [14, 2], [16, 2], [18, 2], [20, 2], [22, 2], [24, 2], [26, 2], [28, 2]]);
-    expect(p.warnings).toEqual(["Sub reaction: 2 из 30 джоб — не хватает свободных реакционных слотов до конца плана, начнутся позже"]);
+    expect(sub.map((j) => [j.start, j.jobs])).toEqual([[0, 2], [2, 2], [4, 2], [6, 2], [8, 2], [10, 2], [12, 2], [14, 2], [16, 2], [18, 2], [20, 2], [22, 2], [24, 2], [26, 2]]);
+    expect(p.warnings).toEqual(["Sub reaction: 2 из 30 джоб — не хватает свободных реакционных слотов до конца недели, переносится на следующую неделю"]);
+    expect(p.carried).toEqual([{ name: "Sub reaction", activity: "reaction", runs: 2, jobs: 2 }]);
+    // Its chain is not done: the hull stays for next week.
+    expect(p.nextWeek.map((b) => b.name)).toEqual(["Ship 1"]);
+    expect(p.logins.every((l) => l.day < 28)).toBe(true);
   });
 });
 
@@ -371,7 +405,8 @@ describe("marginalValues: what one more slot, character or billion adds", () => 
 
   it("one more character copies the slots of the biggest one", () => {
     const s: SlotState[] = [...slots(1), { kind: "manufacturing", owner: "Big", freeAt: 0 }, { kind: "manufacturing", owner: "Big", freeAt: 5 }];
-    const m = marginalValues({ ...base, candidates: many, slots: s, budget: 1e12 });
+    const lots = Array.from({ length: 40 }, (_, i) => ({ ...ship(i + 1, 100, 10), key: String(i) }));
+    const m = marginalValues({ ...base, candidates: lots, slots: s, budget: 1e12 });
     expect(m.character?.like).toBe("Big");
     expect(m.character!.gain).toBeGreaterThan(m.slot.manufacturing);
   });
@@ -427,6 +462,8 @@ describe("planWeek: sequential parts of one blueprint", () => {
 
   it("parts go back to back on one slot, the next at the login after the previous ends; it may end next week", () => {
     const p = planWeek({ candidates: [bpc()], slots: slots(2), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 99 });
+    // The second part ends next week: it is not in this week's logins.
+    expect(p.logins.map((l) => l.day)).toEqual([0, 6]);
     expect(p.jobs.map((j) => ({ runs: j.runs, slot: j.slot, start: j.start, part: j.part }))).toEqual([
       { runs: 4, slot: 0, start: 0, part: { index: 1, of: 2 } },
       { runs: 2, slot: 0, start: 6, part: { index: 2, of: 2 } },
@@ -460,8 +497,77 @@ describe("planWeek: a pin is exactly N units", () => {
   });
 
   it("no slots for all of it: how many fit and how many slot-days are missing", () => {
-    const p = planWeek({ candidates: [{ ...ship(1, 300, 10), pinned: 8 }], slots: slots(1, 3), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 5, unitCap: () => 99 });
-    expect(p.pins[0]).toMatchObject({ want: 8, planned: 4 });
+    // The only slot is busy for two weeks: nothing this week, nothing next week.
+    const p = planWeek({ candidates: [{ ...ship(1, 300, 10), pinned: 8 }], slots: slots(1, 13), budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 5, unitCap: () => 99, ...ready });
+    expect(p.pins[0]).toMatchObject({ want: 8, planned: 0 });
     expect(p.pins[0].missingSlotDays).toBeGreaterThan(0);
+  });
+});
+
+describe("planWeek: conveyor", () => {
+  // SYNTHETIC: a hull whose chain is a 3-day reaction, then a 5-day component: it cannot start this week.
+  const deep = (id: number, profit = 100): PlanBatch => ({
+    typeId: id,
+    name: `Hull ${id}`,
+    runs: 2,
+    units: 2,
+    profit,
+    capital: 10,
+    jobs: [
+      { typeId: 300 + id, name: "Reaction", activity: "reaction", runs: 3, seconds: 72 * H, depth: 2 },
+      { typeId: 200 + id, name: "Component", activity: "manufacturing", runs: 5, seconds: 120 * H, depth: 1, inputs: [300 + id] },
+      { typeId: id, name: `Hull ${id}`, activity: "manufacturing", runs: 2, seconds: 48 * H, depth: 0, inputs: [200 + id] },
+    ],
+  });
+  const mixed: SlotState[] = [...slots(2), { kind: "reaction", owner: "R", freeAt: 0 }];
+
+  it("empty stock, long chain: a ramp-up week — components now, the hull next week; its capital is spent now", () => {
+    const p = planWeek({ candidates: [deep(1)], slots: mixed, budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 99 });
+    expect(p.batches).toEqual([]);
+    expect(p.rampUp).toBe(true);
+    expect(p.nextWeek.map((b) => [b.name, b.ready])).toEqual([["Hull 1", null]]);
+    expect(p.nextWeekProfit).toBe(100);
+    expect(p.profit).toBe(0);
+    expect(p.capital).toBe(10);
+    // The component waits for its reaction (ends day 3 → login 4), and ends next week.
+    expect(p.prep.map((x) => [x.name, x.start])).toEqual([["Reaction", 0], ["Component", 4]]);
+  });
+
+  it("a component waits only for its own inputs, not for an unrelated deeper reaction", () => {
+    const other: PlanBatch = { ...ship(5, 50, 10), jobs: [{ typeId: 105, name: "Plain", activity: "manufacturing", runs: 1, seconds: 10 * H, depth: 1, inputs: [] }, ship(5, 50, 10).jobs[1]] };
+    const p = planWeek({ candidates: [deep(1), other], slots: [...slots(3), { kind: "reaction", owner: "R", freeAt: 0 }], budget: 100, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 99 });
+    expect(p.prep.find((x) => x.name === "Plain")!.start).toBe(0);
+  });
+
+  it("stock from a running job counts from the day it ends: the hull starts at the login after", () => {
+    const stockUse = (b: PlanBatch, left: ReadonlyMap<number, number>) => ({ take: new Map([[101, Math.min(8, left.get(101) ?? 0)]]), value: 0, build: new Map<number, number>() });
+    const p = planWeek({
+      candidates: [ship(1, 100, 10)],
+      slots: slots(1),
+      budget: 100,
+      cadenceDays: 2,
+      horizonDays: 7,
+      maxBatchesPerItem: 1,
+      unitCap: () => 99,
+      stock: new Map([[101, 8]]),
+      jobStock: new Map([[101, { quantity: 8, day: 3 }]]),
+      stockUse,
+    });
+    expect(p.jobs.map((j) => j.start)).toEqual([4]);
+  });
+
+  it("hulls from stock go before next week's components, even when they earn less", () => {
+    const stockUse = (b: PlanBatch) => ({ take: new Map<number, number>(), value: 0, ...(b.typeId === 1 ? { build: new Map<number, number>() } : {}) });
+    const p = planWeek({ candidates: [ship(1, 100, 10), ship(2, 300, 10)], slots: slots(2), budget: 10, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 99, stock: new Map([[1, 1]]), stockUse });
+    expect(p.batches.map((b) => b.typeId)).toEqual([1]);
+    expect(p.nextWeek).toEqual([]);
+    expect(p.skipped).toEqual([{ name: "Ship 2", reason: "не хватает бюджета" }]);
+  });
+
+  it("next week has only so many slot-days for hulls: no more components than that", () => {
+    // One factory slot, 2-day hulls: next week takes 3 (6 of 7 days), the 4th does not fit.
+    const p = planWeek({ candidates: Array.from({ length: 6 }, (_, i) => ({ ...deep(i + 1), key: String(i) })), slots: [...slots(1), { kind: "reaction", owner: "R", freeAt: 0 }, { kind: "reaction", owner: "R", freeAt: 0 }], budget: 1000, cadenceDays: 2, horizonDays: 7, maxBatchesPerItem: 1, unitCap: () => 99 });
+    expect(p.nextWeek.length).toBeLessThanOrEqual(3);
+    expect(p.skipped.some((s) => s.reason.includes("следующей неделе") || s.reason.includes("слотов"))).toBe(true);
   });
 });

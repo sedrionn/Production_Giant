@@ -23,6 +23,12 @@ export interface SavedPlanData {
   invention: PlanResponse["invention"];
   /** What to do at each login (missing in plans saved before 2026-10-23: rebuilt from `jobs`). */
   logins?: SavedLogin[];
+  /** Hulls whose components this plan makes, starting next week (missing in plans saved before 2026-10-27). */
+  nextWeek?: { typeId: number; name: string; runs: number; profit: number; capital: number }[];
+  /** No hulls this week, components only. */
+  rampUp?: boolean;
+  /** Intermediate jobs that did not fit the week: for the next plan. */
+  carried?: PlanResponse["carried"];
 }
 
 export interface SavedLogin {
@@ -59,6 +65,9 @@ export function savePlan(p: PlanResponse, title?: string): number {
     profit: p.profit,
     capital: p.capital,
     batches: p.batches.map((b) => ({ typeId: b.typeId, name: b.name, runs: b.runs, profit: b.profit, capital: b.capital, start: b.start, end: b.end })),
+    nextWeek: (p.nextWeek ?? []).map((b) => ({ typeId: b.typeId, name: b.name, runs: b.runs, profit: b.profit, capital: b.capital })),
+    rampUp: !!p.rampUp,
+    carried: p.carried ?? [],
     jobs: p.jobs.map((j) => ({ typeId: j.typeId, name: j.name, runs: j.runs, owner: j.owner, start: j.start, end: j.end })),
     stages: p.stages,
     stock: p.stock,

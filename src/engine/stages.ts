@@ -62,8 +62,12 @@ export interface StageBuyInfo {
 }
 
 export interface StageInput {
-  /** One entry per product job of the plan. */
-  products: { typeId: number; runs: number }[];
+  /**
+   * One entry per product job of the plan. `prepOnly`: a hull that starts next week — only what is
+   * built for it now (and the materials of that) is in the stages; the hull job and its own bought
+   * materials are next week's.
+   */
+  products: { typeId: number; runs: number; prepOnly?: boolean }[];
   /** Everything that is built, by type (first recipe wins when batches disagree). */
   recipes: Map<number, StageRecipe>;
   /** Everything that is bought. */
@@ -157,13 +161,15 @@ export function planStages(input: StageInput): Stages {
   const demand = new Map<number, number>();
   const runsOf = new Map<number, number>();
   const add = (m: Map<number, number>, id: number, q: number) => m.set(id, (m.get(id) ?? 0) + q);
-  const productIds = new Set(input.products.map((p) => p.typeId));
+  const productIds = new Set(input.products.filter((p) => !p.prepOnly).map((p) => p.typeId));
   for (const p of input.products) {
     const r = recipes.get(p.typeId);
-    add(runsOf, p.typeId, p.runs);
-    add(demand, p.typeId, p.runs * (r?.outputPerRun ?? 1));
+    if (!p.prepOnly) {
+      add(runsOf, p.typeId, p.runs);
+      add(demand, p.typeId, p.runs * (r?.outputPerRun ?? 1));
+    }
     // Each product job consumes its own inputs (rounded per job, as in game).
-    if (r) for (const i of r.inputs) add(demand, i.typeId, inputQuantity(r, i, p.runs));
+    if (r) for (const i of r.inputs) if (!p.prepOnly || recipes.has(i.typeId)) add(demand, i.typeId, inputQuantity(r, i, p.runs));
   }
 
   const left = new Map(stock);
@@ -182,7 +188,7 @@ export function planStages(input: StageInput): Stages {
     const d = depth.get(id)!;
     if (productIds.has(id) && d === 0) {
       const runs = runsOf.get(id) ?? 0;
-      const jobs = input.products.filter((p) => p.typeId === id).map((p) => p.runs);
+      const jobs = input.products.filter((p) => p.typeId === id && !p.prepOnly).map((p) => p.runs);
       lines.push({ typeId: id, name: r.name, activity: r.activity, depth: 0, need: demand.get(id) ?? 0, fromStock: 0, runs, output: runs * r.outputPerRun, seconds: runs * r.secondsPerRun, jobs, isProduct: true });
       continue;
     }

@@ -242,8 +242,19 @@ export function Planner({ categories }: { categories: { key: string; label: stri
               {isk(plan.request.budget)}, заход раз в {plan.request.cadenceDays} дн. Если цены или склад обновились, составь заново.
             </p>
           )}
-          <section className="grid gap-4 sm:grid-cols-5">
-            <Stat label="Прибыль плана" value={isk(plan.profit, true)} title={full(plan.profit)} tone="gain" />
+          {plan.rampUp && (
+            <p className="rounded border border-marker/50 bg-marker/10 px-4 py-3">
+              Разгон: склад пустой, поэтому на этой неделе корпусов нет — ставятся компоненты и реакции под следующую неделю. Со второй недели
+              корпуса идут из готового, а компоненты параллельно под неделю после.
+            </p>
+          )}
+          <section className="grid gap-4 sm:grid-cols-6">
+            <Stat label="Прибыль недели" value={isk(plan.profit, true)} title={`${full(plan.profit)}: корпуса, которые стартуют на этой неделе`} tone="gain" />
+            <Stat
+              label="Заготовка: прибыль корпусов"
+              value={isk(plan.nextWeekProfit ?? 0, true)}
+              title="Корпуса следующей недели, компоненты которых ставятся сейчас (их вложения уже в «Нужно вложить»)"
+            />
             <Stat label="Нужно вложить" value={isk(plan.capital)} title={`${full(plan.capital)} из бюджета ${full(plan.request.budget)}: только то, что покупается`} />
             <Stat label="Из склада" value={isk(plan.fromStock ?? 0)} title="Сколько стоили бы на рынке материалы и компоненты, которые план берёт со склада. Бюджет на них не тратится" />
             <Stat label="Заходов" value={String(plan.logins.length)} title="Дни, когда нужно что-то забрать или поставить" />
@@ -311,7 +322,7 @@ export function Planner({ categories }: { categories: { key: string; label: stri
                 )}
                 {l.prep.some((p) => p.activity === "invention") && (
                   <p className="text-sm">
-                    <span className="text-job">Инвент в лаборатории на следующий круг:</span>{" "}
+                    <span className="text-job">Инвент в лаборатории:</span>{" "}
                     {l.prep
                       .filter((p) => p.activity === "invention")
                       .map(
@@ -323,7 +334,7 @@ export function Planner({ categories }: { categories: { key: string; label: stri
                 )}
                 {l.prep.some((p) => p.activity === "manufacturing" || p.activity === "reaction") && (
                   <p className="text-sm">
-                    <span className="text-job">Компоненты и реакции на следующий круг:</span>{" "}
+                    <span className="text-job">Компоненты и реакции:</span>{" "}
                     {l.prep
                       .filter((p) => p.activity === "manufacturing" || p.activity === "reaction")
                       .map((p) => `${p.name} × ${qty(p.runs)}${p.jobs > 1 ? ` (${p.jobs} джоб параллельно)` : ""}`)
@@ -356,7 +367,7 @@ export function Planner({ categories }: { categories: { key: string; label: stri
           </section>
 
           <section className="space-y-2">
-            <h2 className="font-display text-2xl font-semibold">Партии</h2>
+            <h2 className="font-display text-2xl font-semibold">Корпуса этой недели</h2>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[800px] whitespace-nowrap text-left">
                 <thead className="border-b border-line text-sm text-graphite">
@@ -400,6 +411,53 @@ export function Planner({ categories }: { categories: { key: string; label: stri
               </table>
             </div>
           </section>
+
+          {plan.nextWeek?.length > 0 && (
+            <section className="space-y-2">
+              <h2 className="font-display text-2xl font-semibold">Под следующую неделю</h2>
+              <p className="max-w-[90ch] text-sm text-graphite">
+                Компоненты, реакции и инвент для этих корпусов ставятся на этой неделе, сами корпуса — в плане следующей недели (их цепочка не
+                успевает до конца этой). Деньги на них уже в «Нужно вложить».
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] whitespace-nowrap text-left">
+                  <thead className="border-b border-line text-sm text-graphite">
+                    <tr>
+                      <th className="py-2 pr-4 font-normal">Предмет</th>
+                      <th className="py-2 pr-4 text-right font-normal">Партий × ранов</th>
+                      <th className="py-2 pr-4 text-right font-normal">Прибыль</th>
+                      <th className="py-2 text-right font-normal">Вложить</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groupBatches(plan.nextWeek.map((b) => ({ ...b, start: 0, end: 0 }))).map((g) => (
+                      <tr key={g.name} className="border-b border-line/40">
+                        <td className="py-1.5 pr-4">
+                          {g.name}
+                          {g.pinned && <span className="ml-2 rounded border border-marker/60 px-1 text-xs text-marker">закреплено</span>}
+                        </td>
+                        <td className="py-1.5 pr-4 text-right">
+                          {g.count} × {g.runs}
+                        </td>
+                        <td className="py-1.5 pr-4 text-right text-gain" title={full(g.profit)}>
+                          {isk(g.profit, true)}
+                        </td>
+                        <td className="py-1.5 text-right" title={full(g.capital)}>
+                          {isk(g.capital)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
+          {plan.carried?.length > 0 && (
+            <p className="text-sm text-graphite">
+              Не влезло в неделю, перейдёт в следующий план: {plan.carried.map((x) => `${x.name} × ${qty(x.runs)} (${x.jobs} джоб)`).join(", ")}.
+            </p>
+          )}
 
           <StagesPreview stages={plan.stages} />
 

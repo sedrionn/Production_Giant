@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 process.env.PG_SDE = "fixtures";
 process.env.PG_APP_DB = ":memory:";
@@ -6,7 +6,7 @@ process.env.PG_SECRET_KEY = "test-key";
 
 let plan: typeof import("@/server/plan");
 
-// SYNTHETIC character: 2 factory slots, 2 lab slots. Data (recipes, prices) are the real fixtures.
+// SYNTHETIC character: 2 factory slots, 6 reaction slots, 2 lab slots. Data (recipes, prices) are the real fixtures.
 beforeAll(async () => {
   plan = await import("@/server/plan");
   const { getDb } = await import("@/server/data");
@@ -17,6 +17,7 @@ beforeAll(async () => {
     .values([
       { characterId: 1, skillId: 3387, level: 1 }, // Mass Production → 2 factory slots
       { characterId: 1, skillId: 3406, level: 1 }, // Laboratory Operation → 2 lab slots
+      { characterId: 1, skillId: 45748, level: 5 }, // Mass Reactions → 6 reaction slots
     ])
     .run();
 });
@@ -27,7 +28,17 @@ describe("buildPlan: pins and lab slots (real fixtures)", () => {
   it("a pinned item outside the chosen categories is planned, with its invention on a lab slot", () => {
     const p = plan.buildPlan({ ...req, pins: [{ typeId: 2185, units: 1 }] }); // Hammerhead II, invented
     expect(p.slots[0]).toMatchObject({ manufacturing: { total: 2 }, science: { total: 2 } });
-    expect(p.batches.map((b) => [b.name, b.pinned])).toEqual([["Hammerhead II", 1]]);
+    // Empty stock: its chain (fuel blocks → reactions → components) takes the week, the hull is next week's.
+    expect(p.batches).toEqual([]);
+    expect(p.nextWeek.map((b) => [b.name, b.pinned])).toEqual([["Hammerhead II", 1]]);
+    expect(p.rampUp).toBe(true);
+    expect(p.pins).toEqual([expect.objectContaining({ name: "Hammerhead II", want: 1 })]);
+    expect(p.pins[0].planned).toBeGreaterThanOrEqual(1);
+    // Every job of the plan starts inside the week.
+    expect(p.logins.every((l) => l.day < 7)).toBe(true);
+    expect(p.prep.every((x) => x.start < 7)).toBe(true);
+    // The purchase list has the components' materials, not the hull's own (bought next week).
+    expect(p.stages.stages.flatMap((s) => s.lines).some((l) => l.isProduct)).toBe(false);
     const inv = p.prep.find((x) => x.activity === "invention")!;
     expect(inv.name).toBe("Hammerhead II (инвент)");
     expect(inv.runs).toBe(p.invention[0].attempts);
@@ -64,8 +75,9 @@ describe("buildPlan: no market", () => {
       .values({ typeId: 2185, regionId: getSettings().priceRegionId, avgDailyVolume7d: 0, avgDailyVolume30d: 0.1, vwap7d: null, vwap30d: 1, median30d: 1, daysTraded7d: 0, daysTraded30d: 2 })
       .run();
     const pinned = plan.buildPlan({ ...req, pins: [{ typeId: 2185, units: 1 }] });
-    expect(pinned.batches.map((b) => b.name)).toEqual(["Hammerhead II"]);
-    expect(pinned.batches[0].profit).toBeLessThan(0); // sold into buy orders only: at a loss, but pinned
+    const all = [...pinned.batches, ...pinned.nextWeek];
+    expect(all.map((b) => b.name)).toEqual(["Hammerhead II"]);
+    expect(all[0].profit).toBeLessThan(0); // sold into buy orders only: at a loss, but pinned
   });
 });
 
@@ -96,7 +108,7 @@ describe("buildPlan: T1 copies for invention", () => {
 describe("buildPlan: stock", () => {
   it("materials in the stock hangar are taken by the batch and not paid from the budget", async () => {
     const before = plan.buildPlan({ ...req, pins: [{ typeId: 2185, units: 1 }] });
-    const b0 = before.batches[0];
+    const b0 = [...before.batches, ...before.nextWeek][0];
     expect(b0.fromStock).toBe(0);
 
     // SYNTHETIC: 1000 Morphite in a structure that counts as stock.
@@ -110,12 +122,13 @@ describe("buildPlan: stock", () => {
       .run();
 
     const after = plan.buildPlan({ ...req, pins: [{ typeId: 2185, units: 1 }] });
-    const b = after.batches[0];
+    const b = [...after.batches, ...after.nextWeek][0];
     // The batch needs less Morphite than there is: all of it comes from stock, at its market cost.
     expect(b.fromStock).toBeCloseTo(morphite.cost!);
     expect(after.capital).toBeCloseTo(b.capital - b.fromStock);
     expect(after.fromStock).toBeCloseTo(morphite.cost!);
-    expect(after.stages.buy.find((l) => l.typeId === morphite.typeId)).toMatchObject({ toBuy: 0 });
+    // Morphite goes into the hull itself, which starts next week: not on this week's list at all.
+    expect(after.stages.buy.find((l) => l.typeId === morphite.typeId)?.toBuy ?? 0).toBe(0);
   });
 });
 
@@ -130,7 +143,33 @@ describe("buildPlan: what one more slot, character or billion adds", () => {
   });
 });
 
+/** SYNTHETIC: every intermediate of a pinned item's chain lies in the stock hangar (the hull can start this week). Returns the cleanup. */
+async function stockChainOf(typeId: number): Promise<() => void> {
+  const { getDb, saveSettings } = await import("@/server/data");
+  const { assets } = await import("@/db/schema");
+  const { inArray } = await import("drizzle-orm");
+  const first = plan.buildPlan({ ...req, categories: ["t3"], maxItemShare: 1, pins: [{ typeId, units: 1 }] });
+  saveSettings({ stockLocationIds: [1_000_000_000_001] });
+  const ids: number[] = [];
+  for (const l of first.stages.stages.flatMap((s) => s.lines)) {
+    if (l.isProduct || l.need <= 0) continue;
+    const itemId = 5000 + ids.length;
+    ids.push(itemId);
+    getDb()
+      .insert(assets)
+      .values({ itemId, ownerType: "character", ownerId: 1, viaCharacterId: 1, typeId: l.typeId, quantity: l.need * 2, locationId: 1_000_000_000_001, locationFlag: "Hangar", locationType: "other" })
+      .run();
+  }
+  return () => getDb().delete(assets).where(inArray(assets.itemId, ids)).run();
+}
+
 describe("buildPlan: manufacturing job cap (Jackdaw, real fixtures)", () => {
+  let cleanup = () => {};
+  beforeAll(async () => {
+    cleanup = await stockChainOf(34828);
+  });
+  afterAll(() => cleanup());
+
   it("an invented BPC longer than the cap runs as sequential jobs of ≤ 7 days; the BPC length matches the batch", () => {
     const p = plan.buildPlan({ ...req, categories: ["t3"], maxItemShare: 1, maxManufacturingJobDays: 7, pins: [{ typeId: 34828, units: 1 }] });
     const hull = p.jobs.filter((j) => j.typeId === 34828);

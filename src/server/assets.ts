@@ -198,15 +198,23 @@ export function stockIndex(): { stock: Map<number, number>; locations: number[];
  * delivered jobs are still "active" in ESI and count too.
  */
 export function jobOutputs(days: number, now = Date.now()): Map<number, number> {
+  return new Map([...jobOutputsTimed(days, now)].map(([id, x]) => [id, x.quantity]));
+}
+
+/** The same, with the day (from now) the last of those jobs ends: the plan can use it only from then. */
+export function jobOutputsTimed(days: number, now = Date.now()): Map<number, { quantity: number; day: number }> {
   const { source: sde } = getSde();
   const locs = selectedLocations();
-  const out = new Map<number, number>();
+  const out = new Map<number, { quantity: number; day: number }>();
   for (const j of getDb().select().from(industryJobs).all()) {
     if (j.status !== "active" || !j.productTypeId || !locs.has(j.facilityId)) continue;
     const activity = j.activityId === JOB_ACTIVITY_IDS.manufacturing ? "manufacturing" : (JOB_ACTIVITY_IDS.reactions as readonly number[]).includes(j.activityId) ? "reaction" : null;
     if (!activity || Date.parse(j.endDate) > now + days * 86_400_000) continue;
     const perRun = sde.getBlueprint(j.blueprintTypeId)?.activities[activity]?.products.find((p) => p.typeId === j.productTypeId)?.quantity ?? 1;
-    out.set(j.productTypeId, (out.get(j.productTypeId) ?? 0) + j.runs * perRun);
+    const cur = out.get(j.productTypeId) ?? { quantity: 0, day: 0 };
+    cur.quantity += j.runs * perRun;
+    cur.day = Math.max(cur.day, (Date.parse(j.endDate) - now) / 86_400_000);
+    out.set(j.productTypeId, cur);
   }
   return out;
 }

@@ -14,7 +14,7 @@ import { getDb, getSde, getSettings, priceBook, volumesFor } from "./data";
 import { recipeLookup } from "@/sde/recipes";
 import fs from "node:fs";
 import path from "node:path";
-import { jobOutputs, stockIndex } from "./assets";
+import { jobOutputsTimed, stockIndex } from "./assets";
 import { planStages, type StageBuyInfo, type StageRecipe, type Stages } from "@/engine/stages";
 import { buyOrderAdvice, quotePrice } from "@/engine/pricing";
 import { materialQuantity } from "@/engine/materials";
@@ -178,6 +178,11 @@ function depths(r: CalcResponse): Map<number, number> {
 export function toBatch(r: CalcResponse): PlanBatch {
   const depth = depths(r);
   const { source: sde } = getSde();
+  const byId = new Map(r.nodes.map((n) => [n.typeId, n]));
+  const built = (id: number) => {
+    const n = byId.get(id);
+    return !!n && n.decision === "build" && (n.activity === "manufacturing" || n.activity === "reaction");
+  };
   const jobs: PlanJob[] = r.jobs
     .filter((j) => j.activity === "manufacturing" || j.activity === "reaction")
     .map((j) => ({
@@ -188,6 +193,8 @@ export function toBatch(r: CalcResponse): PlanBatch {
       seconds: j.timeSeconds,
       depth: depth.get(j.typeId) ?? 1,
       maxRunsPerJob: sde.getBlueprint(j.blueprintTypeId)?.maxProductionLimit || undefined,
+      // What this job waits for: its built inputs (a job starts once they are done).
+      inputs: (byId.get(j.typeId)?.children ?? []).map((c) => c.typeId).filter(built),
     }));
   // Invention for the next round's BPC: expected attempts on a lab slot, before everything else.
   const inv = r.request.blueprintSource === "invention" ? r.invention.chosen : null;
@@ -466,7 +473,8 @@ export function buildPlan(req: PlanRequest): PlanResponse {
   const { slots, summary } = characterSlots(now);
   // Stock = hangars + what running factory/reaction jobs deliver inside the plan.
   const stockInfo = stockIndex();
-  const inJobs = jobOutputs(horizon, now);
+  const jobStock = jobOutputsTimed(horizon, now);
+  const inJobs = new Map([...jobStock].map(([id, x]) => [id, x.quantity]));
   const stock = new Map(stockInfo.stock);
   for (const [id, q] of inJobs) stock.set(id, (stock.get(id) ?? 0) + q);
   const inputFor = (e: Evaluated): PlanInput => ({
@@ -481,6 +489,7 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     unitCap: (id) => e.unitCap.get(id) ?? 0,
     // Stock is used up batch by batch and is not paid from the budget.
     stock,
+    jobStock,
     stockUse: stockUseFor(e.calcs, horizon, req.maxReactionJobDays),
     stockFirst: req.stockFirst !== false,
   });
@@ -496,8 +505,10 @@ export function buildPlan(req: PlanRequest): PlanResponse {
     const ev2 = evaluate(bar, ev);
     const input2 = inputFor(ev2);
     const plan2 = planWeek(input2);
-    if (plan2.profit > plan.profit) {
-      slotPass = { bar, gain: plan2.profit - plan.profit, bought: boughtForSlots(plan2, ev2.calcs) };
+    // Both weeks count: in a ramp-up week this week's profit is 0 either way.
+    const total = (p: Plan) => p.profit + p.nextWeekProfit;
+    if (total(plan2) > total(plan)) {
+      slotPass = { bar, gain: total(plan2) - total(plan), bought: boughtForSlots(plan2, ev2.calcs) };
       [ev, input, plan] = [ev2, input2, plan2];
       marginal = marginalValues(input, plan);
     }
@@ -507,7 +518,8 @@ export function buildPlan(req: PlanRequest): PlanResponse {
   // One shopping list for everything in the plan.
   const shop = new Map<number, PlanResponse["shopping"][number]>();
   const inv = new Map<string, PlanResponse["invention"][number]>();
-  for (const b of plan.batches) {
+  // Next week's hulls are paid now: their invention runs this week, their materials are on the list.
+  for (const b of [...plan.batches, ...plan.nextWeek]) {
     const c = calcs.get(b.key ?? String(b.typeId))!;
     for (const l of c.shopping) {
       const cur = shop.get(l.typeId) ?? { typeId: l.typeId, name: l.name, quantity: 0, cost: 0, volume: 0 };
@@ -637,7 +649,7 @@ const buildsBelowBar = (c: CalcResponse, bar: SlotBar) => belowBar(c, bar).lengt
 /** What the plan buys because the slot is worth more, one line per type. */
 function boughtForSlots(plan: Plan, calcs: Map<string, CalcResponse>): NonNullable<PlanResponse["slotPass"]>["bought"] {
   const out = new Map<number, NonNullable<PlanResponse["slotPass"]>["bought"][number]>();
-  for (const b of plan.batches) {
+  for (const b of [...plan.batches, ...plan.nextWeek]) {
     for (const n of calcs.get(b.key ?? String(b.typeId))?.nodes ?? []) {
       if (n.reason !== "slot value" || out.has(n.typeId) || n.activity === null) continue;
       out.set(n.typeId, { typeId: n.typeId, name: n.name, activity: n.activity, savesPerHour: n.buildSavingsPerHour ?? 0 });
@@ -666,7 +678,7 @@ function stagesFor(
   const note = new Map<number, string>();
   // Invented BPCs per route: attempts are an expectation over all of them (like EVE Guru), not per BPC.
   const invented = new Map<string, { c: CalcResponse; bpcs: number }>();
-  for (const b of plan.batches) {
+  for (const b of [...plan.batches, ...plan.nextWeek]) {
     const key = b.key ?? String(b.typeId);
     const c = calcs.get(key);
     if (!c) continue;
@@ -706,7 +718,11 @@ function stagesFor(
     buy.set(id, { typeId: id, name: t?.name ?? `#${id}`, unitPrice: quotePrice(prices.quote(id), s.materialPriceMode), volume: t ? t.packagedVolume ?? t.volume : 0 });
   }
   const stages = planStages({
-    products: plan.jobs.filter((j) => j.depth === 0).map((j) => ({ typeId: j.typeId, runs: j.runs })),
+    products: [
+      ...plan.jobs.filter((j) => j.depth === 0).map((j) => ({ typeId: j.typeId, runs: j.runs })),
+      // Next week's hulls: only what is built for them now (and its materials); the hull job itself is next week's.
+      ...plan.nextWeek.map((b) => ({ typeId: b.typeId, runs: b.runs, prepOnly: true })),
+    ],
     recipes,
     buy,
     stock: st.stock,
@@ -794,9 +810,12 @@ function stockUseFor(calcs: Map<string, CalcResponse>, horizonDays: number, maxR
     }
     const st = planStages({ products: [{ typeId: b.typeId, runs: b.runs }], recipes: m.recipes, buy: m.buy, stock: new Map(left) });
     const take = new Map<number, number>();
+    const build = new Map<number, number>();
     let value = 0;
     for (const line of st.stages.flatMap((x) => x.lines)) {
-      if (line.isProduct || line.fromStock <= 0) continue;
+      if (line.isProduct) continue;
+      if (line.runs > 0) build.set(line.typeId, (build.get(line.typeId) ?? 0) + line.runs);
+      if (line.fromStock <= 0) continue;
       take.set(line.typeId, (take.get(line.typeId) ?? 0) + line.fromStock);
       value += line.fromStock * (m.unit.get(line.typeId) ?? 0);
     }
@@ -805,7 +824,7 @@ function stockUseFor(calcs: Map<string, CalcResponse>, horizonDays: number, maxR
       take.set(l.typeId, (take.get(l.typeId) ?? 0) + l.fromStock);
       value += l.fromStock * (l.unitPrice ?? 0);
     }
-    return { take, value };
+    return { take, value, build };
   };
 }
 
@@ -821,9 +840,11 @@ const sheetName = (id: number) => getSde().source.getType(id)?.name ?? `#${id}`;
 export function sheetText(p: PlanResponse): string {
   const r = p.request;
   const lines = [
-    `Бюджет ${r.budget.toLocaleString("ru-RU")} ISK, заход раз в ${r.cadenceDays} дн., горизонт ${r.horizonDays} дн., рынок до ${Math.round(r.marketShare * 100)}% недельного объёма, партии от ${r.minBatchProfit.toLocaleString("ru-RU")} ISK прибыли.`,
+    `Бюджет ${r.budget.toLocaleString("ru-RU")} ISK, заход раз в ${r.cadenceDays} дн., план на ${r.horizonDays} дн., рынок до ${Math.round(r.marketShare * 100)}% недельного объёма, партии от ${r.minBatchProfit.toLocaleString("ru-RU")} ISK прибыли.`,
     `Слоты: ${p.slots.map((s) => `${s.owner} — производство ${s.manufacturing.total} (занято ${s.manufacturing.busy}), реакции ${s.reaction.total} (занято ${s.reaction.busy}), лаборатории ${s.science.total} (занято ${s.science.busy})`).join("; ")}.`,
     ...(r.pins?.length ? [`Закреплено: ${r.pins.map((x) => `${sheetName(x.typeId)} × ${x.units} шт.`).join(", ")}.`] : []),
+    ...(p.rampUp ? ["Разгон: корпусов на этой неделе нет, только компоненты под следующую."] : []),
+    ...(p.nextWeek.length ? [`Под следующую неделю (компоненты ставятся сейчас): ${p.nextWeek.map((b) => `${b.name} × ${b.runs} ран.`).join(", ")}.`] : []),
     ...(p.warnings.length ? ["", "Предупреждения плана:", ...p.warnings.map((w) => `- ${w}`)] : []),
     ...(p.marginal
       ? [

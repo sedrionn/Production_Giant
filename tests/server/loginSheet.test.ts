@@ -45,7 +45,10 @@ describe("loginSheet", () => {
     expect(s.plan?.title).toBe(view.title);
     expect(s.logins.map((l) => l.day)).toEqual(p.logins.map((l) => l.day));
     expect(s.current).toBe(0);
-    expect(s.logins[0].start.some((j) => j.name === "Jackdaw")).toBe(true);
+    // Empty stock: the first week makes Jackdaw's components, the hull is next week's.
+    expect(s.plan?.rampUp).toBe(true);
+    expect(s.plan?.nextWeek).toEqual([{ name: "Jackdaw", batches: 1, runs: p.nextWeek[0].runs }]);
+    expect(s.logins[0].prep.length).toBeGreaterThan(0);
     expect(s.buy?.buy.length).toBeGreaterThan(0);
     const later = s.logins.at(-1)!;
     expect(sheet.loginSheet(later.day, t0).current).toBe(s.logins.length - 1);

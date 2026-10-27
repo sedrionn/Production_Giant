@@ -58,6 +58,11 @@ export function LoginSheetView() {
             </>
           )}
         </p>
+        {sheet.plan?.rampUp && (
+          <p className="rounded border border-marker/50 bg-marker/10 px-3 py-2 text-sm">
+            Разгон: на этой неделе корпусов нет, ставятся компоненты и реакции под следующую неделю. Со следующей недели конвейер идёт на полную.
+          </p>
+        )}
         {sheet.logins.length > 1 && (
           <div className="flex flex-wrap gap-2 text-sm">
             {sheet.logins.map((l, i) => (
@@ -114,6 +119,18 @@ export function LoginSheetView() {
           </li>
         ))}
       </Block>
+
+      {sheet.plan && sheet.plan.nextWeek.length > 0 && (
+        <p className="text-sm text-graphite">
+          <span className="text-job">Заготовка под следующую неделю:</span> компоненты и реакции этой недели идут на{" "}
+          {sheet.plan.nextWeek.map((x) => `${x.name} × ${qty(x.runs)}${x.batches > 1 ? ` (${x.batches} партии)` : ""}`).join(", ")}. Корпуса поставишь по плану следующей недели.
+        </p>
+      )}
+      {sheet.plan && sheet.plan.carried.length > 0 && (
+        <p className="text-sm text-graphite">
+          Не влезло в неделю, перейдёт в следующий план: {sheet.plan.carried.map((x) => `${x.name} × ${qty(x.runs)} (${x.jobs} джоб)`).join(", ")}.
+        </p>
+      )}
 
       {next && (
         <p className="text-sm text-graphite">
