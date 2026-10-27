@@ -7,12 +7,12 @@ import type { SavedLogin } from "@/server/savedPlan";
 import { ago, duration, full, isk, qty } from "@/lib/format";
 import { BuyList } from "./BuyList";
 import { CopyName } from "./CopyName";
+import { useOnRefreshed } from "./FullRefresh";
 
 /** One page for a login: deliver, start, sell, fix orders, buy. */
 export function LoginSheetView() {
   const [sheet, setSheet] = useState<LoginSheet | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
 
   const load = useCallback(async (day?: number) => {
     try {
@@ -29,18 +29,8 @@ export function LoginSheetView() {
     load();
   }, [load]);
 
-  const sync = async () => {
-    setSyncing(true);
-    try {
-      const r = await fetch("/api/characters/sync", { method: "POST" });
-      if (!r.ok) throw new Error((await r.json()).error);
-      await load(sheet?.logins[sheet.current]?.day);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setSyncing(false);
-    }
-  };
+  // Fresh data after "Обновить всё" in the header.
+  useOnRefreshed(useCallback(() => { load(sheet?.logins[sheet.current]?.day); }, [sheet, load]));
 
   if (error) return <p className="rounded border border-loss/50 bg-loss/10 px-4 py-3 text-loss">{error}</p>;
   if (!sheet) return <p className="text-graphite">Загружаю…</p>;
@@ -56,9 +46,6 @@ export function LoginSheetView() {
       <section className="space-y-2">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h1 className="font-display text-3xl font-semibold">Заход</h1>
-          <button onClick={sync} disabled={syncing} className="rounded border border-marker/70 px-3 py-1.5 text-marker hover:bg-marker/10 disabled:opacity-50" title="Подтянуть джобы, ассеты и ордера из игры">
-            {syncing ? "Синхронизирую…" : "Обновить из игры"}
-          </button>
         </div>
         <p className="text-graphite">
           {sheet.plan ? (
@@ -71,6 +58,11 @@ export function LoginSheetView() {
             </>
           )}
         </p>
+        {sheet.plan?.rampUp && (
+          <p className="rounded border border-marker/50 bg-marker/10 px-3 py-2 text-sm">
+            Разгон: на этой неделе корпусов нет, ставятся компоненты и реакции под следующую неделю. Со следующей недели конвейер идёт на полную.
+          </p>
+        )}
         {sheet.logins.length > 1 && (
           <div className="flex flex-wrap gap-2 text-sm">
             {sheet.logins.map((l, i) => (
@@ -127,6 +119,18 @@ export function LoginSheetView() {
           </li>
         ))}
       </Block>
+
+      {sheet.plan && sheet.plan.nextWeek.length > 0 && (
+        <p className="text-sm text-graphite">
+          <span className="text-job">Заготовка под следующую неделю:</span> компоненты и реакции этой недели идут на{" "}
+          {sheet.plan.nextWeek.map((x) => `${x.name} × ${qty(x.runs)}${x.batches > 1 ? ` (${x.batches} партии)` : ""}`).join(", ")}. Корпуса поставишь по плану следующей недели.
+        </p>
+      )}
+      {sheet.plan && sheet.plan.carried.length > 0 && (
+        <p className="text-sm text-graphite">
+          Не влезло в неделю, перейдёт в следующий план: {sheet.plan.carried.map((x) => `${x.name} × ${qty(x.runs)} (${x.jobs} джоб)`).join(", ")}.
+        </p>
+      )}
 
       {next && (
         <p className="text-sm text-graphite">

@@ -9,6 +9,15 @@ export interface TaskState {
   startedAt: string;
   finishedAt: string | null;
   error: string | null;
+  /** Steps of a multi-step task in order (the full refresh); a failed step does not stop the rest. */
+  steps?: TaskStep[];
+}
+
+export interface TaskStep {
+  name: string;
+  status: "pending" | "running" | "done" | "error";
+  /** What went wrong (the step may still have done part of its work). */
+  error?: string;
 }
 
 const g = globalThis as unknown as { __pgTasks?: Map<string, TaskState> };
@@ -39,8 +48,11 @@ export function startTask(label: string, run: (t: TaskState) => Promise<void>): 
   return t;
 }
 
-export function getTask(id: string): TaskState | undefined {
-  return tasks.get(id);
+/** The latest task with this label (running or finished), if any since the app started. */
+export function latestTask(label: string): TaskState | undefined {
+  let last: TaskState | undefined;
+  for (const t of tasks.values()) if (t.label === label && (!last || t.startedAt >= last.startedAt)) last = t;
+  return last;
 }
 
 /** The running task with this label, if any. */

@@ -37,7 +37,7 @@ describe("loginSheet", () => {
   });
 
   it("with a saved plan: the logins are kept, today's is picked, any other can be shown", () => {
-    const p = plan.buildPlan({ budget: 10e9, cadenceDays: 2, horizonDays: 7, categories: [], marketShare: 0.3, minBatchProfit: 0, caldariShipsFirst: true, maxItemShare: 1, maxManufacturingJobDays: 7, pins: [{ typeId: 34828, batches: 1 }] });
+    const p = plan.buildPlan({ budget: 10e9, cadenceDays: 2, horizonDays: 7, categories: [], marketShare: 0.3, minBatchProfit: 0, caldariShipsFirst: true, maxItemShare: 1, maxManufacturingJobDays: 7, pins: [{ typeId: 34828, units: 1 }] });
     saved.savePlan(p);
     const view = saved.savedPlanView()!;
     const t0 = Date.parse(view.createdAt);
@@ -45,7 +45,10 @@ describe("loginSheet", () => {
     expect(s.plan?.title).toBe(view.title);
     expect(s.logins.map((l) => l.day)).toEqual(p.logins.map((l) => l.day));
     expect(s.current).toBe(0);
-    expect(s.logins[0].start.some((j) => j.name === "Jackdaw")).toBe(true);
+    // Empty stock: the first week makes Jackdaw's components, the hull is next week's.
+    expect(s.plan?.rampUp).toBe(true);
+    expect(s.plan?.nextWeek).toEqual([{ name: "Jackdaw", batches: 1, runs: p.nextWeek[0].runs }]);
+    expect(s.logins[0].prep.length).toBeGreaterThan(0);
     expect(s.buy?.buy.length).toBeGreaterThan(0);
     const later = s.logins.at(-1)!;
     expect(sheet.loginSheet(later.day, t0).current).toBe(s.logins.length - 1);

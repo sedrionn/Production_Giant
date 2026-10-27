@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { PlanResponse } from "@/server/plan";
 import type { ScheduledJob } from "@/engine/planner";
 import { full, isk, pct, qty } from "@/lib/format";
 import { stageName } from "@/lib/stages";
 import { BuyList, StockPicker } from "./BuyList";
+import { useOnRefreshed } from "./FullRefresh";
 import { Search } from "./ItemSearch";
 
 interface Form {
@@ -15,7 +16,6 @@ interface Form {
   /** Fill idle reaction slots with small reactions for sale. */
   fillIdleReactions: boolean;
   cadenceDays: number;
-  horizonDays: number;
   marketShare: number;
   minBatchProfit: number;
   caldariShipsFirst: boolean;
@@ -27,12 +27,37 @@ interface Form {
   /** Purchase list: materials for this many weeks. */
   buyWeeks: number;
   categories: string[];
-  /** Always in the plan, before everything else. */
-  pins: { typeId: number; name: string; batches: number }[];
+  /** Always in the plan, before everything else: exactly this many units. */
+  pins: Pin[];
 }
 
-const DEFAULT: Form = { budget: 10e9, stockFirst: true, fillIdleReactions: true, cadenceDays: 2, horizonDays: 7, marketShare: 0.3, minBatchProfit: 30e6, caldariShipsFirst: true, maxItemShare: 0.2, maxReactionJobDays: 2, maxManufacturingJobDays: 7, buyWeeks: 1, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions"], pins: [] };
-const STORAGE = "pg.plan.v3";
+interface Pin {
+  typeId: number;
+  name: string;
+  units: number;
+  decryptor: "auto" | "none" | number;
+  source: "auto" | "owned" | "invention";
+}
+
+const DEFAULT: Form = { budget: 10e9, stockFirst: true, fillIdleReactions: true, cadenceDays: 2, marketShare: 0.3, minBatchProfit: 30e6, caldariShipsFirst: true, maxItemShare: 0.2, maxReactionJobDays: 2, maxManufacturingJobDays: 7, buyWeeks: 1, categories: ["caldari_t1", "caldari_t2", "t3", "rigs_t1", "rigs_t2", "reactions", "warp_disruptors"], pins: [] };
+/** Where the form lived before it moved to the app DB: read once and moved over. */
+const LEGACY_STORAGE = "pg.plan.v3";
+
+/** A form from before pins were in units and the bubbles were a default category. */
+function migrateLegacy(raw: Omit<Partial<Form>, "pins"> & { pins?: (Partial<Pin> & { batches?: number })[] }): Form {
+  const categories = raw.categories?.length ? raw.categories : DEFAULT.categories;
+  return {
+    ...DEFAULT,
+    ...raw,
+    categories: categories.includes("warp_disruptors") ? categories : [...categories, "warp_disruptors"],
+    pins: (raw.pins ?? []).map((p) => ({ typeId: p.typeId ?? 0, name: p.name ?? "", units: p.units ?? p.batches ?? 1, decryptor: p.decryptor ?? "auto", source: p.source ?? "auto" })),
+  };
+}
+
+/** Keeps the form on the server: pins stay until removed, "Обновить всё" rebuilds the plan with it. */
+const store = (f: Form) => {
+  fetch("/api/plan", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(f) }).catch(() => {});
+};
 
 export function Planner({ categories }: { categories: { key: string; label: string }[] }) {
   const [form, setForm] = useState<Form>(DEFAULT);
@@ -42,27 +67,40 @@ export function Planner({ categories }: { categories: { key: string; label: stri
   const [copied, setCopied] = useState(false);
   const [showSheet, setShowSheet] = useState(false);
 
-  // The last plan comes back when you return to the page (it is kept on the server).
+  // The last plan and the form (with pins) come back from the server.
   useEffect(() => {
     fetch("/api/plan")
       .then((r) => r.json())
-      .then((b) => b.plan && setPlan((cur) => cur ?? b.plan))
+      .then((b: { plan?: PlanResponse & { text: string }; form?: Form | null }) => {
+        if (b.plan) setPlan((cur) => cur ?? b.plan!);
+        if (b.form) return setForm({ ...DEFAULT, ...b.form });
+        // First visit after the move: take the form this browser kept and store it on the server.
+        let legacy: string | null = null;
+        try {
+          legacy = localStorage.getItem(LEGACY_STORAGE);
+        } catch {}
+        if (!legacy) return;
+        const next = migrateLegacy(JSON.parse(legacy));
+        setForm(next);
+        store(next);
+      })
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    try {
-      const s = localStorage.getItem(STORAGE);
-      if (s) setForm({ ...DEFAULT, ...(JSON.parse(s) as Partial<Form>) });
-    } catch {}
-  }, []);
+  // "Обновить всё" rebuilds the plan with the stored form: show the new one.
+  useOnRefreshed(
+    useCallback(() => {
+      fetch("/api/plan")
+        .then((r) => r.json())
+        .then((b) => b.plan && setPlan(b.plan))
+        .catch(() => {});
+    }, []),
+  );
 
   const set = (patch: Partial<Form>) => {
     const next = { ...form, ...patch };
     setForm(next);
-    try {
-      localStorage.setItem(STORAGE, JSON.stringify(next));
-    } catch {}
+    store(next);
   };
 
   const run = async () => {
@@ -121,16 +159,15 @@ export function Planner({ categories }: { categories: { key: string; label: stri
       <div>
         <h1 className="font-display text-4xl font-semibold tracking-wide">План недели</h1>
         <p className="mt-1 max-w-[85ch] text-graphite">
-          Подбирает партии так, чтобы джоба корпуса заканчивалась к твоему следующему заходу, и раскладывает их по свободным слотам
-          персонажей. Корпуса этой недели строятся из готовых компонентов, а компоненты и реакции на следующий круг ставятся параллельно,
-          одной джобой на тип. Берутся только предметы, на которые есть свой чертёж или инвент.
+          План на 7 дней: всё, что в нём есть, стартует на этой неделе (закончиться может позже). Корпуса этой недели строятся из того, что
+          уже есть на складе, а компоненты и реакции под следующую неделю ставятся параллельно, одной джобой на тип. Первая неделя с пустым
+          складом — разгонная. Берутся только предметы, на которые есть свой чертёж или инвент.
         </p>
       </div>
 
       <section className="grid gap-4 rounded border border-line bg-sheet/60 px-4 py-4 sm:grid-cols-2 lg:grid-cols-8">
         <Num label="Бюджет, млрд ISK" value={form.budget / 1e9} step={0.5} onChange={(v) => set({ budget: v * 1e9 })} />
         <Num label="Захожу раз в, дней" value={form.cadenceDays} step={1} min={1} max={7} onChange={(v) => set({ cadenceDays: v })} />
-        <Num label="План на, дней" value={form.horizonDays} step={1} min={1} max={28} onChange={(v) => set({ horizonDays: v })} />
         <Num label="Не больше, % рынка за период" value={Math.round(form.marketShare * 100)} step={5} min={5} max={100} onChange={(v) => set({ marketShare: v / 100 })} />
         <Num label="Партия от, млн ISK прибыли" value={form.minBatchProfit / 1e6} step={5} min={0} onChange={(v) => set({ minBatchProfit: v * 1e6 })} />
         <Num label="Одна позиция, не больше % бюджета" value={Math.round(form.maxItemShare * 100)} step={5} min={5} max={100} onChange={(v) => set({ maxItemShare: v / 100 })} />
@@ -205,8 +242,19 @@ export function Planner({ categories }: { categories: { key: string; label: stri
               {isk(plan.request.budget)}, заход раз в {plan.request.cadenceDays} дн. Если цены или склад обновились, составь заново.
             </p>
           )}
-          <section className="grid gap-4 sm:grid-cols-5">
-            <Stat label="Прибыль плана" value={isk(plan.profit, true)} title={full(plan.profit)} tone="gain" />
+          {plan.rampUp && (
+            <p className="rounded border border-marker/50 bg-marker/10 px-4 py-3">
+              Разгон: склад пустой, поэтому на этой неделе корпусов нет — ставятся компоненты и реакции под следующую неделю. Со второй недели
+              корпуса идут из готового, а компоненты параллельно под неделю после.
+            </p>
+          )}
+          <section className="grid gap-4 sm:grid-cols-6">
+            <Stat label="Прибыль недели" value={isk(plan.profit, true)} title={`${full(plan.profit)}: корпуса, которые стартуют на этой неделе`} tone="gain" />
+            <Stat
+              label="Заготовка: прибыль корпусов"
+              value={isk(plan.nextWeekProfit ?? 0, true)}
+              title="Корпуса следующей недели, компоненты которых ставятся сейчас (их вложения уже в «Нужно вложить»)"
+            />
             <Stat label="Нужно вложить" value={isk(plan.capital)} title={`${full(plan.capital)} из бюджета ${full(plan.request.budget)}: только то, что покупается`} />
             <Stat label="Из склада" value={isk(plan.fromStock ?? 0)} title="Сколько стоили бы на рынке материалы и компоненты, которые план берёт со склада. Бюджет на них не тратится" />
             <Stat label="Заходов" value={String(plan.logins.length)} title="Дни, когда нужно что-то забрать или поставить" />
@@ -228,6 +276,22 @@ export function Planner({ categories }: { categories: { key: string; label: stri
                 .join(" · ")}
             </p>
           </section>
+
+          {plan.pins?.length > 0 && (
+            <section className="space-y-1">
+              <h2 className="font-display text-2xl font-semibold">Закрепы</h2>
+              <ul className="space-y-0.5 text-sm">
+                {plan.pins.map((x) => (
+                  <li key={x.typeId} className={x.planned < x.want ? "text-loss" : ""}>
+                    {x.name}:{" "}
+                    {x.planned >= x.want
+                      ? `закреплено ${qty(x.want)} шт.${x.planned > x.want ? ` → будет ${qty(x.planned)} (целыми BPC / ранами)` : ""}`
+                      : `влезло ${qty(x.planned)} из ${qty(x.want)} шт. — ${x.reason}${x.missingSlotDays ? `, не хватает ~${x.missingSlotDays.toFixed(1)} слот-дней` : ""}`}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           {plan.marginal && <WhatMore plan={plan} />}
 
@@ -258,7 +322,7 @@ export function Planner({ categories }: { categories: { key: string; label: stri
                 )}
                 {l.prep.some((p) => p.activity === "invention") && (
                   <p className="text-sm">
-                    <span className="text-job">Инвент в лаборатории на следующий круг:</span>{" "}
+                    <span className="text-job">Инвент в лаборатории:</span>{" "}
                     {l.prep
                       .filter((p) => p.activity === "invention")
                       .map(
@@ -270,7 +334,7 @@ export function Planner({ categories }: { categories: { key: string; label: stri
                 )}
                 {l.prep.some((p) => p.activity === "manufacturing" || p.activity === "reaction") && (
                   <p className="text-sm">
-                    <span className="text-job">Компоненты и реакции на следующий круг:</span>{" "}
+                    <span className="text-job">Компоненты и реакции:</span>{" "}
                     {l.prep
                       .filter((p) => p.activity === "manufacturing" || p.activity === "reaction")
                       .map((p) => `${p.name} × ${qty(p.runs)}${p.jobs > 1 ? ` (${p.jobs} джоб параллельно)` : ""}`)
@@ -303,7 +367,7 @@ export function Planner({ categories }: { categories: { key: string; label: stri
           </section>
 
           <section className="space-y-2">
-            <h2 className="font-display text-2xl font-semibold">Партии</h2>
+            <h2 className="font-display text-2xl font-semibold">Корпуса этой недели</h2>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[800px] whitespace-nowrap text-left">
                 <thead className="border-b border-line text-sm text-graphite">
@@ -348,6 +412,53 @@ export function Planner({ categories }: { categories: { key: string; label: stri
             </div>
           </section>
 
+          {plan.nextWeek?.length > 0 && (
+            <section className="space-y-2">
+              <h2 className="font-display text-2xl font-semibold">Под следующую неделю</h2>
+              <p className="max-w-[90ch] text-sm text-graphite">
+                Компоненты, реакции и инвент для этих корпусов ставятся на этой неделе, сами корпуса — в плане следующей недели (их цепочка не
+                успевает до конца этой). Деньги на них уже в «Нужно вложить».
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[640px] whitespace-nowrap text-left">
+                  <thead className="border-b border-line text-sm text-graphite">
+                    <tr>
+                      <th className="py-2 pr-4 font-normal">Предмет</th>
+                      <th className="py-2 pr-4 text-right font-normal">Партий × ранов</th>
+                      <th className="py-2 pr-4 text-right font-normal">Прибыль</th>
+                      <th className="py-2 text-right font-normal">Вложить</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groupBatches(plan.nextWeek.map((b) => ({ ...b, start: 0, end: 0 }))).map((g) => (
+                      <tr key={g.name} className="border-b border-line/40">
+                        <td className="py-1.5 pr-4">
+                          {g.name}
+                          {g.pinned && <span className="ml-2 rounded border border-marker/60 px-1 text-xs text-marker">закреплено</span>}
+                        </td>
+                        <td className="py-1.5 pr-4 text-right">
+                          {g.count} × {g.runs}
+                        </td>
+                        <td className="py-1.5 pr-4 text-right text-gain" title={full(g.profit)}>
+                          {isk(g.profit, true)}
+                        </td>
+                        <td className="py-1.5 text-right" title={full(g.capital)}>
+                          {isk(g.capital)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
+          {plan.carried?.length > 0 && (
+            <p className="text-sm text-graphite">
+              Не влезло в неделю, перейдёт в следующий план: {plan.carried.map((x) => `${x.name} × ${qty(x.runs)} (${x.jobs} джоб)`).join(", ")}.
+            </p>
+          )}
+
           <StagesPreview stages={plan.stages} />
 
           <BuyList
@@ -363,6 +474,12 @@ export function Planner({ categories }: { categories: { key: string; label: stri
               </>
             }
           />
+
+          {plan.categoryCounts && plan.categoryCounts.length > 0 && (
+            <p className="text-sm text-graphite" title="Сколько предметов в категории и сколько из них дошло до кандидатов плана (прибыльные, с чертежом и ценами)">
+              Рассмотрено: {plan.categoryCounts.map((c) => `${c.label} — ${c.candidates} из ${c.items}`).join(" · ")}
+            </p>
+          )}
 
           {plan.skipped.length > 0 && (
             <details className="text-sm text-graphite">
@@ -406,48 +523,168 @@ function StagesPreview({ stages }: { stages: PlanResponse["stages"] }) {
   );
 }
 
-/** Items that always go into the plan first, with a batch count. */
+/** Items that always go into the plan first: exactly N units, with the blueprint source and decryptor. */
 function Pins({ pins, onChange }: { pins: Form["pins"]; onChange: (p: Form["pins"]) => void }) {
   // A new key clears the search box after each pick.
   const [searchKey, setSearchKey] = useState(0);
+  const [decryptors, setDecryptors] = useState<{ typeId: number; name: string }[]>([]);
+  useEffect(() => {
+    fetch("/api/decryptors")
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setDecryptors)
+      .catch(() => {});
+  }, []);
+  const update = (typeId: number, patch: Partial<Pin>) => onChange(pins.map((x) => (x.typeId === typeId ? { ...x, ...patch } : x)));
   return (
     <div className="space-y-2 sm:col-span-2 lg:col-span-8">
       <p className="text-sm text-graphite">
-        Закрепить: эти предметы попадают в план первыми, даже если по прибыли на слот-день проигрывают. Лимиты рынка и доли бюджета на них не действуют,
-        бюджет и слоты действуют.
+        Закрепить: ровно столько штук попадает в план первым, даже в минус. Количество округляется вверх до целого BPC (или рана). Лимиты рынка и
+        доли бюджета на закреп не действуют (будет предупреждение), бюджет и слоты действуют. Закреп остаётся, пока его не снимешь.
       </p>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="space-y-1.5">
         {pins.map((p) => (
-          <span key={p.typeId} className="flex items-center gap-1.5 rounded border border-marker/60 px-2 py-1 text-sm">
-            {p.name} ×
-            <input
-              type="number"
-              min={1}
-              max={10}
-              value={p.batches}
-              title="Партий за план"
-              onChange={(e) => onChange(pins.map((x) => (x.typeId === p.typeId ? { ...x, batches: Math.min(10, Math.max(1, Number(e.target.value) || 1)) } : x)))}
-              className="w-12 rounded border border-line bg-ink px-1 py-0.5"
-            />
-            <button onClick={() => onChange(pins.filter((x) => x.typeId !== p.typeId))} className="text-graphite hover:text-loss" title="Открепить">
-              ✕
-            </button>
-          </span>
+          <PinRow key={p.typeId} pin={p} decryptors={decryptors} onChange={(patch) => update(p.typeId, patch)} onRemove={() => onChange(pins.filter((x) => x.typeId !== p.typeId))} />
         ))}
-        <Search
-          key={searchKey}
-          endpoint="/api/search"
-          idKey="typeId"
-          placeholder="Добавить, например Flycatcher"
-          value={null}
-          onPick={(it) => {
-            if (!pins.some((x) => x.typeId === it.id)) onChange([...pins, { typeId: it.id, name: it.name, batches: 1 }]);
-            setSearchKey((k) => k + 1);
-          }}
-          className="w-64"
-        />
       </div>
+      <Search
+        key={searchKey}
+        endpoint="/api/search"
+        idKey="typeId"
+        placeholder="Добавить, например Flycatcher"
+        value={null}
+        onPick={(it) => {
+          if (!pins.some((x) => x.typeId === it.id)) onChange([...pins, { typeId: it.id, name: it.name, units: 1, decryptor: "auto", source: "auto" }]);
+          setSearchKey((k) => k + 1);
+        }}
+        className="w-64"
+      />
     </div>
+  );
+}
+
+interface PinOptionsView {
+  outputPerRun: number;
+  owned: { isBpo: boolean; me: number; te: number; bpcRuns: number[]; profitPerUnit: number | null } | null;
+  invention: { decryptorId: number | null; name: string; runsPerBpc: number; chance: number; profitPerUnit: number | null }[];
+}
+
+function PinRow({ pin: p, decryptors, onChange, onRemove }: { pin: Pin; decryptors: { typeId: number; name: string }[]; onChange: (patch: Partial<Pin>) => void; onRemove: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [opts, setOpts] = useState<PinOptionsView | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const toggle = () => {
+    setOpen(!open);
+    if (opts || open) return;
+    fetch(`/api/plan/pin?typeId=${p.typeId}`)
+      .then(async (r) => {
+        const b = await r.json();
+        if (!r.ok) throw new Error(b.error);
+        setOpts(b);
+      })
+      .catch((e) => setErr((e as Error).message));
+  };
+  const select = "rounded border border-line bg-ink px-1 py-0.5 text-sm";
+  return (
+    <div className="rounded border border-marker/60 px-2 py-1.5 text-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-medium">{p.name}</span>
+        <input
+          type="number"
+          min={1}
+          value={p.units}
+          title="Штук продукта за план"
+          onChange={(e) => onChange({ units: Math.max(1, Math.trunc(Number(e.target.value) || 1)) })}
+          className="w-20 rounded border border-line bg-ink px-1 py-0.5"
+        />
+        <span className="text-graphite">шт.</span>
+        <select className={select} value={p.source} onChange={(e) => onChange({ source: e.target.value as Pin["source"] })} title="Откуда чертёж">
+          <option value="auto">чертёж: авто</option>
+          <option value="owned">свой BPO/BPC</option>
+          <option value="invention">инвент</option>
+        </select>
+        {p.source !== "owned" && (
+          <select
+            className={select}
+            value={String(p.decryptor)}
+            onChange={(e) => onChange({ decryptor: e.target.value === "auto" || e.target.value === "none" ? e.target.value : Number(e.target.value) })}
+            title="Декриптор для инвента"
+          >
+            <option value="auto">декриптор: авто (под ритм заходов)</option>
+            <option value="none">без декриптора</option>
+            {decryptors.map((d) => (
+              <option key={d.typeId} value={d.typeId}>
+                {d.name.replace(" Decryptor", "")}
+              </option>
+            ))}
+          </select>
+        )}
+        <button onClick={toggle} className="text-graphite underline hover:text-chalk">
+          {open ? "скрыть варианты" : "варианты"}
+        </button>
+        <button onClick={onRemove} className="ml-auto text-graphite hover:text-loss" title="Открепить">
+          ✕
+        </button>
+      </div>
+      {open && (err ? <p className="mt-1 text-loss">{err}</p> : opts ? <PinOptionsTable pin={p} o={opts} /> : <p className="mt-1 text-graphite">Считаю…</p>)}
+    </div>
+  );
+}
+
+/** For N units: how many BPCs, attempts and what profit each source / decryptor gives. */
+function PinOptionsTable({ pin, o }: { pin: Pin; o: PinOptionsView }) {
+  const units = (runs: number) => runs * o.outputPerRun;
+  const rows: { key: string; label: string; bpcs: string; planned: number; attempts: string; profit: number | null; chosen: boolean }[] = [];
+  if (o.owned) {
+    const per = o.owned.isBpo ? 0 : units(Math.max(1, o.owned.bpcRuns[0] ?? 1));
+    const planned = per ? Math.ceil(pin.units / per) * per : Math.ceil(pin.units / o.outputPerRun) * o.outputPerRun;
+    rows.push({
+      key: "owned",
+      label: o.owned.isBpo ? `свой BPO (ME ${o.owned.me})` : `свои BPC (ME ${o.owned.me}, ${o.owned.bpcRuns.length} шт.)`,
+      bpcs: o.owned.isBpo ? "—" : String(Math.ceil(pin.units / per)),
+      planned,
+      attempts: "—",
+      profit: o.owned.profitPerUnit === null ? null : o.owned.profitPerUnit * planned,
+      chosen: pin.source === "owned",
+    });
+  }
+  for (const d of o.invention) {
+    const per = units(d.runsPerBpc);
+    const bpcs = Math.ceil(pin.units / per);
+    const planned = bpcs * per;
+    rows.push({
+      key: String(d.decryptorId),
+      label: `инвент: ${d.name.replace(" Decryptor", "")}`,
+      bpcs: `${bpcs} × ${d.runsPerBpc} ран.`,
+      planned,
+      attempts: `~${Math.ceil(bpcs / Math.max(d.chance, 0.01) - 1e-9)} (${pct(d.chance, 0)})`,
+      profit: d.profitPerUnit === null ? null : d.profitPerUnit * planned,
+      chosen: pin.source !== "owned" && (pin.decryptor === "none" ? d.decryptorId === null : pin.decryptor === d.decryptorId),
+    });
+  }
+  if (!rows.length) return <p className="mt-1 text-graphite">Нет своего чертежа и нельзя заинвентить.</p>;
+  return (
+    <table className="mt-2 w-full text-left text-xs">
+      <thead className="text-graphite">
+        <tr>
+          <th className="pr-3 font-normal">Вариант</th>
+          <th className="pr-3 text-right font-normal">BPC</th>
+          <th className="pr-3 text-right font-normal">Будет штук</th>
+          <th className="pr-3 text-right font-normal">Попыток (шанс)</th>
+          <th className="text-right font-normal">Прибыль ≈</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr key={r.key} className={r.chosen ? "text-marker" : ""}>
+            <td className="pr-3">{r.label}</td>
+            <td className="pr-3 text-right">{r.bpcs}</td>
+            <td className="pr-3 text-right">{qty(r.planned)}</td>
+            <td className="pr-3 text-right">{r.attempts}</td>
+            <td className={`text-right ${r.profit !== null && r.profit < 0 ? "text-loss" : "text-gain"}`}>{r.profit === null ? "—" : isk(r.profit, true)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 

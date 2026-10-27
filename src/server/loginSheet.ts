@@ -14,7 +14,19 @@ import { characterSlots, type SlotSummary } from "./plan";
 import { loginsOf, savedPlanView, type SavedLogin } from "./savedPlan";
 
 export interface LoginSheet {
-  plan: { id: number; title: string; createdAt: string; cadenceDays: number; horizonDays: number } | null;
+  plan: {
+    id: number;
+    title: string;
+    createdAt: string;
+    cadenceDays: number;
+    horizonDays: number;
+    /** A ramp-up week: components only, the hulls start next week. */
+    rampUp: boolean;
+    /** Hulls the components of this plan are for (next week), merged per item. */
+    nextWeek: { name: string; batches: number; runs: number }[];
+    /** Jobs that did not fit the week: the next plan picks them up. */
+    carried: { name: string; runs: number; jobs: number }[];
+  } | null;
   /** Days since the plan was saved. */
   planDay: number;
   /** All logins of the plan and the one shown (index). */
@@ -71,7 +83,16 @@ export function loginSheet(day?: number, now = Date.now()): LoginSheet {
   const prices = priceBook([...onHand, ...hub.map((o) => o.typeId)], s.priceLocationId);
 
   return {
-    plan: view && { id: view.id, title: view.title, createdAt: view.createdAt, cadenceDays: view.data.request.cadenceDays, horizonDays: view.data.request.horizonDays },
+    plan: view && {
+      id: view.id,
+      title: view.title,
+      createdAt: view.createdAt,
+      cadenceDays: view.data.request.cadenceDays,
+      horizonDays: view.data.request.horizonDays,
+      rampUp: !!view.data.rampUp,
+      nextWeek: mergeByName(view.data.nextWeek ?? []),
+      carried: (view.data.carried ?? []).map(({ name, runs, jobs }) => ({ name, runs, jobs })),
+    },
     planDay,
     logins,
     current,
@@ -82,4 +103,15 @@ export function loginSheet(day?: number, now = Date.now()): LoginSheet {
     buy: view?.data.stages ?? null,
     syncedAt: chars.map((c) => c.lastSyncAt).filter((x): x is string => !!x).sort()[0] ?? null,
   };
+}
+
+function mergeByName(list: { name: string; runs: number }[]): { name: string; batches: number; runs: number }[] {
+  const m = new Map<string, { name: string; batches: number; runs: number }>();
+  for (const x of list) {
+    const g = m.get(x.name) ?? { name: x.name, batches: 0, runs: 0 };
+    g.batches++;
+    g.runs += x.runs;
+    m.set(x.name, g);
+  }
+  return [...m.values()];
 }

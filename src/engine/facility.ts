@@ -52,8 +52,8 @@ export interface FacilityProfile {
   facilityTax: number;
   /**
    * Extra system-wide discount on the cost-index part of the job fee
-   * (e.g. Faction Warfare system bonus), fraction: 0.5 = −50%. Verify against the
-   * in-game job cost tooltip — CCP's exact rule is not confirmed here.
+   * (e.g. Faction Warfare system bonus), fraction: 0.5 = −50%. Facility tax and SCC are not
+   * discounted. Confirmed in game (Jackdaw × 20 in Auner, see the golden test).
    */
   systemJobBonus?: number;
 }

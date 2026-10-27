@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { Ledger, LedgerItem } from "@/server/ledger";
 import { CATEGORY_LABEL, type LedgerCategory } from "@/engine/ledger";
 import { ago, full, isk, pct, qty } from "@/lib/format";
+import { useOnRefreshed } from "./FullRefresh";
 
 const PERIODS: { v: string; label: string }[] = [
   { v: "7", label: "7 дней" },
@@ -21,7 +22,6 @@ export function Money() {
   const [data, setData] = useState<Ledger | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     try {
@@ -52,19 +52,8 @@ export function Money() {
     } catch {}
   }, [days, load]);
 
-  const sync = async () => {
-    setSyncing(true);
-    try {
-      const r = await fetch("/api/characters/sync", { method: "POST" });
-      const body = await r.json();
-      if (!r.ok) throw new Error(body.error);
-      await load(days);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setSyncing(false);
-    }
-  };
+  // Fresh data after "Обновить всё" in the header.
+  useOnRefreshed(useCallback(() => { load(days); }, [days, load]));
 
   const noAccess = data?.characters.filter((c) => !c.moneyAccess) ?? [];
   const c = data?.cash;
@@ -93,9 +82,6 @@ export function Money() {
               </button>
             ))}
           </div>
-          <button onClick={sync} disabled={syncing} className="rounded border border-marker/70 px-3 py-1.5 text-marker hover:bg-marker/10 disabled:opacity-50">
-            {syncing ? "Синхронизирую…" : "Синхронизировать персонажей"}
-          </button>
         </div>
       </div>
 

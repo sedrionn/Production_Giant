@@ -8,7 +8,11 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   try {
-    return ok(saveSettings((await req.json()) as Partial<AppSettings>));
+    // Kept by the app itself: a settings page opened earlier must not overwrite them with stale copies.
+    const patch = (await req.json()) as Partial<AppSettings>;
+    delete patch.planForm;
+    delete patch.lastAutoRefreshAt;
+    return ok(saveSettings(patch));
   } catch (e) {
     return fail(e);
   }

@@ -8,6 +8,7 @@ import { ago, duration, isk, pct, qty } from "@/lib/format";
 import { stageName } from "@/lib/stages";
 import { BuyList } from "./BuyList";
 import { CopyName } from "./CopyName";
+import { useOnRefreshed } from "./FullRefresh";
 
 const STATE: Record<LineProgress["state"], { label: string; cls: string }> = {
   todo: { label: "не начато", cls: "text-graphite" },
@@ -19,7 +20,6 @@ const STATE: Record<LineProgress["state"], { label: string; cls: string }> = {
 export function StagesTracker() {
   const [view, setView] = useState<SavedPlanView | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
   const [hideDone, setHideDone] = useState(false);
 
   const load = useCallback(async (id?: number) => {
@@ -39,19 +39,8 @@ export function StagesTracker() {
     } catch {}
   }, [load]);
 
-  const sync = async () => {
-    setSyncing(true);
-    try {
-      const r = await fetch("/api/characters/sync", { method: "POST" });
-      const b = await r.json();
-      if (!r.ok) throw new Error(b.error);
-      await load(view?.id);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setSyncing(false);
-    }
-  };
+  // Fresh data after "Обновить всё" in the header.
+  useOnRefreshed(useCallback(() => { load(view?.id); }, [view?.id, load]));
 
   const remove = async () => {
     if (!view) return;
@@ -115,9 +104,6 @@ export function StagesTracker() {
             <input type="checkbox" className="accent-[var(--marker)]" checked={hideDone} onChange={(e) => toggleDone(e.target.checked)} />
             скрыть готовое
           </label>
-          <button onClick={sync} disabled={syncing} className="rounded border border-marker/70 px-3 py-1.5 text-marker hover:bg-marker/10 disabled:opacity-50" title="Подтянуть джобы из игры">
-            {syncing ? "Синхронизирую…" : "Обновить джобы"}
-          </button>
           <button onClick={remove} className="text-sm text-graphite hover:text-loss">
             Удалить план
           </button>
