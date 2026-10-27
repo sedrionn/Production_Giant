@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ago } from "@/lib/format";
+import { useOnRefreshed } from "./FullRefresh";
 
 interface Char {
   characterId: number;
@@ -47,7 +48,6 @@ const SCOPES = [
 export function Characters() {
   const [data, setData] = useState<Data | null>(null);
   const [banner, setBanner] = useState<{ ok: boolean; text: string } | null>(null);
-  const [syncing, setSyncing] = useState(false);
   const [industryChar, setIndustryChar] = useState<number | null>(null);
   const [filter, setFilter] = useState("");
 
@@ -68,25 +68,8 @@ export function Characters() {
     if (q.get("added") || q.get("error")) window.history.replaceState(null, "", "/characters");
   }, [load]);
 
-  const sync = async () => {
-    setSyncing(true);
-    try {
-      const r = await fetch("/api/characters/sync", { method: "POST" });
-      const body = await r.json();
-      if (!r.ok) throw new Error(body.error);
-      const failed = (body as { error?: string; name: string }[]).filter((x) => x.error);
-      setBanner(
-        failed.length
-          ? { ok: false, text: `Не синхронизировались: ${failed.map((f) => `${f.name} (${f.error})`).join(", ")}` }
-          : { ok: true, text: "Синхронизировано." },
-      );
-      await load();
-    } catch (e) {
-      setBanner({ ok: false, text: `ESI недоступен: ${(e as Error).message}` });
-    } finally {
-      setSyncing(false);
-    }
-  };
+  // Fresh data after "Обновить всё" in the header.
+  useOnRefreshed(useCallback(() => { load(); }, [load]));
 
   const remove = async (c: Char) => {
     if (!window.confirm(`Удалить ${c.name} из приложения? Чертежи и скиллы этого персонажа пропадут из расчётов.`)) return;
@@ -113,11 +96,6 @@ export function Characters() {
         <div className="flex flex-wrap items-baseline justify-between gap-4">
           <h1 className="font-display text-4xl font-semibold tracking-wide">Персонажи</h1>
           <div className="flex gap-3">
-            {data.characters.length > 0 && (
-              <button onClick={sync} disabled={syncing} className="rounded px-3 py-2 text-chalk ring-1 ring-line hover:ring-marker disabled:opacity-50">
-                {syncing ? "Синхронизирую…" : "Синхронизировать всех"}
-              </button>
-            )}
             {data.ssoReady && (
               // Full navigation: the SSO flow leaves the app and comes back to /api/auth/callback.
               <a href="/api/auth/login" className="rounded bg-marker px-3 py-2 font-medium text-ink hover:bg-marker/90">

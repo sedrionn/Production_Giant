@@ -2,10 +2,9 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import type { Overview as OverviewData, OverviewRow } from "@/server/overview";
-import type { TaskState } from "@/server/tasks";
 import { ago, duration, full, isk, pct, qty } from "@/lib/format";
 import { ChainPanel } from "./ChainPanel";
-import { FullRefresh } from "./FullRefresh";
+import { useOnRefreshed } from "./FullRefresh";
 
 export interface CategoryTab {
   key: string;
@@ -42,7 +41,6 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
   const [rigSize, setRigSize] = useState<RigSize>("all");
   const [hideNoMarket, setHideNoMarket] = useState(true);
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "iskPerHour", dir: -1 });
-  const [task, setTask] = useState<TaskState | null>(null);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const toggle = (id: number) =>
     setExpanded((cur) => {
@@ -87,33 +85,12 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
     setExpanded(new Set());
   }, [cat, load]);
 
-  // Poll the background refresh, then recompute.
-  useEffect(() => {
-    if (!task || task.finishedAt) return;
-    const t = setInterval(async () => {
-      const r = await fetch(`/api/tasks?id=${task.id}`);
-      if (!r.ok) return;
-      const next = (await r.json()) as TaskState;
-      setTask(next);
-      if (next.finishedAt) load(cat);
-    }, 1000);
-    return () => clearInterval(t);
-  }, [task, cat, load]);
+  // Prices and volumes come from "Обновить всё" in the header: recompute when it finishes.
+  useOnRefreshed(useCallback(() => load(cat), [cat, load]));
 
   const hide = async (typeId: number) => {
     const r = await fetch("/api/blacklist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ typeId, add: true }) });
     if (r.ok) setData((d) => (d ? { ...d, rows: d.rows.filter((x) => x.typeId !== typeId), hidden: d.hidden + 1 } : d));
-  };
-
-  const refresh = async () => {
-    const r = await fetch("/api/overview/refresh", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ category: cat }),
-    });
-    const body = await r.json();
-    if (!r.ok) return setError(body.error);
-    setTask(body);
   };
 
   const rows = useMemo(() => {
@@ -134,8 +111,6 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
   }, [data, filter, sort, cat, rigSize, hideNoMarket]);
   const noMarket = (data?.rows ?? []).filter((r) => r.priceFlags?.some((f) => f.kind === "no_market")).length;
 
-  const running = task && !task.finishedAt;
-
   return (
     <div className="mx-auto max-w-[1400px] space-y-5 px-4 py-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -145,26 +120,10 @@ export function Overview({ categories }: { categories: CategoryTab[] }) {
             Полное дерево по каждому предмету с твоими структурами, порогом выгоды и режимами цен. Партия подобрана так, чтобы
             джоба продукта шла около {data?.targetJobDays ?? 5} дней (меняется в настройках).
           </p>
-          <FullRefresh onDone={() => load(cat)} />
         </div>
         <div className="space-y-1 text-right">
-          <button
-            onClick={refresh}
-            disabled={!!running}
-            className="rounded border border-marker/70 px-3 py-2 text-marker hover:bg-marker/10 disabled:opacity-50"
-          >
-            Обновить цены и объёмы категории
-          </button>
           <p className="text-sm text-graphite" aria-live="polite">
-            {running
-              ? `${task.phase}${task.total ? `: ${task.done} из ${task.total}` : "…"}`
-              : task?.error
-                ? `ESI недоступен: ${task.error}`
-                : task?.finishedAt
-                  ? `Обновлено${task.failed ? `, не удалось ${task.failed}` : ""}`
-                  : data?.pricesOldest
-                    ? `цены ESI: ${ago(data.pricesOldest)}`
-                    : "цены из фикстур или не загружены"}
+            {data?.pricesOldest ? `цены ESI: ${ago(data.pricesOldest)}` : "цены из фикстур или не загружены"}
           </p>
         </div>
       </div>

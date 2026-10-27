@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { PlanResponse } from "@/server/plan";
 import type { ScheduledJob } from "@/engine/planner";
 import { full, isk, pct, qty } from "@/lib/format";
 import { stageName } from "@/lib/stages";
 import { BuyList, StockPicker } from "./BuyList";
+import { useOnRefreshed } from "./FullRefresh";
 import { Search } from "./ItemSearch";
 
 interface Form {
@@ -85,6 +86,16 @@ export function Planner({ categories }: { categories: { key: string; label: stri
       })
       .catch(() => {});
   }, []);
+
+  // "Обновить всё" rebuilds the plan with the stored form: show the new one.
+  useOnRefreshed(
+    useCallback(() => {
+      fetch("/api/plan")
+        .then((r) => r.json())
+        .then((b) => b.plan && setPlan(b.plan))
+        .catch(() => {});
+    }, []),
+  );
 
   const set = (patch: Partial<Form>) => {
     const next = { ...form, ...patch };

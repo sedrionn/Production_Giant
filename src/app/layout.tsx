@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { FullRefresh } from "@/components/FullRefresh";
 import { NavLinks } from "@/components/NavLinks";
 import "./globals.css";
 
@@ -22,7 +23,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       </head>
       <body className="antialiased">
         <header className="border-b border-line bg-ink/90">
-          <nav className="mx-auto flex max-w-[1400px] items-baseline gap-6 px-4 py-3">
+          <nav className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
+            <FullRefresh />
             <Link href="/" className="font-display text-xl font-semibold tracking-wide text-chalk">
               Production Giant
             </Link>
