@@ -162,11 +162,19 @@ export function planStages(input: StageInput): Stages {
   const runsOf = new Map<number, number>();
   const add = (m: Map<number, number>, id: number, q: number) => m.set(id, (m.get(id) ?? 0) + q);
   const productIds = new Set(input.products.filter((p) => !p.prepOnly).map((p) => p.typeId));
+  // Units of each product the plan sells: never taken from stock (the hangar is for sale).
+  const productUnits = new Map<number, number>();
   for (const p of input.products) {
     const r = recipes.get(p.typeId);
+    // A product that another item of the plan also needs (a reaction sold AND used in a component)
+    // gets one merged line below, at its intermediate depth; that line consumes the inputs for all
+    // its runs. Adding them here as well bought the product's materials twice.
+    const alsoIntermediate = (depth.get(p.typeId) ?? 0) > 0;
     if (!p.prepOnly) {
       add(runsOf, p.typeId, p.runs);
       add(demand, p.typeId, p.runs * (r?.outputPerRun ?? 1));
+      add(productUnits, p.typeId, p.runs * (r?.outputPerRun ?? 1));
+      if (alsoIntermediate) continue;
     }
     // Each product job consumes its own inputs (rounded per job, as in game).
     if (r) for (const i of r.inputs) if (!p.prepOnly || recipes.has(i.typeId)) add(demand, i.typeId, inputQuantity(r, i, p.runs));
@@ -195,7 +203,8 @@ export function planStages(input: StageInput): Stages {
     const need = demand.get(id) ?? 0;
     // Reached only through inputs that come entirely from stock: nothing to do.
     if (need <= 0) continue;
-    const fromStock = take(id, need);
+    // Stock covers only what other items consume; the units sold as a product are built.
+    const fromStock = take(id, need - (productUnits.get(id) ?? 0));
     const runs = Math.ceil((need - fromStock) / r.outputPerRun - 1e-9);
     // Each parallel job rounds its own materials, like in game.
     const jobs = splitRuns(runs, r.secondsPerRun, r.maxJobSeconds, r.maxRunsPerJob);
