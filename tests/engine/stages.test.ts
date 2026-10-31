@@ -138,3 +138,23 @@ describe("planStages: game rounding on merged jobs", () => {
     expect(s.buy.find((b) => b.typeId === 10)!.need).toBe(188);
   });
 });
+
+describe("planStages: a product that is also an intermediate", () => {
+  // SYNTHETIC: Gas (reaction, 10 per run ← 5 Ice) is sold as a product AND goes into Component.
+  it("its inputs are bought once, for the merged line", () => {
+    const s = planStages({ products: [{ typeId: 1, runs: 10 }, { typeId: 3, runs: 7 }, { typeId: 3, runs: 7 }], recipes, buy, stock: new Map() });
+    const gas = s.stages.flatMap((x) => x.lines).filter((l) => l.typeId === 3);
+    // One line: 140 sold + 20 for components = 160 → 16 runs.
+    expect(gas).toHaveLength(1);
+    expect(gas[0]).toMatchObject({ need: 160, runs: 16, depth: 2 });
+    // Ice for 16 runs only (was 14 × 5 + 16 × 5 = 150).
+    expect(s.buy.find((b) => b.typeId === 11)).toMatchObject({ need: 80 });
+  });
+
+  it("stock covers only the intermediate part; the sold units are built", () => {
+    const s = planStages({ products: [{ typeId: 1, runs: 10 }, { typeId: 3, runs: 14 }], recipes, buy, stock: new Map([[3, 1000]]) });
+    const gas = s.stages.flatMap((x) => x.lines).find((l) => l.typeId === 3)!;
+    expect(gas).toMatchObject({ need: 160, fromStock: 20, runs: 14 });
+    expect(s.buy.find((b) => b.typeId === 11)).toMatchObject({ need: 70 });
+  });
+});
